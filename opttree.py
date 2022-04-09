@@ -64,6 +64,10 @@ def learn_tree(x,y,depth):
 
     model = Model()
 
+    model.Params.LazyConstraints = 1
+
+    lazy_val = 3
+    
     # variables for the tree structure
 
     a = [] # a[t][j]=1 iff we split on j at node t. NB a[j][t] in paper
@@ -116,9 +120,11 @@ def learn_tree(x,y,depth):
     for i in range(n):
         for t in range(num_branch_nodes,num_nodes):
             for m in ar[t]:
-                model.addConstr(LinExpr(x[i],a[m]), GRB.GREATER_EQUAL, b[m] - (1-z[i][t]))
+                constr = model.addConstr(LinExpr(x[i],a[m]), GRB.GREATER_EQUAL, b[m] - (1-z[i][t]))
+                constr.Lazy = lazy_val
             for m in al[t]:
-                model.addConstr(LinExpr(ladd(x[i],epsilon),a[m]), GRB.LESS_EQUAL, b[m] + (1+e_max)*(1-z[i][t]))
+                constr = model.addConstr(LinExpr(ladd(x[i],epsilon),a[m]), GRB.LESS_EQUAL, b[m] + (1+e_max)*(1-z[i][t]))
+                constr.Lazy = lazy_val
 
     # NOT FROM THE PAPER
 
@@ -138,8 +144,10 @@ def learn_tree(x,y,depth):
 
     for i in range(n):
         for t in range(num_branch_nodes,num_nodes):
-            model.addConstr(node_policy[t] + (1-z[i][t]) + (1-unit_policy[i]) >= 1)
-            model.addConstr((1-node_policy[t]) + (1-z[i][t]) + unit_policy[i] >= 1)
+            constr = model.addConstr(node_policy[t] + (1-z[i][t]) + (1-unit_policy[i]) >= 1)
+            constr.Lazy = lazy_val
+            constr = model.addConstr((1-node_policy[t]) + (1-z[i][t]) + unit_policy[i] >= 1)
+            constr.Lazy = lazy_val
 
     # optimisation
     # neighbouring leaves have opposite policies
