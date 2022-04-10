@@ -4,31 +4,41 @@ import argparse
 import numpy as np
 import csv
 
-
+def get_policy(xi,left_child,right_child,num_branch_nodes,solution_vector):
+    t = 0
+    while t < num_branch_nodes:
+        if xi[solution_vector[t]] == 0:
+            t = left_child[t]
+        else:
+            t = right_child[t]
+    return solution_vector[t]
+        
 def mycallback(model,where):
     '''Add lazy constraints given an integer solution
     '''
     #print(where)
     if where == GRB.Callback.MIPSOL:
-        a, node_policy, unit_policy, x, n, p, left_child, right_child = model._info
+        a, node_policy, unit_policy, x, n, p, left_child, right_child, vals = model._info
         num_branch_nodes = len(a)
-        ncons = 0
+        #ncons = 0
         #print('Callback start')
         for i in range(n):
             xi = x[i]
+            valsi = vals[i]
             # what policy does the current tree assign to x[i] ?
             t = 0
             pathi = [0]
-            splits = []
+            pathvals = []
             while t < num_branch_nodes:
                 for j in range(p):
                     if model.cbGetSolution(a[t][j]) > 0.5:
-                        splits.append(j)
                         break
                 if xi[j] == 0:
                     t = left_child[t]
+                    pathvals.append(valsi[0])
                 else:
                     t = right_child[t]
+                    pathvals.append(valsi[1])
                 pathi.append(t)
             if model.cbGetSolution(node_policy[t]) > 0.5:
                 tree_policyi = 1
@@ -44,11 +54,11 @@ def mycallback(model,where):
             if tree_policyi != sol_policyi:
                 #print('Datapoint {0} should be {1} but is {2}'.format(i,tree_policyi,sol_policyi))
                 #print([xi[j] for j in splits])
-                ncons += 1
+                #ncons += 1
                 lexpr = LinExpr()
                 #current_lhs = 0
                 for k, t in enumerate(pathi[:-1]):
-                    lexpr.add(a[t][splits[k]],-1)
+                    lexpr.addTerms([-1]*len(pathvals[k]),[a[t][jj] for jj in pathvals[k]])
                     #current_lhs -= model.cbGetSolution(a[t][splits[k]])
                 #current_lhs -= model.cbGetSolution(node_policy[pathi[-1]])
                 if tree_policyi == 1:
@@ -64,7 +74,7 @@ def mycallback(model,where):
         #print('Callback done')
         #print('New incumbent generated {0} constraints'.format(ncons))
                     
-def learn_tree(x,y,depth):
+def learn_tree(x,y,depth,x_names,solution_vector=None,report=False):
 
     p = len(x[0])
     n = len(x)
@@ -116,6 +126,7 @@ def learn_tree(x,y,depth):
     model.ModelSense = -1             # maximise objective (rather than the default of minimisation)
     model.Params.LazyConstraints = 1  # constraints added lazily
     model.Params.PreCrush = 1         # constraints added lazily
+    #model.Params.BranchDir = 1
 
     
     # create variables for the tree structure
@@ -153,36 +164,74 @@ def learn_tree(x,y,depth):
         if t % 2 == 1:
             model.addConstr(node_policy[t] + node_policy[t+1] == 1)
 
+    # for each datapoint find covariates where it = 0 and those where it = 1
+    vals = []
+    for i in range(n):
+        val_zero = []
+        val_one = []
+        for j, val in enumerate(x[i]):
+            if val == 0:
+                val_zero.append(j)
+            else:
+                val_one.append(j)
+        vals.append((val_zero,val_one))
 
     # add information as attributes to model, so available in callback
-    model._info = a, node_policy, unit_policy, x, n, p, left_child, right_child
-        
+    model._info = a, node_policy, unit_policy, x, n, p, left_child, right_child, vals
+
+    if solution_vector is not None:
+        model.NumStart = 1
+        model.Params.StartNumber = 0
+        for t in range(num_branch_nodes):
+            for j in range(p):
+                a[t][j].Start = 0
+            a[t][solution_vector[t]].Start = 1
+        for t in range(num_branch_nodes,num_nodes):
+            node_policy[t].Start = solution_vector[t]
+        for i in range(n):
+            unit_policy[i].Start = get_policy(x[i],left_child,right_child,num_branch_nodes,solution_vector)
+    
     model.optimize(mycallback)
 
     # Extract answer
 
+    solution_vector = []
+    
     # The tree
 
-    branches = []
-    for (node,node_parent) in parent.items():
-        branches.append((node_parent,node))
-    branches.sort()
-    print('Tree structure:')
-    for node_parent,node in branches:
-        print('{0}->{1}'.format(node_parent,node))
-    print()
+    if report:
+        branches = []
+        for (node,node_parent) in parent.items():
+            branches.append((node_parent,node))
+        branches.sort()
+        print('Tree structure:')
+        for node_parent,node in branches:
+            print('{0}->{1}'.format(node_parent,node))
+        print()
 
     for t in range(num_branch_nodes):
         for j in range(p):
             if a[t][j].X > 0.5:
-                print("Node {0} splits on covariate {1}".format(t,j))
+                solution_vector.append(j)
+                if report:
+                    print("Node {0} splits on covariate {1}".format(t,x_names[j]))
                 break
-    print()
+    if report:
+        print()
 
     for t in range(num_branch_nodes,num_nodes):
-        print("Leaf node {0} chooses policy {1}".format(t,node_policy[t].X))
-    print()
+        if node_policy[t].X > 0.5:
+            np = 1
+        else:
+            np = 0
+        solution_vector.append(np)
+        if report:
+            print("Leaf node {0} chooses policy {1}".format(t,np))
+    if report:
+        print()
 
+    return solution_vector
+        
     #for i in range(n):
     #    for t in range(num_branch_nodes,num_nodes):
     #        if z[i][t].X > 0.5:
@@ -214,28 +263,39 @@ if __name__ == "__main__":
 
     x_names_to_exclude = frozenset(args.exclude.split(",") + args.scores.split(","))
     x_indices_to_exclude = []
+    x_names = []
     for i, name in enumerate(names):
         if name in x_names_to_exclude:
             x_indices_to_exclude.append(i)
+        else:
+            x_names.append(name)
         if name == args.score:
             y_index = i
 
     x = np.delete(data,x_indices_to_exclude,axis=1)
+    x = x.astype(np.uint32)
     y = data[:,y_index]
 
     #x, indices, counts = np.unique(x,axis=0,return_index=True,return_counts=True)
 
     # switch to lists
     
-    x = x.tolist()[:100]
-    y = y.tolist()[:100]
+    x = x.tolist()
+    y = y.tolist()
 
     # newy = []
     # for i in indices:
     #     newy.append(y[i]*counts[i])
     # y = newy
-        
-    learn_tree(x,y,args.depth)
+
+    init_size = 200
+    solution_vector = learn_tree(x[:init_size],y[:init_size],args.depth,x_names)
+    init_size += 200
+    while init_size  < len(x):
+        solution_vector = learn_tree(x[:init_size],y[:init_size],args.depth,x_names,solution_vector)
+        init_size += 200
+
+    learn_tree(x,y,args.depth,x_names,solution_vector,True)
     
     #print(x)
 
