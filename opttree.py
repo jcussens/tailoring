@@ -76,7 +76,9 @@ class Node:
             self._left.addmipvars(model,p)
             self._right.addmipvars(model,p)
         else:
-            self._mipvars = [model.addVar(name="np#{0}".format(self._name),vtype=GRB.BINARY)]
+            v = model.addVar(name="np#{0}".format(self._name),vtype=GRB.BINARY)
+            v.BranchPriority = 10
+            self._mipvars = [v]
     
     def addmipcons(self,model,x,upvars,lazy,siblingcons,leftzerocons,usesos):
         if self._left is not None:
