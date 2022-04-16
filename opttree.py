@@ -65,19 +65,20 @@ class Node:
             else:
                 self._policy = 0
             
-    def addmipvars(self,model,p):
+    def addmipvars(self,model,p,x_names):
         if self._left is not None:
             # if a left child then should always be a right child
             assert self._right is not None
             self._mipvars = []
             for j in range(p):
-                v = model.addVar(name="a#{0}#{1}".format(self._name,j),vtype=GRB.BINARY)
+                v = model.addVar(name="a#{0}#{1}".format(self._name,x_names[j]),vtype=GRB.BINARY)
+                v.BranchPriority = 10-self._depth
                 self._mipvars.append(v)
-            self._left.addmipvars(model,p)
-            self._right.addmipvars(model,p)
+            self._left.addmipvars(model,p,x_names)
+            self._right.addmipvars(model,p,x_names)
         else:
             v = model.addVar(name="np#{0}".format(self._name),vtype=GRB.BINARY)
-            v.BranchPriority = 10
+            v.BranchPriority = 100
             self._mipvars = [v]
     
     def addmipcons(self,model,x,upvars,lazy,siblingcons,leftzerocons,usesos):
@@ -332,11 +333,11 @@ if __name__ == "__main__":
     model.Params.PreSOS1Encoding = 3
     root = Node(depth=0)
     root.maketree(args.depth)
-    root.addmipvars(model,p)
+    root.depth_first_enumerate(1,x_names)
+    root.addmipvars(model,p,x_names)
     upvars = [model.addVar(name="up#{0}".format(i),vtype=GRB.BINARY,obj=y[i]) for i in range(n)]
     root.addmipcons(model,x,upvars,args.lazy,args.siblingcons,args.leftzerocons,args.usesos)
     model.optimize()
     root.apply_solution()
-    root.depth_first_enumerate(1,x_names)
     print(root.treestr())
     print('Score is {0}'.format(model.objVal))
