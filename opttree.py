@@ -2,6 +2,7 @@ from gurobipy import *
 import argparse
 import numpy as np
 import csv
+import sys
 
 class Node:
 
@@ -239,7 +240,113 @@ class Node:
         left_node, right_node = self.split_on_j(splits,bestj)
         return bestj, left_node, right_node
 
-def get_splits(x):
+
+def get_splits_i(x):
+    '''For each datapoint x[i] return those covariates for which x[i][j]=0
+    and those for which x[i][j]=1
+    '''
+    splits = []
+    n = len(x)
+    p = len(x[0])
+    for i in range(n):
+        xi = x[i]
+        left = []
+        right = []
+        for j in range(p):
+            if xi[j] == 0:
+                left.append(j)
+            else:
+                right.append(j)
+        splits.append((frozenset(left),frozenset(right)))
+    return splits
+
+def get_initial(splits_j):
+    maxsplitsize = 0
+    for j, (left,right) in enumerate(splits_j):
+        splitsize = max(len(left),len(right))
+        if splitsize > maxsplitsize:
+            maxsplitsize = splitsize
+            best_j = j
+    return best_j
+
+def best_split(indices,p,splits_j,splits_i):
+    remaining = set(range(p))
+    existing = set()
+    best_candidate = get_initial(splits_j)
+    existing.add(best_candidate)
+    remaining.remove(best_candidate)
+    while len(existing) <= p/2:
+        best_candidate, best_determined = greedy_choose_j(indices,splits_i,existing,remaining)
+        existing.add(best_candidate)
+        remaining.remove(best_candidate)
+        print(existing,best_determined)
+        
+def get_determined(indices,new_set,splits_i):
+    determined = 0
+    for i in indices:
+        if new_set <= splits_i[i][0] or new_set <= splits_i[i][1]:
+            determined += 1
+    return determined
+            
+def greedy_choose_j(indices,splits_i,existing,remaining):
+    best_determined = 0
+    for candidate in remaining:
+        determined = get_determined(indices,existing | frozenset([candidate]),splits_i)
+        if determined > best_determined:
+            best_determined  = determined
+            best_candidate = candidate
+    return best_candidate, best_determined
+
+def find_best_j(x,p,indices,splits_j):
+    if len(indices) < 2:
+        return
+    goal_size = len(indices)/2
+    best_size = goal_size
+    best_j = None
+    for j in range(p):
+        left = indices & splits_j[j][0]
+        this_size = abs(len(left) - goal_size)
+        if this_size < best_size:
+            best_size = this_size
+            best_j = j
+            if best_size < 1:
+                break
+    best_left = indices & splits_j[best_j][0]
+    best_right = indices & splits_j[best_j][1]
+    print('Splitting {0} datapoints on {1} into a left size of {2} and a right size of {3}'.format(len(indices),best_j,len(best_left),len(best_right)))
+    find_best_j(x,p,best_left,splits_j)
+    find_best_j(x,p,best_right,splits_j)
+
+            
+def relations(splits):
+    for i1, (left1,right1) in enumerate(splits):
+        for tmp, (left2,right2) in enumerate(splits[i1+1:]):
+            i2 = tmp + i1 + 1
+            if right1 <= right2:
+                print(i1,i2,'{0} <= {1}'.format(i1,i2))
+            elif right2 <= right1:
+                print(i1,i2,'{0} >= {1}'.format(i1,i2))
+            elif len(right1 & right2) == 0:
+                print(i1,i2,'{0} & {1} = 0'.format(i1,i2))
+            else:
+                for tmp2, (left3,right3) in enumerate(splits[i2+1:]):
+                    if (right1 <= right3 or right3 <= right1 or right2 <= right3 or right3 <= right2 or
+                        len(right1&right3)==0 or len(right2&right3)==0):
+                        continue
+                    i3 = tmp2 + i2 + 1
+                    if right1 & right2 <= right3:
+                        print(i1,i2,i3,'{0} & {1} <= {2}'.format(i1,i2,i3))
+                    if right1 & right3 <= right2:
+                        print(i1,i2,i3,'{0} & {1} <= {2}'.format(i1,i3,i2))
+                    if right2 & right3 <= right1:
+                        print(i1,i2,i3,'{0} & {1} <= {2}'.format(i2,i3,i1))
+                    if len(right1 & right2 & right3) == 0:
+                        print(i1,i2,i3,'{0} & {1} & {2} = 0'.format(i1,i2,i3))
+                
+def get_splits_j(x):
+    '''For each covariate get indices of datapoints
+    that go left and those that go right
+    '''
     splits = []
     n = len(x)
     p = len(x[0])
@@ -304,26 +411,38 @@ if __name__ == "__main__":
     for i, idx in enumerate(indices):
         newy[idx] += y[i]
     y = newy
-    
+
     # switch to lists
     
     x = x.tolist()[:args.prefix]
     y = y.tolist()[:args.prefix]
 
-    splits = get_splits(x)
+    # splitsi = get_splits_i(x)
+    # #print(splitsi)
+    # relations(splitsi)
+
+
     n = len(x)
     p = len(x[0])
 
+    
+    #splits_i = get_splits_i(x)
+    splits_j = get_splits_j(x)
+
+    #best_split(frozenset(range(n)),p,splits_j,splits_i)
+
+    #find_best_j(x,p,frozenset(range(n)),splits_j)
+    
     root_indices = frozenset(range(n))
     
     root = Node(indices=root_indices,depth=0)
-    root.tree_greedy(x,splits,y,args.depth)
+    root.tree_greedy(x,splits_j,y,args.depth)
     root.depth_first_enumerate(1,x_names)
     print(root.treestr())
     print('Score is {0}'.format(root.score()))
 
     root = Node(indices=root_indices,depth=0)
-    root.tree_optimal(x,splits,y,args.depth)
+    root.tree_optimal(x,splits_j,y,args.depth)
     root.depth_first_enumerate(1,x_names)
     print(root.treestr())
     print('Score is {0}'.format(root.score()))
