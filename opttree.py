@@ -240,7 +240,37 @@ class Node:
         left_node, right_node = self.split_on_j(splits,bestj)
         return bestj, left_node, right_node
 
+def best_split_exact(indices,p,splits_i):
 
+    model = Model()
+    # VARIABLES
+    b = []
+    for j in range(p):
+        b.append(model.addVar(name='b#{0}'.format(j),vtype=GRB.BINARY))
+    l = {}
+    r = {}
+    u = {}
+    for i in indices:
+        l[i] = model.addVar(name='l#{0}'.format(i),vtype=GRB.BINARY)
+        r[i] = model.addVar(name='r#{0}'.format(i),vtype=GRB.BINARY)
+        u[i] = model.addVar(name='u#{0}'.format(i),vtype=GRB.BINARY,obj=1)
+    # CONSTRAINTS
+    size = int(p/2)
+    for i in indices:
+        model.addConstr(l[i] + r[i] + u[i] == 1)
+    model.addConstr(quicksum(b) == size)
+    for i in indices:
+        li = splits_i[i][0]
+        ri = splits_i[i][1]
+        maxl = min(size,len(li))
+        maxr = min(size,len(ri))
+        model.addConstr(quicksum([b[j] for j in li]) <= maxl - maxl*r[i])
+        model.addConstr(quicksum([b[j] for j in ri]) <= maxr - maxr*l[i])
+        #model.addConstr((r[i]==1) >> (quicksum([b[j] for j in li]) == 0))
+        #model.addConstr((l[i]==1) >> (quicksum([b[j] for j in ri]) == 0))
+    model.optimize()
+    
+        
 def get_splits_i(x):
     '''For each datapoint x[i] return those covariates for which x[i][j]=0
     and those for which x[i][j]=1
@@ -426,8 +456,10 @@ if __name__ == "__main__":
     p = len(x[0])
 
     
-    #splits_i = get_splits_i(x)
+    splits_i = get_splits_i(x)
     splits_j = get_splits_j(x)
+
+    #best_split_exact(frozenset(range(n)),p,splits_i)
 
     #best_split(frozenset(range(n)),p,splits_j,splits_i)
 
