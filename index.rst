@@ -10,8 +10,18 @@ Welcome to opttree's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+The Node class
+--------------
+	     
 .. autoclass:: opttree.Node
    :members:
+   :special-members:
+
+Functions
+---------
+
+.. automodule:: opttree
+   :members: get_splits_j
 
 
 Indices and tables
