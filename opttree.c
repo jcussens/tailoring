@@ -10,16 +10,6 @@
 #define RIGHT 1
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
-struct node
-{
-  int index;                 /** splitting covariate */      
-  double value;              /** split value */
-  double reward;             /** reward (see above) */
-  int action_id;             /** best action (only meaningful for leaves) */
-  struct node* left_child;   /** left child (or NULL) */
-  struct node* right_child;  /** right child (or NULL) */
-};
-typedef struct node NODE;
 
 /* 
  * a sorted set is a single subset of a universal set, we include the ordering of the universal set for each covariate
@@ -39,26 +29,6 @@ struct sorted_set
 };
 typedef struct sorted_set SORTED_SET;
 
-static
-void print_tree(
-  NODE* tree
-  )
-{
-  printf("node = %p\n", (void*) tree);
-  printf("index = %d\n", tree->index);
-  printf("value = %g\n", tree->value);
-  printf("reward = %g\n", tree->reward);
-  printf("action_id = %d\n", tree->action_id);
-  printf("left_child = %p\n", (void*) tree->left_child);
-  printf("right_child = %p\n", (void*) tree->right_child);
-  printf("\n");
-
-  if(tree->left_child != NULL)
-    print_tree(tree->left_child);
-
-  if(tree->right_child != NULL)
-    print_tree(tree->right_child);
-}
 
 
 /*
@@ -364,7 +334,6 @@ void tree_copy(
 /*
  * delete a tree (free the memory it occupied)
  */
-static
 void tree_free(
   NODE* node
   )
@@ -549,7 +518,7 @@ void find_best_split(
  * Notes: A tree of depth 0 is a single node (with no children) where only the reward and action_id members are meaningful.
  */
 
-void tree_search(
+NODE* tree_search(
   int depth,            /** (maximum) depth of returned tree */
   int split_step,       /** consider splits every split_step'th possible split */
   int min_node_size,    /** smallest terminal node size */
@@ -621,9 +590,6 @@ void tree_search(
   find_best_split(tree, depth, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, sorted_set,
     tmp_trees, tmp_indices, tmp_sorted_sets, rewards);  /* these 3 temporary reusable storage */
 
-  print_tree(tree);
-  tree_free(tree);
-
   free(tmp_indices);
   free(data_xx);
   free(rewards);
@@ -659,6 +625,7 @@ void tree_search(
   free(sorted_set->n_breakpoints);
   free(sorted_set->present);
   free(sorted_set);
-  
+
+  return tree;
 }
 
