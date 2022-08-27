@@ -78,6 +78,7 @@ int main(
   int nfields;
   int i;
   char** covnames;
+  char** actionnames;
   int nlines;
   int offset;
 
@@ -145,17 +146,29 @@ int main(
 
   /* read in covariate names */
   covnames = (char**) malloc(num_cols_x*sizeof(char*));
+  actionnames = (char**) malloc(num_cols_y*sizeof(char*));
   lineptr = line;
-  for(i = 0; i < num_cols_x; i++)
+  for(i = 0; i < num_cols_x+num_cols_y; i++)
   {
     status = sscanf(lineptr, "%s%n", tmpstr, &offset);
     if( status != 1 )
     {
-      printf("Error reading covariate name with index %d from %s.\n", i, line);
+      if( i < num_cols_x )
+        printf("Error reading covariate name with index %d from %s.\n", i, line);
+      else
+        printf("Error reading action name with index %d from %s.\n", i-num_cols_x, line);
       return 1;
     }
-    covnames[i] = (char*) malloc((strlen(tmpstr)+1)*sizeof(char));
-    strcpy(covnames[i],tmpstr);
+    if( i < num_cols_x )
+    {
+      covnames[i] = (char*) malloc((strlen(tmpstr)+1)*sizeof(char));
+      strcpy(covnames[i],tmpstr);
+    }
+    else
+    {
+      actionnames[i-num_cols_x] = (char*) malloc((strlen(tmpstr)+1)*sizeof(char));
+      strcpy(actionnames[i-num_cols_x],tmpstr);
+    }
     lineptr += offset;
   }
 
@@ -188,11 +201,21 @@ int main(
   
   tree = tree_search(depth, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y);
 
+  printf("Actions: ");
+  for(i = 0; i < num_cols_y; i++)
+    printf("%d: %s ",i,actionnames[i]);
+  printf("\n");
+  
   print_tree(tree,covnames);
+
   for(i = 0; i < num_cols_x; i++)
     free(covnames[i]);
   free(covnames);
-  
+
+  for(i = 0; i < num_cols_y; i++)
+    free(actionnames[i]);
+  free(actionnames);
+
   tree_free(tree);
   
   free(data_x);
