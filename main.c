@@ -84,9 +84,9 @@ int main(
 
   NODE* tree;
   
-  if( argc == 1 )
+  if( argc < 2 )
   {
-    printf("Need to supply at least a filename.\n");
+    printf("Need to supply at least a filename and the number of actions.\n");
     return 1;
   }
 

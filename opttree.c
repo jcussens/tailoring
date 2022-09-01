@@ -143,6 +143,16 @@ void next_breakpoint(
   int i;
   int elt;
 
+  assert( sorted_set != NULL );
+  assert( indices != NULL );
+  assert( n_indices != NULL );
+  assert( next_bki != NULL );
+  assert( next_bk != NULL );
+  assert( p >= 0);
+  assert( sorted_set->n_breakpoints[p] > 0);
+  assert( current_bki >= -1 );
+  assert( current_bk >= 0 );
+  
   /* bki is the index of the breakpoint in sorted_set->breakpoints
    * bk is the breakpoint which is an index into sorted_set->sorted_universe
    */
@@ -150,11 +160,13 @@ void next_breakpoint(
   *next_bki = -1;
   *next_bk = -1;
   
-  for( *next_bki = current_bki+1; *next_bki < sorted_set->n_breakpoints[p]; *next_bki++)
+  for( *next_bki = current_bki+1; *next_bki < sorted_set->n_breakpoints[p]; (*next_bki)++)
   {
     /* get the next breakpoint */
+    assert(*next_bki >= 0);
     *next_bk = sorted_set->breakpoints[p][*next_bki];
-
+    assert(*next_bk >= 0);
+    
     /* inspect elements in sorted_universe[current_bk:next_bk-1] */
     for( i = current_bk; i < *next_bk; i++)
     {
@@ -412,7 +424,6 @@ void find_best_split(
   )
 {
 
-  double best_reward;
   int best_action;
 
   int p;
@@ -426,8 +437,9 @@ void find_best_split(
   int breakpoint;
   
   double reward;
-  
-  int best_split_var = -1;  /* so far no splitting covariate found, might not find one! */
+
+  double best_reward = -INF;
+  int best_split_var = -1;
   double best_split_val = 0;
 
   int pp;
@@ -446,12 +458,13 @@ void find_best_split(
   assert(num_cols_x > 0);
   assert(num_cols_y > 0);
   
-  /* find best reward with no split */
-  find_best_reward(sorted_set,data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
 
   /* nothing further to do for a leaf or if too few datapoints for splitting */
   if( depth == 0 || sorted_set->n <= min_node_size )
   {
+    /* find best reward with no split */
+    find_best_reward(sorted_set,data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
+
     /* populate node */
     node->index = -1;
     node->reward = best_reward;
