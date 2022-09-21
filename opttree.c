@@ -536,6 +536,8 @@ void level_one_learning(
       best_reward = nosplit_rewards[d];
       best_action = d;
     }
+
+  /* printf("No split best reward is %g, best action is %d\n", best_reward, best_action); */
   
   /* search for best split */
   for( p = 0; p < num_cols_x; p++)
@@ -556,7 +558,7 @@ void level_one_learning(
       dyelt = data_y + elt;
       for( d = 0; d < num_cols_y; d++ )
       {
-        left_rewards[d] = *dyelt;
+        left_rewards[d] += *dyelt;
         dyelt += num_rows;
       }
 
@@ -594,6 +596,9 @@ void level_one_learning(
           best_right_action = best_right_action_for_split;
           best_split_var = p;
           best_split_val = data_xp[elt];
+
+          /* printf("New best reward is %g=%g+%g, best actions are %d,%d split var is %d, split val is %g\n", best_reward, */
+          /*   best_left_reward, best_right_reward, best_left_action, best_right_action, p, best_split_val); */
         }
       }
     }
