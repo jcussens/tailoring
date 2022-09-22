@@ -473,13 +473,13 @@ void level_one_learning(
   int num_cols_x,            /** number of covariates */
   int num_cols_y,            /** number of rewards */
   double* rewards,           /** temporary storage for computing best rewards */
-  double* rewards2           /** temporary storage for computing best rewards */
+  double** rewards2          /** temporary storage for computing best rewards */
   )
 {
 
   int d;
-  double* nosplit_rewards = rewards2;
-  double* left_rewards = rewards;
+  double* nosplit_rewards = rewards;
+  double** left_rewards = rewards2;
 
   double best_left_reward_for_split;
   int best_left_action_for_split;
@@ -544,44 +544,47 @@ void level_one_learning(
   {
     SORTED_SET* sorted_set = sorted_sets[p];
     double* data_xp = data_x+(p*num_rows);
+    int* elements = (sorted_sets[p])->elements;
     
-    /* initialise left rewards for this p */
+    /* left_rewards[d][i] is reward for action d if all elements up to and including
+     * element index i are on the left */
+
+    /* initialise left_rewards */
+    elt = elements[0];
     for( d = 0; d < num_cols_y; d++ )
-      left_rewards[d] = 0.0;
+      left_rewards[d][0] = data_y[num_rows*d+elt];
 
     /* don't move last element from right to left since then we would have no split */
+    for( i = 1; i < (sorted_set->n)-1; i++ )
+    {
+      elt = elements[i];
+      for( d = 0; d < num_cols_y; d++ )
+        left_rewards[d][i] = left_rewards[d][i-1] + data_y[num_rows*d+elt];
+    }
+
+    /* now find best split for covariate p */
     for( i = 0; i < (sorted_set->n)-1; i++ )
     {
-      elt = sorted_set->elements[i];
-
-      /* update left rewards */
-      dyelt = data_y + elt;
-      for( d = 0; d < num_cols_y; d++ )
-      {
-        left_rewards[d] += *dyelt;
-        dyelt += num_rows;
-      }
-
-      assert( data_xp[elt] <= data_xp[sorted_set->elements[i+1]] );
+      assert( data_xp[elements[i]] <= data_xp[elements[i+1]] );
 
       /* if a proper split see whether it's a best split */
-      if( data_xp[elt] < data_xp[sorted_set->elements[i+1]] )
+      if( data_xp[elements[i]] < data_xp[elements[i+1]] )
       {
         /* find best left and right reward+action */
-        best_left_reward_for_split = left_rewards[0];
+        best_left_reward_for_split = left_rewards[0][i];
         best_left_action_for_split = 0;
-        best_right_reward_for_split = nosplit_rewards[0] - left_rewards[0];
+        best_right_reward_for_split = nosplit_rewards[0] - left_rewards[0][i];
         best_right_action_for_split = 0;
         for( d = 1; d < num_cols_y; d++ )
         {
-          if( left_rewards[d] > best_left_reward_for_split )
+          if( left_rewards[d][i] > best_left_reward_for_split )
           {
-            best_left_reward_for_split = left_rewards[d];
+            best_left_reward_for_split = left_rewards[d][i];
             best_left_action_for_split = d;
           }
-          if( nosplit_rewards[d] - left_rewards[d] > best_right_reward_for_split )
+          if( nosplit_rewards[d] - left_rewards[d][i] > best_right_reward_for_split )
           {
-            best_right_reward_for_split = nosplit_rewards[d] - left_rewards[d];
+            best_right_reward_for_split = nosplit_rewards[d] - left_rewards[d][i];
             best_right_action_for_split = d;
           }
         }
@@ -595,7 +598,7 @@ void level_one_learning(
           best_right_reward = best_right_reward_for_split;
           best_right_action = best_right_action_for_split;
           best_split_var = p;
-          best_split_val = data_xp[elt];
+          best_split_val = data_xp[elements[i]];
 
           /* printf("New best reward is %g=%g+%g, best actions are %d,%d split var is %d, split val is %g\n", best_reward, */
           /*   best_left_reward, best_right_reward, best_left_action, best_right_action, p, best_split_val); */
@@ -647,7 +650,7 @@ void find_best_split(
   NODE*** tmp_trees,                /** trees of various depths for temporary storage */
   SORTED_SET**** tmp_sorted_sets,   /** e.g have tmp_sorted_sets[depth][LEFT][p] preallocated space */
   double* rewards,                  /** temporary storage for computing best rewards */
-  double* rewards2                  /** temporary storage for computing best rewards */
+  double** rewards2                  /** temporary storage for computing best rewards */
   )
 {
 
@@ -794,10 +797,11 @@ NODE* tree_search(
   int* indices;
   int i;
   int p;
+  int d;
   NODE*** tmp_trees;
   int* tmp_indices;
   double* rewards;
-  double* rewards2;
+  double** rewards2;
 
   SORTED_SET** initial_sorted_sets;
   /* have pre-allocated memory for each depth, each direction, each covariate */
@@ -849,14 +853,18 @@ NODE* tree_search(
   }
   
   rewards = (double*) malloc(num_cols_y*sizeof(double));
-  rewards2 = (double*) malloc(num_cols_y*sizeof(double));
-
+  rewards2 = (double**) malloc(num_cols_y*sizeof(double*));
+  for( d = 0; d < num_cols_y; d++ )
+    rewards2[d] = (double*) malloc(num_rows*sizeof(double));
+  
   find_best_split(tree, depth, initial_sorted_sets, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
     tmp_trees, tmp_sorted_sets, rewards, rewards2);  /* these 3 temporary reusable storage */
 
   free(rewards);
+  for( d = 0; d < num_cols_y; d++ )
+    free(rewards2[d]);
   free(rewards2);
-    
+  
   /* remove temporary sorted sets */
   for(i = 1; i < depth+1; i++)
   {
