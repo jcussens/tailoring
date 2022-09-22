@@ -557,9 +557,12 @@ void level_one_learning(
     /* don't move last element from right to left since then we would have no split */
     for( i = 1; i < (sorted_set->n)-1; i++ )
     {
-      elt = elements[i];
+      dyelt = data_y + elements[i]; 
       for( d = 0; d < num_cols_y; d++ )
-        left_rewards[d][i] = left_rewards[d][i-1] + data_y[num_rows*d+elt];
+      {
+        left_rewards[d][i] = left_rewards[d][i-1] + *dyelt;
+        dyelt += num_rows;
+      }
     }
 
     /* now find best split for covariate p */
