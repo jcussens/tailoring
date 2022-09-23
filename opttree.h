@@ -14,14 +14,14 @@ struct node
 typedef struct node NODE;
 
 NODE* tree_search(
-  int depth,            /** (maximum) depth of returned tree */
-  int split_step,       /** consider splits every split_step'th possible split */
-  int min_node_size,    /** smallest terminal node size */
-  double* data_x,       /** covariates (column major) */
-  double* data_y,       /** gammas (column major) */
-  int num_rows,         /** number of units */
-  int num_cols_x,       /** number of covariates */
-  int num_cols_y        /** number of rewards */
+  const int depth,            /** (maximum) depth of returned tree */
+  const int split_step,       /** consider splits every split_step'th possible split */
+  const int min_node_size,    /** smallest terminal node size */
+  const double* data_x,       /** covariates (column major) */
+  const double* data_y,       /** gammas (column major) */
+  const int num_rows,         /** number of units */
+  const int num_cols_x,       /** number of covariates */
+  const int num_cols_y        /** number of rewards */
    );
 
 void tree_free(

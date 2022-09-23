@@ -25,7 +25,7 @@ typedef struct sorted_set SORTED_SET;
 
 static
 int print_set(
-  SORTED_SET* sorted_set
+  const SORTED_SET* sorted_set
    )
 {
    int i;
@@ -189,8 +189,8 @@ void insert_element(
 /* debugging only */
 static
 void print_tree(
-  NODE* tree,
-  char** covnames
+  const NODE* tree,
+  const char** covnames
   )
 {
   printf("node = %p\n", (void*) tree);
@@ -217,12 +217,12 @@ void print_tree(
  */
 static
 void bottomupmerge(
-  int* indices,
+  const int* indices,
   int ileft,
   int iright,
   int iend,
   int* tmp,
-  double* data_x_p
+  const double* data_x_p
   )
 {
   int i = ileft;
@@ -243,12 +243,12 @@ void bottomupmergesort(
   int* indices,
   int* tmp,
   int n,
-  double* data_x_p
+  const double* data_x_p
   )
 {
   int width;
   int i;
-  size_t size = n*sizeof(int);
+  const size_t size = n*sizeof(int);
   
   for( width = 1; width < n; width *= 2)
   {
@@ -271,7 +271,7 @@ void make_empty(
 /** copy a sorted set, overwriting an existing target set */
 static
 void copy_sorted_set(
-  SORTED_SET* source,
+  const SORTED_SET* source,
   SORTED_SET* target
   )
 {
@@ -283,11 +283,11 @@ void copy_sorted_set(
 /** create a new uninitialised subset from existing sorted subset */
 static
 void new_sorted_subset(
-  SORTED_SET* source,
+  const SORTED_SET* source,
   SORTED_SET* target
   )
 {
-  size_t size = (source->n)*sizeof(int);
+  const size_t size = (source->n)*sizeof(int);
   
   target->elements = (int*) malloc(size);
   target->rank = (int*) malloc(size);
@@ -298,8 +298,8 @@ void new_sorted_subset(
 /* make a sorted set from elements 0,...,num_indices-1 */
 static
 SORTED_SET* make_sorted_set(
-  int num_indices,            /* size of set */
-  double* data_xx,            /* ordering values */
+  const int num_indices,            /* size of set */
+  const double* data_xx,      /* ordering values */
   int* tmp                    /* temporary storage for ordering */
   )
 {
@@ -378,7 +378,7 @@ NODE* make_tree(
  */
 static
 void tree_copy(
-  NODE* source,
+  const NODE* source,
   NODE* target
   )
 {
@@ -416,17 +416,17 @@ void tree_free(
 
 static
 void find_best_reward(
-  SORTED_SET* sorted_set,
-  double* data_y,
-  int num_cols_y,
-  int num_rows,
+  const SORTED_SET* sorted_set,
+  const double* data_y,
+  const int num_cols_y,
+  const int num_rows,
   double* rewards,
   double* best_reward,
   int* best_action
   )
 {
   int d;
-  double* dyelt;
+  const double* dyelt;
   int i;
   
   assert(sorted_set != NULL);
@@ -464,16 +464,16 @@ void find_best_reward(
 /* find optimal depth=1 (ie a single split) tree */
 static
 void level_one_learning(
-  NODE* node,                /** skeleton tree to be populated */
+  NODE* node,                      /** skeleton tree to be populated */
   SORTED_SET** sorted_sets,  /** sorted sets */
-  int split_step,            /** consider splits every split_step'th possible split */
-  double* data_x,            /** covariates, data_x[j] are values for covariate j */
-  double* data_y,            /** gammas, y[i] are the rewards for unit i */
-  int num_rows,              /** number of units */
-  int num_cols_x,            /** number of covariates */
-  int num_cols_y,            /** number of rewards */
-  double* rewards,           /** temporary storage for computing best rewards */
-  double* rewards2           /** temporary storage for computing best rewards */
+  const int split_step,                  /** consider splits every split_step'th possible split */
+  const double* data_x,                  /** covariates, data_x[j] are values for covariate j */
+  const double* data_y,                  /** gammas, y[i] are the rewards for unit i */
+  const int num_rows,                    /** number of units */
+  const int num_cols_x,                  /** number of covariates */
+  const int num_cols_y,                  /** number of rewards */
+  double* rewards,                 /** temporary storage for computing best rewards */
+  double* rewards2                 /** temporary storage for computing best rewards */
   )
 {
 
@@ -497,7 +497,7 @@ void level_one_learning(
   int p;
 
   int i;
-  double* dyelt;
+  const double* dyelt;
 
   int best_split_var;
   double best_split_val;
@@ -542,8 +542,8 @@ void level_one_learning(
   /* search for best split */
   for( p = 0; p < num_cols_x; p++)
   {
-    SORTED_SET* sorted_set = sorted_sets[p];
-    double* data_xp = data_x+(p*num_rows);
+    const SORTED_SET* sorted_set = sorted_sets[p];
+    const double* data_xp = data_x+(p*num_rows);
     
     /* initialise left rewards for this p */
     for( d = 0; d < num_cols_y; d++ )
@@ -635,15 +635,15 @@ void level_one_learning(
 static
 void find_best_split(
   NODE* node,               /** skeleton tree to be populated */
-  int depth,                /** depth of tree */
+  const int depth,                /** depth of tree */
   SORTED_SET** sorted_sets, /** sorted sets, one for each covariate */
-  int split_step,           /** consider splits every split_step'th possible split */
-  int min_node_size,        /** smallest terminal node size */
-  double* data_x,           /** covariates, data_x[j] are values for covariate j */
-  double* data_y,           /** gammas, y[i] are the rewards for unit i */
-  int num_rows,             /** number of units */
-  int num_cols_x,           /** number of covariates */
-  int num_cols_y,           /** number of rewards */
+  const int split_step,           /** consider splits every split_step'th possible split */
+  const int min_node_size,        /** smallest terminal node size */
+  const double* data_x,           /** covariates, data_x[j] are values for covariate j */
+  const double* data_y,           /** gammas, y[i] are the rewards for unit i */
+  const int num_rows,             /** number of units */
+  const int num_cols_x,           /** number of covariates */
+  const int num_cols_y,           /** number of rewards */
   NODE*** tmp_trees,                /** trees of various depths for temporary storage */
   SORTED_SET**** tmp_sorted_sets,   /** e.g have tmp_sorted_sets[depth][LEFT][p] preallocated space */
   double* rewards,                  /** temporary storage for computing best rewards */
@@ -714,7 +714,7 @@ void find_best_split(
   for( p = 0; p < num_cols_x; p++)
   {
     SORTED_SET* sorted_set = sorted_sets[p];
-    double* data_xp = data_x+(p*num_rows);
+    const double* data_xp = data_x+(p*num_rows);
 
     /* initialise all sorted sets to be empty on left, and full on right */
     for( pp = 0; pp < num_cols_x; pp++)
@@ -779,14 +779,14 @@ void find_best_split(
  */
 
 NODE* tree_search(
-  int depth,            /** (maximum) depth of returned tree */
-  int split_step,       /** consider splits every split_step'th possible split */
-  int min_node_size,    /** smallest terminal node size */
-  double* data_x, /** covariates (column major) */
-  double* data_y, /** gammas (column major) */
-  int num_rows,         /** number of units */
-  int num_cols_x,       /** number of covariates */
-  int num_cols_y        /** number of rewards */
+  const int depth,            /** (maximum) depth of returned tree */
+  const int split_step,       /** consider splits every split_step'th possible split */
+  const int min_node_size,    /** smallest terminal node size */
+  const double* data_x,       /** covariates (column major) */
+  const double* data_y,       /** gammas (column major) */
+  const int num_rows,         /** number of units */
+  const int num_cols_x,       /** number of covariates */
+  const int num_cols_y        /** number of rewards */
   )
 {
 
@@ -799,7 +799,8 @@ NODE* tree_search(
   double* rewards;
   double* rewards2;
 
-  SORTED_SET** initial_sorted_sets;
+  SORTED_SET** initial_sorted_sets = (SORTED_SET**) malloc(num_cols_x*sizeof(SORTED_SET*));
+  
   /* have pre-allocated memory for each depth, each direction, each covariate */
   SORTED_SET**** tmp_sorted_sets;
 
@@ -812,9 +813,7 @@ NODE* tree_search(
   
   /* make skeleton tree of correct depth */
   tree = make_tree(depth);
-
   tmp_indices = (int*) malloc(num_rows*sizeof(int));
-  initial_sorted_sets = (SORTED_SET**) malloc(num_cols_x*sizeof(SORTED_SET*));
   
   /* make initial sorted sets */
   for( p = 0; p < num_cols_x; p++)
