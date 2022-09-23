@@ -525,13 +525,29 @@ void level_one_learning(
     {
       /* update left rewards */
       double* dy = data_y;
-      for( d = 0; d < num_cols_y; d++ )
+      if( num_cols_y == 2 )
       {
-        double tmp = 0.0;
-        for( i = 0; i < n_tmp_indices; i++ )
-          tmp += dy[tmp_indices[i]];
-        left_rewards[d] += tmp;
-        dy += num_rows;      
+         double tmp0 = 0.0;
+         double tmp1 = 0.0;
+         for( i = 0; i < n_tmp_indices; i++ )
+         {
+            int elt = tmp_indices[i]; 
+            tmp0 += data_y[elt];
+            tmp1 += data_y[num_rows+elt];
+         }
+         left_rewards[0] += tmp0;
+         left_rewards[1] += tmp1;
+      }
+      else
+      {
+         for( d = 0; d < num_cols_y; d++ )
+         {
+            double tmp = 0.0;
+            for( i = 0; i < n_tmp_indices; i++ )
+               tmp += dy[tmp_indices[i]];
+            left_rewards[d] += tmp;
+            dy += num_rows;      
+         }
       }
       /* find best left and right reward+action */
       left_reward = left_rewards[0];
