@@ -555,17 +555,21 @@ void level_one_learning(
       elt = sorted_set->elements[i];
 
       /* update left rewards */
-      dyelt = data_y + elt;
-      for( d = 0; d < num_cols_y; d++ )
+      if( num_cols_y == 2 )
       {
-        left_rewards[d] += *dyelt;
-        dyelt += num_rows;
+        left_rewards[0] += data_y[elt];
+        left_rewards[1] += data_y[num_rows+elt];
+      }
+      else
+      {
+        for( d = 0; d < num_cols_y; d++ )
+          left_rewards[d] += data_y[d*num_rows+elt];
       }
 
       assert( data_xp[elt] <= data_xp[sorted_set->elements[i+1]] );
 
       /* if a proper split see whether it's a best split */
-      if( data_xp[elt] < data_xp[sorted_set->elements[i+1]] )
+      if( data_xp[elt] != data_xp[sorted_set->elements[i+1]] )
       {
         /* find best left and right reward+action */
         best_left_reward_for_split = left_rewards[0];
