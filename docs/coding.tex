@@ -1,0 +1,100 @@
+\documentclass{article}
+
+\newcommand{\splitval}{\ensuremath{\theta}}
+\newcommand{\depth}{\ensuremath{D}}
+
+\title{Notes on implementing optimal policy tree learning}
+\author{James Cussens}
+
+\begin{document}
+
+\maketitle
+
+\section{Basic algorithm}
+\label{sec:basics}
+
+
+
+We assume we have $n$ datapoints, each of which has $p$ covariate
+values, followed by $d$ rewards for the $d$ possible actions. Our goal
+is to construct an policy tree of depth $\depth$ for this data which has
+maximal reward. We will use $i$ to index units, $j$ to index
+covariates and $k$ to index actions/rewards. Let $x_{i,j}$ the $j$th
+covariate value for unit i and $y_{i,k}$ the the $k$th reward for unit $i$.
+
+A tree of depth 0 has no splits and specifies the same action for each
+unit. Let $r(\depth,I)$ be the maximal reward for a tree of depth
+$\depth$ for a subset of the data $\{(x_{i},y_{i}): i \in I\}$ then we
+have:
+
+\begin{equation}
+  \label{eq:rewardt0}
+  r(0,I) = \max_{k=1,\dots d} \sum_{i \in I} y_{i,k}
+\end{equation}
+Note that $r(0,I)$ does not depend on $x$, the covariate values.
+
+Trees of non-zero depth have splits which are specified by a choice of
+covariate $j$ and splitting value \splitval. Units $i$ where
+$x_{i,j} < \splitval$ go left and those where $x_{i,j} \geq \splitval$
+go right. Let $L(j,\splitval,I) = \{i \in I :x_{i,j} < \splitval\}$
+and let $R(j,\splitval,I) = \{i \in I :x_{i,j} \geq \splitval\}$. We
+have the fundamental recursive formula:
+
+\begin{equation}
+  \label{eq:recurse}
+  r(\depth,I) = \max_{j,\splitval} \left\{ r(\depth-1,L(j,\splitval,I))
+  + r(\depth-1,R(j,\splitval,I))\right\}, \;\; \depth > 0 
+\end{equation}
+
+Equation (\ref{eq:recurse}) suggest a simple dynamic programming
+algorithm to find optimal trees: simply consider each possible split,
+recursively compute the two rewards for the two datasets created by the
+split and return whatever sum of rewards is largest. By simply
+recording the split $(j,\splitval)$ which was maximising (for each
+depth) we can return the optimal tree.
+
+\section{Implementation issues}
+\label{sec:implementation}
+
+It is important to be able to construct the index sets
+$L(j,\splitval,I)$ and $R(j,\splitval,I)$ quickly from any given index
+set $I$. The \texttt{policytree} package takes the sensible option of
+maintaining, for any index set $I$, an ordering of $I$:
+$(i_{j,1}, \dots, i_{j,|I|})$ for each covariate $j$ such that
+$i_{j,\ell} < i_{j,\ell'} \rightarrow x_{i_{j,\ell},j} \leq
+x_{i_{j,\ell'},j}$. In words: $I$ has $p$ orderings, one for each
+covariate $j$. The advantage of doing this is as follows. For any $j$
+we can order split values $\theta$. Suppose we have $L(j,\splitval,I)$
+and $R(j,\splitval,I)$ for some split value $\splitval$ and suppose
+$\splitval'$ is the `next' split value. Then to get
+$L(j,\splitval',I)$ and $R(j,\splitval',I)$ it is enough to `move'
+indices $i$ such that $x_{i,j} < \splitval'$ from $R(j,\splitval,I)$
+to $L(j,\splitval,I)$ and that will produce $L(j,\splitval',I)$ and
+$R(j,\splitval',I)$. Moreover, these indices will be at the start of
+the ordering of $I$ for $j$. So to find them we just need to scan the
+$j$-ordering of $R(j,\splitval,I)$ until we hit an index for which
+$x_{i,j} \geq \splitval'$. Updating the $j$-ordering is
+simple. However, if we are going to do a recursive call we need to
+update the $j'$-ordering for both left and right set for all other $j'
+\neq j$.
+
+
+This updating of other $j'$-orderings can be avoided if $\depth = 1$
+since we can write:
+\begin{equation}
+  \label{eq:depthone}
+  r(1,I) = \max_{j,\splitval} \left\{ \max_{k=1,\dots d} \sum_{i \in
+     L(j,\splitval,I) } y_{i,k} + \max_{k=1,\dots d} \sum_{i \in R(j,\splitval,I)} y_{i,k} \right\}
+\end{equation}
+We can assume that $I$ has a $j$-ordering for each covariate $j$.
+To compute $r(1,I)$ we can consider each covariate $j$ in turn and there
+is no need to update other orderings for other $j'$. The
+\texttt{policytree} package contains this optimisation.
+
+\subsection{Ordered set data structures}
+\label{sec:orderedsets}
+
+
+
+
+\end{document}
