@@ -1,7 +1,9 @@
 \documentclass{article}
 
 \newcommand{\splitval}{\ensuremath{\theta}}
+\newcommand{\splitvals}{\ensuremath{\Theta}}
 \newcommand{\depth}{\ensuremath{D}}
+\newcommand{\policytree}{\texttt{policytree}}
 
 \title{Notes on implementing optimal policy tree learning}
 \author{James Cussens}
@@ -34,15 +36,17 @@ have:
 Note that $r(0,I)$ does not depend on $x$, the covariate values.
 
 Trees of non-zero depth have splits which are specified by a choice of
-covariate $j$ and splitting value \splitval. Units $i$ where
-$x_{i,j} < \splitval$ go left and those where $x_{i,j} \geq \splitval$
-go right. Let $L(j,\splitval,I) = \{i \in I :x_{i,j} < \splitval\}$
-and let $R(j,\splitval,I) = \{i \in I :x_{i,j} \geq \splitval\}$. We
-have the fundamental recursive formula:
+covariate $j$ and splitting value $\splitval \in \splitvals(j)$, where
+$\splitvals(j)$ is the set of valid split points for covariate
+$j$. Units $i$ where $x_{i,j} < \splitval$ go left and those where
+$x_{i,j} \geq \splitval$ go right. Let
+$L(j,\splitval,I) = \{i \in I :x_{i,j} < \splitval\}$ and let
+$R(j,\splitval,I) = \{i \in I :x_{i,j} \geq \splitval\}$. We have the
+fundamental recursive formula:
 
 \begin{equation}
   \label{eq:recurse}
-  r(\depth,I) = \max_{j,\splitval} \left\{ r(\depth-1,L(j,\splitval,I))
+  r(\depth,I) = \max_{j} \max_{\splitval \in \splitvals(j)} \left\{ r(\depth-1,L(j,\splitval,I))
   + r(\depth-1,R(j,\splitval,I))\right\}, \;\; \depth > 0 
 \end{equation}
 
@@ -83,18 +87,85 @@ This updating of other $j'$-orderings can be avoided if $\depth = 1$
 since we can write:
 \begin{equation}
   \label{eq:depthone}
-  r(1,I) = \max_{j,\splitval} \left\{ \max_{k=1,\dots d} \sum_{i \in
+  r(1,I) = \max_{j}\max_{\splitval \in \splitvals(j)} \left\{ \max_{k=1,\dots d} \sum_{i \in
      L(j,\splitval,I) } y_{i,k} + \max_{k=1,\dots d} \sum_{i \in R(j,\splitval,I)} y_{i,k} \right\}
 \end{equation}
-We can assume that $I$ has a $j$-ordering for each covariate $j$.
-To compute $r(1,I)$ we can consider each covariate $j$ in turn and there
-is no need to update other orderings for other $j'$. The
-\texttt{policytree} package contains this optimisation.
+We can assume that $I$ has a $j$-ordering for each covariate $j$.  To
+compute $r(1,I)$ we can consider each covariate $j$ in turn and there
+is no need to update other orderings for other $j'$. For each $j$ we
+consider each split point $\splitval \in \splitvals(j)$ in order. When
+we move from $\splitval \in \splitvals(j)$ to the next
+$\splitval' \in \splitvals(j)$, we just add $y_{i,k}$ to a `left'
+running total for $\sum y_{i,k}$ for each action $k$ and each index
+$i$ that was `moved' from right to left. Similarly we subtract each of
+these $y_{i,k}$ values from the corresponding running totals on the
+right. Note that no index actually
+has to be moved and that neither $L(j,\splitval,I)$ nor
+$R(j,\splitval,I)$ need be represented explicitly: the indices that we
+want are initial ones from $R(j,\splitval,I)$, it is enough to have
+$I$ represented explicitly (e.g. as an array of integers) and update
+a value specifying the last element of $L(j,\splitval,I)$ and the
+first element of $R(j,\splitval,I)$.   The \texttt{policytree} package contains this optimisation and
+so computing rewards for depth 0 trees using (\ref{eq:rewardt0}) is
+never done.
 
 \subsection{Ordered set data structures}
 \label{sec:orderedsets}
 
+There are a number of data structures that can be used to represent
+the ordered sets $(i_{j,1}, \dots, i_{j,|I|})$. There are 3 main
+operations that are performed on these ordered sets:
+\begin{description}
+\item[Insertion] Inserting one or more new elements into an ordered
+  set. This is performed on left-sets each time we move to the next
+  split point.
+\item[Deletion] Removing one or more new elements from an ordered
+  set. This is performed on right-sets each time we move to the next
+  split point.
+\item[Iteration] To compute (\ref{eq:depthone}) it is necessary to
+  access each element of the set in order.
+\end{description}
 
+\subsubsection{Policytree approach}
+\label{sec:policytreeos}
+
+\policytree{} implements ordered sets as \texttt{flat\_set} objects
+supplied from the boost library. Each ordered set has an associated
+comparison object, which is a total order of the elements in the
+set. An ordered set for covariate $j$ is ordered using the values for
+that covariate (with a mechanism for tie-breaking if two units have
+the same value for covariate $j$). A boost \texttt{flat\_set} is
+implemented essentially like a C++ vector (or C array): elements of
+the set are stored in order in a single contiguous block of
+memory. This makes iteration faster than, for example, a binary tree,
+but insertion and deletion are slower.
+
+Points are deleted using the \texttt{erase} method with the position
+of element to be erased given. The \policytree{} documentation (i.e.\
+comment at line 308 in \verb+tree_search.cpp+) states that this method
+takes $O(1)$ (i.e.\ constant) time, but the boost
+documentation\footnote{https://www.boost.org/doc/libs/1\_64\_0/doc/html/boost/container/flat\_set.html+}
+states that it takes time ``Linear to the elements with keys bigger
+than [that erased]''. In other words $O(n)$. This is because once the
+element has been erased, the elements with bigger keys have to be
+moved `leftwards' to fill in the gap left by the erased element. Note
+also that it is only for the covariate $j$ whose splits are currently
+being considered that the element position is readily available. For
+each of the other $p-1$ covariates an additional $O(log n)$ time is
+required to find the element's position in the ordered set.
+
+Points are inserted using the \texttt{insert} method. The
+\policytree{} documentation states that this takes $O(\log n)$ time to
+execute. But this is only the time it takes to find the position to
+insert the element. Once this position is found it is necessary to
+shunt elements `rightwards' to make room for the new element. As the
+boost documentation states the time requred is: ``Logarithmic search
+time plus linear insertion to the elements with bigger keys than [the
+inserted element].`` In other words $O(n + \log n) = O(n)$
+
+Iteration over \texttt{flat\_set} is fast, since the elements are
+simply stored one after the other. This fast iteration is the stated
+reason for the use of flat sets in \policytree.
 
 
 \end{document}
