@@ -38,10 +38,10 @@ Note that $r(0,I)$ does not depend on $x$, the covariate values.
 Trees of non-zero depth have splits which are specified by a choice of
 covariate $j$ and splitting value $\splitval \in \splitvals(j)$, where
 $\splitvals(j)$ is the set of valid split points for covariate
-$j$. Units $i$ where $x_{i,j} < \splitval$ go left and those where
-$x_{i,j} \geq \splitval$ go right. Let
-$L(j,\splitval,I) = \{i \in I :x_{i,j} < \splitval\}$ and let
-$R(j,\splitval,I) = \{i \in I :x_{i,j} \geq \splitval\}$. We have the
+$j$. Units $i$ where $x_{i,j} \leq \splitval$ go left and those where
+$x_{i,j} > \splitval$ go right. Let
+$L(j,\splitval,I) = \{i \in I :x_{i,j} \leq \splitval\}$ and let
+$R(j,\splitval,I) = \{i \in I :x_{i,j} > \splitval\}$. We have the
 fundamental recursive formula:
 
 \begin{equation}
@@ -72,12 +72,12 @@ we can order split values $\theta$. Suppose we have $L(j,\splitval,I)$
 and $R(j,\splitval,I)$ for some split value $\splitval$ and suppose
 $\splitval'$ is the `next' split value. Then to get
 $L(j,\splitval',I)$ and $R(j,\splitval',I)$ it is enough to `move'
-indices $i$ such that $x_{i,j} < \splitval'$ from $R(j,\splitval,I)$
+indices $i$ such that $x_{i,j} \leq \splitval'$ from $R(j,\splitval,I)$
 to $L(j,\splitval,I)$ and that will produce $L(j,\splitval',I)$ and
 $R(j,\splitval',I)$. Moreover, these indices will be at the start of
 the ordering of $I$ for $j$. So to find them we just need to scan the
 $j$-ordering of $R(j,\splitval,I)$ until we hit an index for which
-$x_{i,j} \geq \splitval'$. Updating the $j$-ordering is
+$x_{i,j} > \splitval'$. Updating the $j$-ordering is
 simple. However, if we are going to do a recursive call we need to
 update the $j'$-ordering for both left and right set for all other $j'
 \neq j$.
