@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
-#include "opttree.h"
+#include "pt_opttree.h"
 
 #define INF DBL_MAX
 #define LEFT 0

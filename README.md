@@ -5,7 +5,10 @@ C and Python code for building policy trees. All code written by James Cussens
 For the C code to compile do the following (from Linux command line):
     `gcc -DNDEBUG -O2 opttree.c main.c`
 which will produce an executable file `a.out`
-    
+
+or, if you want "policytree style" data structures:
+    `gcc -DNDEBUG -O2 pt_opttree.c main.c`
+
 To run `a.out` do:
     ` ./a.out IFLS.txt 2 2`
 
