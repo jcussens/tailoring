@@ -13,5 +13,5 @@ nrows  <- dim(data)[1]
 ncols  <- dim(data)[2]
 x <- data[,(1:(ncols-nactions))]
 gammas <- data[,((ncols-nactions+1):ncols)]
-tree  <- policy_tree(x,gammas,depth)
+tree  <- policy_tree(x,gammas,depth,TRUE)
 tree
