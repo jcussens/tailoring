@@ -67,10 +67,19 @@ maintaining, for any index set $I$, an ordering of $I$:
 $(i_{j,1}, \dots, i_{j,|I|})$ for each covariate $j$ such that
 $i_{j,\ell} < i_{j,\ell'} \rightarrow x_{i_{j,\ell},j} \leq
 x_{i_{j,\ell'},j}$. In words: $I$ has $p$ orderings, one for each
-covariate $j$. The advantage of doing this is as follows. For any $j$
+covariate $j$; the ordering for covariate $j$ is such that indices for
+datapoints with smaller values for covariate $j$ always come before
+indices for datapoints with larger values for covariate $j$. This data
+structure is called \texttt{sorted\_sets} in the \texttt{policytree}
+implementation \cite{sverdrup2020}.
+
+
+
+The advantage of doing this is as follows. For any $j$
 we can order split values $\theta$. Suppose we have $L(j,\splitval,I)$
 and $R(j,\splitval,I)$ for some split value $\splitval$ and suppose
-$\splitval'$ is the `next' split value. Then to get
+$\splitval'$ is the `next' split value for covariate $j$ and index set
+$I$. Then to get
 $L(j,\splitval',I)$ and $R(j,\splitval',I)$ it is enough to `move'
 indices $i$ such that $x_{i,j} \leq \splitval'$ from $R(j,\splitval,I)$
 to $L(j,\splitval,I)$ and that will produce $L(j,\splitval',I)$ and
@@ -90,7 +99,8 @@ since we can write:
   r(1,I) = \max_{j}\max_{\splitval \in \splitvals(j)} \left\{ \max_{k=1,\dots d} \sum_{i \in
      L(j,\splitval,I) } y_{i,k} + \max_{k=1,\dots d} \sum_{i \in R(j,\splitval,I)} y_{i,k} \right\}
 \end{equation}
-We can assume that $I$ has a $j$-ordering for each covariate $j$.  To
+We can assume that $I$ has a $j$-ordering for each covariate $j$.  In
+the case of $D=1$, to
 compute $r(1,I)$ we can consider each covariate $j$ in turn and there
 is no need to update other orderings for other $j'$. For each $j$ we
 consider each split point $\splitval \in \splitvals(j)$ in order. When
@@ -105,9 +115,12 @@ $R(j,\splitval,I)$ need be represented explicitly: the indices that we
 want are initial ones from $R(j,\splitval,I)$, it is enough to have
 $I$ represented explicitly (e.g. as an array of integers) and update
 a value specifying the last element of $L(j,\splitval,I)$ and the
-first element of $R(j,\splitval,I)$.   The \texttt{policytree} package contains this optimisation and
-so computing rewards for depth 0 trees using (\ref{eq:rewardt0}) is
-never done.
+first element of $R(j,\splitval,I)$.   The \texttt{policytree} package
+contains this optimisation implemented in the C++ function called
+\verb+level_one_learning+. Note that with this optimisation the only
+time (\ref{eq:rewardt0}) (implemented as the C++ function
+\verb+level_zero_learning+ in \texttt{policytree}) would be used is if
+a depth 0 tree (i.e.\ a single leaf) was required.
 
 \subsection{Ordered set data structures}
 \label{sec:orderedsets}
@@ -126,7 +139,7 @@ operations that are performed on these ordered sets:
   access each element of the set in order.
 \end{description}
 
-\subsubsection{Policytree approach}
+\subsubsection{\texttt{policytree} approach}
 \label{sec:policytreeos}
 
 \policytree{} implements ordered sets as \texttt{flat\_set} objects
@@ -151,7 +164,7 @@ element has been erased, the elements with bigger keys have to be
 moved `leftwards' to fill in the gap left by the erased element. Note
 also that it is only for the covariate $j$ whose splits are currently
 being considered that the element position is readily available. For
-each of the other $p-1$ covariates an additional $O(log n)$ time is
+each of the other $p-1$ covariates an additional $O(\log n)$ time is
 required to find the element's position in the ordered set.
 
 Points are inserted using the \texttt{insert} method. The
@@ -222,10 +235,44 @@ index is present when constructing the `moving' indices.
 \label{sec:memory}
 
 During the search for an optimal tree, index sets and
-best-trees-so-far must be created and stored. In my C code all space
+best-trees-so-far must be created and stored. In our C code all space
 required for any of these is created once at the start, and then this
 space is re-used. In policytree it appears that memory to store data
 structures (for example, sorted sets) is allocated many times.
+
+
+\section{Time complexity of the \texttt{policytree} algorithm}
+\label{sec:policytreecomplexity}
+
+
+In the paper \cite{sverdrup2020} the time complexity of the
+\texttt{polictree} algorithm is stated as
+$O(p^{D}n^{D}(\log n + d) + pn\log n)$. As Sverdrup \emph{et al}
+correctly note the $O(pn\log n)$ term accounts for the one off cost of
+constructing the \texttt{sorted\_sets} data structure.
+
+When computing the time complexity for the full algorithm Sverdrup
+\emph{et al} state that ``For every single split along along every
+dimension we remove a sample from a Binary Search Tree and add to
+another; this takes O(log N ) time'' \cite{sverdrup2020}. Insertion
+and deletion in a binary search tree actually takes $O(h)$ time
+\cite{cormen90:_introd_algor} where $h$ is the height of that tree but
+it is true that typically $h = O(\log n)$. But this is irrelevant
+since \texttt{policytree} does not use a binary search tree for its
+\texttt{sorted\_sets} data structure. Instead, as discussed in
+Section~\ref{sec:policytreeos} a \texttt{flat\_set} is used where
+insertion and deletion is $O(n)$.
+
+\begin{quotation}
+  Sverdrup \emph{et al} basically use the \emph{substitution method}
+  to derive that the complexity of their algorithm is
+  $O(p^{D}n^{D}(\log n + d)$. But I think their reasoning is faulty:
+  although I suspect they have ended up with the correct
+  end-result. Perhaps it is not worth spending time on this
+  issue. Recurrence is $T(n,D,p) \leq p.n.(2(p-1)n\log n +
+  2T(n,D-1,p))$. Without level one learning trick this gives something
+  like $O(2^{D}n^{2}p^{2} + 2^{D}nd) = O(2^{D}n(np^{2}+d))$. 
+\end{quotation}
 
 \section{Benchmarks}
 \label{sec:benchmarks}
@@ -597,6 +644,9 @@ sudo perf record -e cpu-clock Rscript pt.R fakedata.txt 2 2
   \caption{perf analyses on continuous data}
   \label{fig:perfcontinuous}
 \end{figure}
+
+\bibliographystyle{plain}
+\bibliography{coding}
 
 
 \end{document}

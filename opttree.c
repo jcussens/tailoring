@@ -443,6 +443,7 @@ void level_one_learning(
   int num_rows,             /** number of units */
   int num_cols_x,           /** number of covariates */
   int num_cols_y,           /** number of rewards */
+  int* best_actions,        /** best_actions[i] is the best action for unit i */
   int* tmp_indices,                 /** stores indices moved from right branch to left branch */
   double* rewards,                  /** temporary storage for computing best rewards */
   double* rewards2                  /** temporary storage for computing best rewards */
@@ -604,6 +605,39 @@ void level_one_learning(
   }
 }
 
+static
+int pure(
+  SORTED_SET* sorted_set,
+  int* best_actions
+  )
+{
+  int i;
+  int best_action = 0;
+  int first = 1;
+  int n = sorted_set->n;
+  
+  for( i = 0; i < sorted_set->n_universe; i++)
+  {
+    if( sorted_set->present[i] )
+    {
+      if( first )
+      {
+        best_action = best_actions[i];
+        first = 0;
+      }
+      else
+      {
+        if( best_actions[i] != best_action )
+          return -1;
+      }
+      n--;
+      if( n == 0 )
+        return best_action;
+    }
+  }
+  return best_action;
+}
+
 /* on return, `node` will be the root of an optimal tree of depth `depth` for the data
  * represented by `sorted_set`
  * arguments `split_step` to `num_cols_y` are constant values needed to determine optimal tree
@@ -621,6 +655,7 @@ void find_best_split(
   int num_rows,             /** number of units */
   int num_cols_x,           /** number of covariates */
   int num_cols_y,           /** number of rewards */
+  int* best_actions,        /** best_actions[i] is the best action for unit i */
   NODE*** tmp_trees,                /** trees of various depths for temporary storage */
   int* tmp_indices,                 /** stores indices moved from right branch to left branch */
   SORTED_SET*** tmp_sorted_sets,  /** e.g have tmp_sorted_sets[depth][LEFT] preallocated space */
@@ -652,6 +687,8 @@ void find_best_split(
 
   SORTED_SET* left_sorted_set;
   SORTED_SET* right_sorted_set;
+
+  int best_reward_for_all;
   
   assert(node != NULL);
   assert(tmp_trees != NULL);
@@ -677,9 +714,27 @@ void find_best_split(
     return;
   }
 
+  /* best_reward_for_all = -1; */
+  best_reward_for_all = pure(sorted_set,best_actions);
+  if( best_reward_for_all != -1 )
+  {
+    /* printf("Index set of size %d is pure with all units having %d as best action\n", sorted_set->n, best_reward_for_all); */
+
+    /* find best reward with no split */
+    find_best_reward(sorted_set,data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
+
+    assert(best_reward == best_reward_for_all);
+    
+    /* populate node */
+    node->index = -1;
+    node->reward = best_reward;
+    node->action_id = best_action;
+    return;
+  }
+  
   if( depth == 1 )
   {
-    level_one_learning(node, sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,  tmp_indices,
+    level_one_learning(node, sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,  best_actions, tmp_indices,
       rewards, rewards2);
     return;
   }
@@ -707,9 +762,9 @@ void find_best_split(
       insert_elements(left_sorted_set,tmp_indices,n_tmp_indices);
       remove_elements(right_sorted_set,tmp_indices,n_tmp_indices);
 
-      find_best_split(left_child, depth-1, left_sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
+      find_best_split(left_child, depth-1, left_sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
          tmp_trees, tmp_indices, tmp_sorted_sets, rewards, rewards2);
-      find_best_split(right_child, depth-1, right_sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
+      find_best_split(right_child, depth-1, right_sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
          tmp_trees, tmp_indices, tmp_sorted_sets, rewards, rewards2);
 
       reward = left_child->reward + right_child->reward;
@@ -742,6 +797,41 @@ void find_best_split(
 }
 
 /*
+ * For each datapoint (index) find and record best action for that datapoint
+ * Return pointer to the array of best actions
+ */
+static
+int* store_best_actions(
+  double* data_y,     /** gammas (column major) */
+  int num_rows,       /** number of units */
+  int num_cols_y      /** number of rewards */
+  )
+{
+  int i;
+  int* best_actions = (int*) malloc(num_rows*sizeof(int));
+  int best_action;
+  int d;
+  double best_reward;
+  
+  for( i = 0; i < num_rows; i++ )
+  {
+    best_action = 0;
+    best_reward = data_y[i];
+    
+    for( d = 1; d < num_cols_y; d++ )
+    {
+      if( data_y[d*num_rows+i] > best_reward )
+      {
+        best_action = d;
+        best_reward = data_y[d*num_rows+i];
+      }
+    }
+    best_actions[i] = best_action;
+  }
+  return best_actions;
+}
+
+/*
  * Notes: A tree of depth 0 is a single node (with no children) where only the reward and action_id members are meaningful.
  */
 
@@ -770,6 +860,8 @@ NODE* tree_search(
   SORTED_SET*** tmp_sorted_sets;
 
   double** data_xx;
+
+  int* best_actions;
   
   /* data_x[col * num_rows + row] is the value of covariate 'col' in datapoint
    * 'row', so column major storage, all values for covariate 0 first
@@ -815,9 +907,13 @@ NODE* tree_search(
   rewards = (double*) malloc(num_cols_y*sizeof(double));
   rewards2 = (double*) malloc(num_cols_y*sizeof(double));
 
-  find_best_split(tree, depth, sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
+  best_actions = store_best_actions(data_y, num_rows, num_cols_y);
+  
+  find_best_split(tree, depth, sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
     tmp_trees, tmp_indices, tmp_sorted_sets, rewards, rewards2);  /* these 3 temporary reusable storage */
 
+  free(best_actions);
+  
   free(tmp_indices);
   free(data_xx);
   free(rewards);
