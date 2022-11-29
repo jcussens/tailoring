@@ -10,7 +10,7 @@
 #define LEFT 0
 #define RIGHT 1
 #define MIN(a,b) (((a)<(b))?(a):(b))
-
+#define VERBOSE 1
 
 
 static
@@ -320,6 +320,7 @@ static
 void level_one_learning(
   NODE* node,                      /** skeleton tree to be populated */
   BST** sorted_sets,  /** sorted sets */
+  int n,                            /** number of datapoints reaching this node */
    int split_step,                  /** consider splits every split_step'th possible split */
    double* data_x,                  /** covariates, data_x[j] are values for covariate j */
    double* data_y,                  /** gammas, y[i] are the rewards for unit i */
@@ -360,6 +361,9 @@ void level_one_learning(
 
   BST* bstnode;
 
+  int n_left;
+  int n_right;
+  
   assert(node != NULL);
   assert(node->left_child != NULL);
   assert(node->right_child != NULL);
@@ -395,14 +399,18 @@ void level_one_learning(
       best_action = d;
     }
 
-  /* printf("No split best reward is %g, best action is %d\n", best_reward, best_action); */
+  if( VERBOSE )
+     printf("No split best reward for %d datapoints is %g, best action is %d\n", n, best_reward, best_action); 
   
   /* search for best split */
   for( p = 0; p < num_cols_x; p++)
   {
      BST* sorted_set = sorted_sets[p];
      double* data_xp = data_x+(p*num_rows);
-    
+
+     n_left = 0;
+     n_right = n;
+     
     /* initialise left rewards for this p */
     for( d = 0; d < num_cols_y; d++ )
       left_rewards[d] = 0.0;
@@ -425,6 +433,9 @@ void level_one_learning(
           left_rewards[d] += data_y[d*num_rows+elt];
       }
 
+      n_left++;
+      n_right--;
+      
       /* find next element to see whether we have a valid split */
       bstnode = find_next(bstnode,&eltnxt);
 
@@ -460,9 +471,10 @@ void level_one_learning(
           best_right_action = best_right_action_for_split;
           best_split_var = p;
           best_split_val = data_xp[elt];
-
-          /* printf("New best reward is %g=%g+%g, best actions are %d,%d split var is %d, split val is %g\n", best_reward, */
-          /*   best_left_reward, best_right_reward, best_left_action, best_right_action, p, best_split_val); */
+          
+          if( VERBOSE )
+             printf("New best split for %d=%d+%d datapoints for depth 1 tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
+                  n,n_left,n_right,p,best_split_val,best_reward,best_left_reward,best_right_reward);
         }
       }
       elt = eltnxt; 
@@ -559,9 +571,15 @@ void find_best_split(
   /* nothing further to do for a leaf or if too few datapoints for splitting or if dataset is pure */
   if( depth == 0 || n <= min_node_size || pure(sorted_sets[0],best_actions) != -1)
   {
+     
     /* find best reward with no split */
     find_best_reward(sorted_sets[0],data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
 
+    if( VERBOSE && pure(sorted_sets[0],best_actions) != -1)
+        printf("Node with %d datapoints for depth %d tree is pure with best action %d and reward=%g\n",
+           n,depth,best_action,best_reward);
+
+    
     /* populate node */
     node->index = -1;
     node->reward = best_reward;
@@ -571,7 +589,7 @@ void find_best_split(
 
   if( depth == 1 )
   {
-     level_one_learning(node, sorted_sets, split_step, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
+     level_one_learning(node, sorted_sets, n, split_step, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
       rewards, rewards2);
     return;
   }
@@ -637,6 +655,9 @@ void find_best_split(
             best_reward = reward;
             best_split_var = p;
             best_split_val = data_xp[elt];
+            if( VERBOSE )
+               printf("New best split for %d=%d+%d datapoints for depth %d tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
+                  n,n_left,n_right,depth,p,best_split_val,reward,left_child->reward,right_child->reward);
             /* save best left and right trees found so far */
             /* tree_copy(source,target) */
             tree_copy(left_child,best_left_child);
