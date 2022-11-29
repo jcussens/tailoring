@@ -25,7 +25,7 @@ struct bst
 typedef struct bst BST;  
 
 void print_node(
-  BST* bst
+   BST* bst
   )
 {
   if( bst != NULL )
@@ -37,7 +37,7 @@ void print_node(
 }
 
 void print_tree(
-  BST* bst
+   BST* bst
   )
 {
 
@@ -54,7 +54,7 @@ void print_tree(
 /* return 1 if node represents an empty set, else 0 */
 static
 int empty_set(
-   BST* node
+    BST* node
    )
 {
    assert(node != NULL);
@@ -64,7 +64,7 @@ int empty_set(
 /* return 4 if left branch of a non-null node is non-empty, else 0 */
 static
 int left_branch_nonempty(
-   BST* node
+    BST* node
    )
 {
    assert(node != NULL);
@@ -74,7 +74,7 @@ int left_branch_nonempty(
 /* return 2 if right branch of a non-null node is non-empty, else 0 */
 static
 int right_branch_nonempty(
-   BST* node
+    BST* node
    )
 {
    assert(node != NULL);
@@ -85,7 +85,7 @@ int right_branch_nonempty(
 /* return 1 if element for non-null node is present in the set, else 0 */
 static
 int element_present(
-   BST* node
+    BST* node
    )
 {
    assert(node != NULL);
@@ -95,7 +95,7 @@ int element_present(
 /* return 1 if node is the root node else 0 */
 static
 int is_root(
-   BST* node
+    BST* node
    )
 {
    assert(node != NULL);
@@ -105,7 +105,7 @@ int is_root(
 /* return 1 if node has a mother and is the left child of its mother else 0 */
 static
 int is_left_child(
-   BST* node
+    BST* node
    )
 {
    assert(node != NULL);
@@ -169,7 +169,7 @@ void mark_right_branch_nonempty(
 
 static
 int left_branch_marked_empty(
-   BST* node
+    BST* node
    )
 {
    assert(node != NULL);
@@ -178,7 +178,7 @@ int left_branch_marked_empty(
 
 static
 int right_branch_marked_empty(
-   BST* node
+    BST* node
    )
 {
    assert(node != NULL);
@@ -197,9 +197,74 @@ void delete_bst(
   free(bst);
 }
 
+
+/** copy presence/absence data from source BST to target BST
+ * (source and target must have same shape, element and rank info)
+ */ 
+void copy_data_bst(
+   BST* source,   /**< source */
+  BST* target          /**< target */
+  )
+{
+  if( source != NULL )
+  {
+    assert(target != NULL);
+    
+    target->flags = source->flags;
+    copy_data_bst(source->left,target->left);
+    copy_data_bst(source->right,target->right);
+  }
+}
+
+/** make target BST represent empty set with same shape etc as source
+ * (source and target must be the same shape)
+ */ 
+void empty_data_bst(
+   BST* source,   /**< source */
+  BST* target          /**< target */
+  )
+{
+  if( source != NULL )
+  {
+    assert(target != NULL);
+    
+    target->flags = EMPTY_TREE;
+    empty_data_bst(source->left,target->left);
+    empty_data_bst(source->right,target->right);
+  }
+}
+
+
+
+/** return a copy of a binary search tree */
+BST* copy_bst(
+   BST* source,  /**< tree to be copied */
+  BST* mother         /**< mother of copy */
+  )
+{
+
+  BST* target = NULL;
+  
+  if( source != NULL )
+  {
+    target = (BST*) malloc(sizeof(BST));
+    target->elt = source->elt;
+    target->rank = source->rank;
+    target->flags = source->flags;
+    target->left = NULL;
+    target->right = NULL;
+    target->mother = mother;
+    if( source->left != NULL )
+      target->left = copy_bst(source->left,target);
+    if( source->right != NULL )
+      target->right = copy_bst(source->right,target);
+  }
+  return target; 
+}
+
 /** make a binary search tree from an array of elements given in rank order */
 BST* make_bst(
-  int* elts,     /**< array of elements */
+   int* elts,     /**< array of elements */
   int n,         /**< number of elements */
   int firstrank, /**< rank of first element */
   BST* mother    /**< mother node (or NULL) */
