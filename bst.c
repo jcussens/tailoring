@@ -24,31 +24,6 @@ struct bst
 };
 typedef struct bst BST;  
 
-void print_node(
-   BST* bst
-  )
-{
-  if( bst != NULL )
-  {
-    printf("node=%p,elt=%d,present=%d,rank=%d,flags=%d\nleft_nonempty=%d,right_nonempty=%d,left_child=%p,right_child=%p,mother=%p\n\n",
-      (void*)bst,bst->elt,bst->flags & ELEMENT_PRESENT,bst->rank,bst->flags,
-      bst->flags & LEFT_NONEMPTY,bst->flags & RIGHT_NONEMPTY,bst->left,bst->right,bst->mother);
-  }
-}
-
-void print_tree(
-   BST* bst
-  )
-{
-
-  print_node(bst);
-  
-  if( bst != NULL )
-  {
-    print_tree(bst->left);
-    print_tree(bst->right);
-  }
-}
 
 
 /* return 1 if node represents an empty set, else 0 */
@@ -118,7 +93,9 @@ void mark_element_present(
    )
 {
    assert(node != NULL);
+   assert(node->flags >= 0);
    node->flags |= ELEMENT_PRESENT;
+   assert(node->flags >= 0);
 }
 
 static
@@ -127,7 +104,9 @@ void mark_element_absent(
    )
 {
    assert(node != NULL);
+   assert(node->flags >= 0);
    node->flags &= ~ELEMENT_PRESENT;
+   assert(node->flags >= 0);
 }
 
 
@@ -137,7 +116,9 @@ void mark_left_branch_empty(
    )
 {
    assert(node != NULL);
-   node->flags &= ~LEFT_NONEMPTY;   
+   assert(node->flags >= 0);
+   node->flags &= ~LEFT_NONEMPTY;
+   assert(node->flags >= 0);
 }
 
 static
@@ -146,7 +127,9 @@ void mark_right_branch_empty(
    )
 {
    assert(node != NULL);
-   node->flags &= ~RIGHT_NONEMPTY;   
+   assert(node->flags >= 0);
+   node->flags &= ~RIGHT_NONEMPTY;
+   assert(node->flags >= 0);
 }
 
 static
@@ -155,7 +138,9 @@ void mark_left_branch_nonempty(
    )
 {
    assert(node != NULL);
-   node->flags |= LEFT_NONEMPTY;   
+   assert(node->flags >= 0);
+   node->flags |= LEFT_NONEMPTY;
+   assert(node->flags >= 0);
 }
 
 static
@@ -164,7 +149,9 @@ void mark_right_branch_nonempty(
    )
 {
    assert(node != NULL);
-   node->flags |= RIGHT_NONEMPTY;   
+   assert(node->flags >= 0);
+   node->flags |= RIGHT_NONEMPTY;
+   assert(node->flags >= 0);
 }
 
 static
@@ -184,6 +171,161 @@ int right_branch_marked_empty(
    assert(node != NULL);
    return !(node->flags & RIGHT_NONEMPTY);
 }
+
+
+static
+int is_empty(
+   BST* bst
+   )
+{
+   assert(bst != NULL);
+   
+   if( element_present(bst) )
+      return 0;
+
+   if( bst->left != NULL && !is_empty(bst->left) )
+      return 0;
+
+   if( bst->right != NULL && !is_empty(bst->right) )
+      return 0;
+
+   return 1;
+   
+}
+
+static
+int tree_correct(
+   BST* bst
+   )
+{
+   assert(bst != NULL);
+   
+   if( bst->left == NULL )
+   {
+      if( !left_branch_marked_empty(bst) )
+      {
+         printf("NULL left branch of %p is not marked empty!", (void*)bst);
+         return 0;
+      }
+   }
+   else
+   {
+      if( left_branch_marked_empty(bst) )
+      {
+         if( !is_empty(bst->left) )
+         {
+            printf("left branch of %p is marked empty but it (%p) is not !", (void*)bst,(void*)bst->left);
+            return 0;
+         }
+      }
+      else
+      {
+         if( is_empty(bst->left) )
+         {
+            printf("left branch of %p is not marked empty but it (%p) is empty !", (void*)bst,(void*)bst->left);
+            return 0;
+         }
+      }
+      if( !tree_correct(bst->left) )
+      {
+         printf("left branch of %p (%p) is not correct somehow", (void*)bst,(void*)bst->left);
+         return 0;
+      }
+   }
+
+   if( bst->right == NULL )
+   {
+      if( !right_branch_marked_empty(bst) )
+      {
+         printf("NULL right branch of %p is not marked empty!", (void*)bst);
+         return 0;
+      }
+   }
+   else
+   {
+      if( right_branch_marked_empty(bst) )
+      {
+         if( !is_empty(bst->right) )
+         {
+            printf("right branch of %p is marked empty but it (%p) is not !", (void*)bst,(void*)bst->right);
+            return 0;
+         }
+      }
+      else
+      {
+         if( is_empty(bst->right) )
+         {
+            printf("right branch of %p is not marked empty but it (%p) is empty !", (void*)bst,(void*)bst->right);
+            return 0;
+         }
+      }
+      if( !tree_correct(bst->right) )
+      {
+         printf("right branch of %p (%p) is not correct somehow", (void*)bst,(void*)bst->right);
+         return 0;
+      }
+   }
+   return 1;
+}
+
+void print_node(
+   BST* bst
+  )
+{
+  if( bst != NULL )
+  {
+    printf("node=%p,elt=%d,present=%d,rank=%d,flags=%d\nleft_nonempty=%d,right_nonempty=%d,left_child=%p,right_child=%p,mother=%p\n\n",
+      (void*)bst,bst->elt,bst->flags & ELEMENT_PRESENT,bst->rank,bst->flags,
+      bst->flags & LEFT_NONEMPTY,bst->flags & RIGHT_NONEMPTY,bst->left,bst->right,bst->mother);
+  }
+}
+
+/** print out set elements in order without exploiting information about empty subtrees */
+void in_order_tree_walk(
+   BST* bst           /**< BST */
+   )
+{
+   if( bst != NULL )
+   {
+      in_order_tree_walk(bst->left);
+      if( element_present(bst) )
+         printf("rank=%d,elt=%d ",bst->rank,bst->elt);
+      in_order_tree_walk(bst->right);
+   }
+}
+
+
+/** print out set elements in order using information about empty subtrees */
+void in_order_tree_walk_fast(
+   BST* bst           /**< BST */
+   )
+{
+   if( bst != NULL )
+   {
+      if( left_branch_nonempty(bst) )
+         in_order_tree_walk(bst->left);
+      if( element_present(bst) )
+         printf("rank=%d,elt=%d ",bst->rank,bst->elt);
+      if( right_branch_nonempty(bst) )
+         in_order_tree_walk(bst->right);
+   }
+}
+
+
+void print_tree(
+   BST* bst
+  )
+{
+
+  print_node(bst);
+  
+  if( bst != NULL )
+  {
+    print_tree(bst->left);
+    print_tree(bst->right);
+  }
+}
+
 
 /** delete a binary search tree */
 void delete_bst(
@@ -213,6 +355,7 @@ void copy_data_bst(
     target->flags = source->flags;
     copy_data_bst(source->left,target->left);
     copy_data_bst(source->right,target->right);
+    assert(tree_correct(target));
   }
 }
 
@@ -221,7 +364,7 @@ void copy_data_bst(
  */ 
 void empty_data_bst(
    BST* source,   /**< source */
-  BST* target          /**< target */
+   BST* target          /**< target */
   )
 {
   if( source != NULL )
@@ -231,6 +374,7 @@ void empty_data_bst(
     target->flags = EMPTY_TREE;
     empty_data_bst(source->left,target->left);
     empty_data_bst(source->right,target->right);
+    assert(tree_correct(target));
   }
 }
 
@@ -285,6 +429,7 @@ BST* make_bst(
   mididx = n/2;
   bst->elt = elts[mididx];
   bst->rank = firstrank+mididx;
+  bst->flags = 0;
   mark_element_present(bst);
   bst->left = NULL;
   bst->right = NULL;
@@ -303,6 +448,8 @@ BST* make_bst(
     mark_right_branch_nonempty(bst);
     bst->right = make_bst(elts+mididx+1,n-mididx-1,firstrank+mididx+1,bst);
   }
+
+  assert(tree_correct(bst));
   return bst;
 }
 
@@ -362,10 +509,16 @@ int delete(
   int rank    /**< rank of element to delete */
   )
 {
+   assert(node != NULL);
+   assert(tree_correct(node));
+   
   if( node->elt == elt )
   {
     mark_element_absent(node);
-    empty_update_ancestors(node);    
+    empty_update_ancestors(node);
+    if( !tree_correct(node) )
+       print_tree(node);
+    assert(tree_correct(node));
     return 1;
   }
   else if( rank < node->rank && node->left != NULL )
@@ -376,6 +529,18 @@ int delete(
     return 0;
 }
 
+
+/** return root node from any other node */
+BST* root_node(
+   BST* node
+   )
+{
+   assert(node != NULL);
+   while(node->mother != NULL)
+      node = node->mother;
+   return node;
+}
+
 /** insert an element, returning 1 if successful else 0 */
 int insert(
    BST* node, /**< tree containing element to insert */
@@ -383,10 +548,16 @@ int insert(
    int rank   /**< rank of element to insert */
    )
 {
+   assert(node != NULL);
+   /* if( !tree_correct(node) ) */
+   /*    print_tree(node); */
+   assert(tree_correct(root_node(node)));
+   
    if( node->elt == elt )
    {
       mark_element_present(node);
-      nonempty_update_ancestors(node);     
+      nonempty_update_ancestors(node);
+      assert(tree_correct(root_node(node)));
       return 1;
    }
    else if( rank < node->rank && node->left != NULL )
@@ -422,6 +593,45 @@ BST* find_minimum(
 
 
 /** find next element, or NULL if there is not one */
+static
+BST* find_next_alt(
+  BST* x,  /**< node for current element */
+  int* elt    /**< pointer to next element */
+   )
+{
+   BST* y;
+   
+   assert(x != NULL);
+   assert(!left_branch_nonempty(x) || x->left != NULL);
+   assert(!right_branch_nonempty(x) || x->right != NULL);
+
+   if( right_branch_nonempty(x) )
+     return find_minimum(x->right,elt);
+
+   y = x->mother;
+   while( y != NULL && x == y->right )
+   {
+      x = y;
+      y = y->mother;
+   }
+
+   if( y ==  NULL )
+      return NULL;
+
+   if( element_present(y) )
+   {
+      *elt = y->elt;
+      return y;
+   }
+   else
+      return find_next(y,elt);
+}
+   
+      
+   
+   
+
+/** find next element, or NULL if there is not one */
 BST* find_next(
   BST* node,  /**< node for current element */
   int* elt    /**< pointer to next element */
@@ -432,6 +642,8 @@ BST* find_next(
    assert(!left_branch_nonempty(node) || node->left != NULL);
    assert(!right_branch_nonempty(node) || node->right != NULL);
 
+   return find_next_alt(node,elt);
+   
    if( right_branch_nonempty(node) )
      return find_minimum(node->right,elt);
    else

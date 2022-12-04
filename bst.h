@@ -5,6 +5,18 @@ extern "C" {
 struct bst;
 typedef struct bst BST;
 
+
+/** print out set elements in order without exploiting information about empty subtrees */
+void in_order_tree_walk(
+   BST* bst           /**< BST */
+   );
+
+/** print out set elements in order using information about empty subtrees */
+void in_order_tree_walk_fast(
+   BST* bst           /**< BST */
+   );
+
+
 /** copy presence/absence data from source BST to target BST
  * (source and target must have same shape, element and rank info)
  */ 

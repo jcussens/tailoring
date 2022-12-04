@@ -10,7 +10,8 @@
 #define LEFT 0
 #define RIGHT 1
 #define MIN(a,b) (((a)<(b))?(a):(b))
-#define VERBOSE 1
+#define VERBOSE 0
+#define VERY_VERBOSE 0
 
 
 static
@@ -415,6 +416,15 @@ void level_one_learning(
     for( d = 0; d < num_cols_y; d++ )
       left_rewards[d] = 0.0;
 
+    if( VERY_VERBOSE )
+    {
+      in_order_tree_walk(sorted_set);
+      printf("\n");
+      in_order_tree_walk_fast(sorted_set);
+      printf("\n");
+
+    }
+    
     /* find lowest ranked element for covariate p */
     bstnode = find_minimum(sorted_set,&elt);
 
@@ -435,6 +445,9 @@ void level_one_learning(
 
       n_left++;
       n_right--;
+
+      if( VERY_VERBOSE )
+        printf("covariate %d,moved=%d,n_left=%d,action 0 reward=%g\n",p,elt,n_left,left_rewards[0]); 
       
       /* find next element to see whether we have a valid split */
       bstnode = find_next(bstnode,&eltnxt);
@@ -442,6 +455,10 @@ void level_one_learning(
       /* if no next element or next element has same value for covariate p, don't consider split */
       if( bstnode != NULL && data_xp[elt] != data_xp[eltnxt] )
       {
+        if( VERY_VERBOSE )
+          printf("valid split at %d, since %d has different %d value\n",elt,eltnxt,p); 
+
+        
         /* find best left and right reward+action */
         best_left_reward_for_split = left_rewards[0];
         best_left_action_for_split = 0;
@@ -628,6 +645,7 @@ void find_best_split(
        /* move element from right to left branch */
        for( pp = 0; pp < num_cols_x; pp++)
        {
+         printf("foo %d %d\n",pp,elt);
           insert(tmp_sorted_sets[depth][LEFT][pp],elt,ranks[pp][elt]);
           delete(tmp_sorted_sets[depth][RIGHT][pp],elt,ranks[pp][elt]);
        }
