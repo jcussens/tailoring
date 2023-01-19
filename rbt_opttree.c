@@ -341,7 +341,6 @@ void level_one_learning(
   assert(node->right_child != NULL);
   assert(data_x != NULL);
   assert(data_y != NULL);
-  assert(sorted_sets != NULL);
 
   
   /* find reward for each action if no split were done */
@@ -560,7 +559,6 @@ void find_best_split(
   assert(tmp_trees != NULL);
   assert(data_x != NULL);
   assert(data_y != NULL);
-  assert(trees != NULL);
   assert(depth >= 0);
   assert(num_rows > 0);
   assert(num_cols_x > 0);
@@ -779,7 +777,7 @@ NODE* tree_search(
   /* empty red-black trees for each depth, for each covariate */
   for(i = 0; i < depth; i++)
   {
-    empty_trees[i] = (RBT**) malloc(depth*sizeof(RBT*));
+    empty_trees[i] = (RBT**) malloc(num_cols_x*sizeof(RBT*));
     for( p = 0; p < num_cols_x; p++)
       empty_trees[i][p] = make_rbt(NULL, 0, nil);
   }
