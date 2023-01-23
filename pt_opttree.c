@@ -9,8 +9,8 @@
 #define LEFT 0
 #define RIGHT 1
 #define MIN(a,b) (((a)<(b))?(a):(b))
-#define VERBOSE 1
-#define VERY_VERBOSE 1
+#define VERBOSE 0
+#define VERY_VERBOSE 0
 
 
 /* 
