@@ -611,6 +611,7 @@ void find_best_split(
     while( rbnode != nil )
     {
       RBT* removed;
+      RBT* rbnodepp;
       
       /* move a single node from right to left */
       right_trees[p] = rb_delete(right_trees[p], rbnode, &removed, nil);
@@ -621,9 +622,11 @@ void find_best_split(
           if( pp != p)
           {
              /* look up key=rank for elt for covariate pp, and find node in tree for pp */
-             rbnode = iterative_tree_search(right_trees[pp], ranks[pp][elt], nil);
+             rbnodepp = iterative_tree_search(right_trees[pp], ranks[pp][elt], nil);
+             /* printf("%d %d %d %d %d\n", p, pp, elt, ranks[pp][elt], rbnodepp==nil); */
+             assert(rbnodepp != nil);
              /* move a single node from right to left */
-             right_trees[pp] = rb_delete(right_trees[pp], rbnode, &removed, nil);
+             right_trees[pp] = rb_delete(right_trees[pp], rbnodepp, &removed, nil);
              left_trees[pp] = rb_insert(left_trees[pp], removed, nil);
           }
        }
@@ -631,7 +634,7 @@ void find_best_split(
        n_right--;
 
        /* find next element, if any, to see whether we have a valid split */
-       rbnode = tree_successor(rbnode,nil);
+       rbnode = tree_minimum(right_trees[p], nil);
        if( rbnode != nil )
        {
           eltnxt = node_elt(rbnode);
@@ -763,6 +766,8 @@ NODE* tree_search(
   free(tmp_indices);
   free(elements);
 
+  /* print_rbt(initial_trees[0],nil); */
+  
   /* make skeleton policy tree of correct depth */
   tree = make_tree(depth);
 

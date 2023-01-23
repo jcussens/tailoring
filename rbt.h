@@ -5,6 +5,19 @@ extern "C" {
 struct rbt;
 typedef struct rbt RBT;
 
+/** print the key-elements of a tree in key order */ 
+void print_elts
+(
+   RBT* x,       /**< red-black tree */
+   RBT* nil      /**< sentinel node */
+   );
+
+
+void print_rbt(
+   RBT* x,       /**< red-black tree to print */
+   RBT* nil      /**< sentinel node */
+   );
+
 /** make a red-black tree from an array of integers
  * each integer is stored at a node, its key is its index in the input array
  * @return the red-black tree

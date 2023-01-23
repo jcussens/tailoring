@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "rbt.h"
 
 #define RED '\000'
@@ -17,6 +18,55 @@ struct rbt
   struct rbt* p;        /**< parent node (or nil if absent) */
   int elt;              /**< element stored at this node */
 };
+
+
+/** print the key-elements of a tree in key order */ 
+void print_elts
+(
+   RBT* x,       /**< red-black tree */
+   RBT* nil      /**< sentinel node */
+   )
+{
+   x = tree_minimum(x,nil);
+   while( x != nil )
+   {
+      printf("(%d,%d),",x->key,x->elt);
+      x = tree_successor(x,nil);
+   }
+   printf("END \n");
+}
+   
+static
+void print_node(
+   RBT* x,       /**< red-black node to print */
+   RBT* nil      /**< sentinel node */
+   )
+{
+   if( x == nil )
+      printf("node=%p,nil\n",x);
+   else
+      printf("node=%p,key=%d,colour=%d,left=%p,right=%p,p=%p,elt=%d\n",
+         x,x->key,x->colour,x->left,x->right,x->p,x->elt);
+}
+
+
+void
+print_rbt(
+   RBT* x,       /**< red-black tree to print */
+   RBT* nil      /**< sentinel node */
+   )
+{
+   if( x == nil )
+      printf("tree=%p,nil\n",x);
+   else
+   {
+      print_node(x,nil);
+      if (x->left != nil )
+         print_rbt(x->left,nil);
+      if (x->right != nil )
+         print_rbt(x->right,nil);
+   }
+}
 
 
 /** Free memory used by a red-black tree
@@ -158,9 +208,10 @@ RBT* tree_minimum(
 {
   assert(x != NULL);
   assert(nil != NULL);
-  
-  while( x->left != nil)
-    x = x->left;
+
+  if( x != nil )
+     while( x->left != nil)
+        x = x->left;
 
   return x;
 }
@@ -211,7 +262,7 @@ RBT* tree_insert(
   assert(z != NULL);
   assert(nil != NULL);
 
-  assert(t->p == nil);
+  assert(t == nil || t->p == nil);
   assert(z != nil);
   assert(z->left == nil);
   assert(z->right == nil);
@@ -279,7 +330,7 @@ RBT* rb_insert(
   assert(x != NULL);
   assert(nil != NULL);
 
-  assert(t->p == nil);
+  assert(t == nil || t->p == nil);
   assert(x != nil);
 
   x->left = nil;
@@ -441,7 +492,7 @@ RBT* rb_delete_fixup(
  * @return the root of the tree after deletion
  */
 RBT* rb_delete(
-   RBT* t,         /**< root node of tree to insert into */
+   RBT* t,         /**< root node of tree containing node to delete */
    RBT* z,         /**< node to delete */
    RBT** r,        /**< (pointer to) 'spliced out' node */
    RBT* nil        /**< sentinel node */
@@ -572,5 +623,7 @@ int node_elt(
    RBT* node   /**< given node */
    )
 {
+   assert(node != NULL);
+   
    return node->elt;
 }
