@@ -301,7 +301,8 @@ void level_one_learning(
   int num_cols_y,                   /** number of rewards */
   int* best_actions,                /** best_actions[i] is the best action for unit i */
   double* rewards,                  /** temporary storage for computing best rewards */
-  double* rewards2                  /** temporary storage for computing best rewards */
+  double* rewards2,                 /** temporary storage for computing best rewards */
+  int** elts                        /**< temporary storage for data indices */
   )
 {
 
@@ -335,12 +336,16 @@ void level_one_learning(
 
   int n_left;
   int n_right;
+
+  int* elts0 = *elts;
   
   assert(node != NULL);
   assert(node->left_child != NULL);
   assert(node->right_child != NULL);
   assert(data_x != NULL);
   assert(data_y != NULL);
+  assert(elts != NULL);
+  assert(elts0 != NULL);
 
   
   /* find reward for each action if no split were done */
@@ -350,9 +355,10 @@ void level_one_learning(
   /* use set ordered on first covariate, would get same result
    * if any other covariate were used
    */
-  for( rbtnode = tree_minimum(trees[0],nil); rbtnode != nil; rbtnode = tree_successor(rbtnode,nil) )
+  get_elts(trees[0], elts0, nil);
+  for( i = 0; i < n; i++ )
   {
-    dyelt = data_y + node_elt(rbtnode);
+    dyelt = data_y + elts0[i];
     for( d = 0; d < num_cols_y; d++ )
     {
       nosplit_rewards[d] += *dyelt;
@@ -381,11 +387,14 @@ void level_one_learning(
 
      n_left = 0;
      n_right = n;
-     
+
     /* initialise left rewards for this p */
     for( d = 0; d < num_cols_y; d++ )
       left_rewards[d] = 0.0;
 
+    if( p > 0 )
+      get_elts(tree, elts0, nil);
+    
     /* if( VERY_VERBOSE ) */
     /* { */
     /*   in_order_tree_walk(sorted_set); */
@@ -394,13 +403,11 @@ void level_one_learning(
     /*   printf("\n"); */
     /* } */
     
-    /* find lowest ranked element for covariate p */
-    rbtnode = tree_minimum(tree,nil);
-    if( rbtnode != nil )
-      elt = node_elt(rbtnode);
-
-    while( rbtnode != nil )
+    for( i = 0; i < n-1; i++)
     {
+
+      elt = elts0[i];
+
       /* update left rewards */
       if( num_cols_y == 2 )
       {
@@ -419,54 +426,46 @@ void level_one_learning(
       if( VERY_VERBOSE )
         printf("covariate %d,moved=%d,n_left=%d,action 0 reward=%g\n",p,elt,n_left,left_rewards[0]); 
       
-      /* find next element to see whether we have a valid split */
-      rbtnode = tree_successor(rbtnode,nil);
-      if( rbtnode != nil )
+      /* next element has same value for covariate p, don't consider split */
+      if( data_xp[elt] != data_xp[elts0[i+i]] )
       {
-        eltnxt = node_elt(rbtnode);
-      
-        /* next element has same value for covariate p, don't consider split */
-        if( data_xp[elt] != data_xp[eltnxt] )
-        {
-          if( VERY_VERBOSE )
-            printf("valid split at %d, since %d has different %d value\n",elt,eltnxt,p); 
+        if( VERY_VERBOSE )
+          printf("valid split at %d, since %d has different %d value\n",elt,elts0[i+1],p); 
 
-          /* find best left and right reward+action */
-          best_left_reward_for_split = left_rewards[0];
-          best_left_action_for_split = 0;
-          best_right_reward_for_split = nosplit_rewards[0] - left_rewards[0];
-          best_right_action_for_split = 0;
-          for( d = 1; d < num_cols_y; d++ )
+        /* find best left and right reward+action */
+        best_left_reward_for_split = left_rewards[0];
+        best_left_action_for_split = 0;
+        best_right_reward_for_split = nosplit_rewards[0] - left_rewards[0];
+        best_right_action_for_split = 0;
+        for( d = 1; d < num_cols_y; d++ )
+        {
+          if( left_rewards[d] > best_left_reward_for_split )
           {
-            if( left_rewards[d] > best_left_reward_for_split )
-            {
-              best_left_reward_for_split = left_rewards[d];
-              best_left_action_for_split = d;
-            }
-            if( nosplit_rewards[d] - left_rewards[d] > best_right_reward_for_split )
-            {
-              best_right_reward_for_split = nosplit_rewards[d] - left_rewards[d];
-              best_right_action_for_split = d;
-            }
+            best_left_reward_for_split = left_rewards[d];
+            best_left_action_for_split = d;
           }
-          
-          /* update if new best split */
-          if( best_left_reward_for_split + best_right_reward_for_split > best_reward)
+          if( nosplit_rewards[d] - left_rewards[d] > best_right_reward_for_split )
           {
-            best_reward = best_left_reward_for_split + best_right_reward_for_split;
-            best_left_reward = best_left_reward_for_split;
-            best_left_action = best_left_action_for_split;
-            best_right_reward = best_right_reward_for_split;
-            best_right_action = best_right_action_for_split;
-            best_split_var = p;
-            best_split_val = data_xp[elt];
-            
-            if( VERBOSE )
-              printf("New best split for %d=%d+%d datapoints for depth 1 tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
-                n,n_left,n_right,p,best_split_val,best_reward,best_left_reward,best_right_reward);
+            best_right_reward_for_split = nosplit_rewards[d] - left_rewards[d];
+            best_right_action_for_split = d;
           }
         }
-        elt = eltnxt;
+          
+        /* update if new best split */
+        if( best_left_reward_for_split + best_right_reward_for_split > best_reward)
+        {
+          best_reward = best_left_reward_for_split + best_right_reward_for_split;
+          best_left_reward = best_left_reward_for_split;
+          best_left_action = best_left_action_for_split;
+          best_right_reward = best_right_reward_for_split;
+          best_right_action = best_right_action_for_split;
+          best_split_var = p;
+          best_split_val = data_xp[elt];
+            
+          if( VERBOSE )
+            printf("New best split for %d=%d+%d datapoints for depth 1 tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
+              n,n_left,n_right,p,best_split_val,best_reward,best_left_reward,best_right_reward);
+        }
       }
     }
   }
@@ -520,7 +519,8 @@ void find_best_split(
   int* best_actions,        /**< best_actions[i] is the best action for unit i */
   NODE*** tmp_trees,        /**< policy trees of various depths for temporary storage */
   double* rewards,          /**< temporary storage for computing best rewards */
-  double* rewards2          /**< temporary storage for computing best rewards */
+  double* rewards2,         /**< temporary storage for computing best rewards */
+  int** elts                /**< temporary storage for data indices */
   )
 {
 
@@ -554,6 +554,11 @@ void find_best_split(
   RBT** left_trees = empty_trees[0];
 
   RBT** tmp;
+
+  RBT* removed;
+  RBT* rbnodepp;
+
+  int* elts0 = *elts;
   
   assert(node != NULL);
   assert(tmp_trees != NULL);
@@ -586,7 +591,7 @@ void find_best_split(
   if( depth == 1 )
   {
     level_one_learning(node, right_trees, nil, n, split_step, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
-      rewards, rewards2);
+      rewards, rewards2, elts+1);
     return;
   }
 
@@ -598,77 +603,77 @@ void find_best_split(
   /* consider each covariate for splitting */
   for( p = 0; p < num_cols_x; p++)
   {
-     int n_left = 0;
-     int n_right = n;
-
-     double* data_xp = data_x+(p*num_rows);
-     
-    /* find lowest ranked element for covariate p */
-    rbnode = tree_minimum(right_trees[p], nil);
-    if( rbnode != nil)
-       elt = node_elt(rbnode);
+    int n_left = 0;
+    int n_right = n;
     
-    while( rbnode != nil )
+    double* data_xp = data_x+(p*num_rows);
+    
+    get_elts(right_trees[p], elts0, nil);
+    
+    for( i = 0; i < n-1; i++)
     {
-      RBT* removed;
-      RBT* rbnodepp;
+      elt = elts0[i];
       
-      /* move a single node from right to left */
-      right_trees[p] = rb_delete(right_trees[p], rbnode, &removed, nil);
-      left_trees[p] = rb_insert(left_trees[p], removed, nil);
+      for( pp = 0; pp < num_cols_x; pp++)
+      {
+        /* look up key=rank for elt for covariate pp, and find node in tree for pp */
+        assert(right_trees[pp] != nil);
+        rbnodepp = iterative_tree_search(right_trees[pp], ranks[pp][elt], nil);
+        /* printf("n_right= %d, i = %d, p = %d, pp = %d, elt = %d val = %g\n", n_right, i, p, pp, elt, vals[i]); */
+        assert(rbnodepp != nil);
+        /* move a single node from right to left */
+        right_trees[pp] = rb_delete(right_trees[pp], rbnodepp, &removed, nil);
+        left_trees[pp] = rb_insert(left_trees[pp], removed, nil);
+      }
 
-       for( pp = 0; pp < num_cols_x; pp++)
-       {
-          if( pp != p)
-          {
-             /* look up key=rank for elt for covariate pp, and find node in tree for pp */
-             rbnodepp = iterative_tree_search(right_trees[pp], ranks[pp][elt], nil);
-             /* printf("%d %d %d %d %d\n", p, pp, elt, ranks[pp][elt], rbnodepp==nil); */
-             assert(rbnodepp != nil);
-             /* move a single node from right to left */
-             right_trees[pp] = rb_delete(right_trees[pp], rbnodepp, &removed, nil);
-             left_trees[pp] = rb_insert(left_trees[pp], removed, nil);
-          }
-       }
-       n_left++;
-       n_right--;
+      n_left++;
+      n_right--;
 
-       /* find next element, if any, to see whether we have a valid split */
-       rbnode = tree_minimum(right_trees[p], nil);
-       if( rbnode != nil )
-       {
-          eltnxt = node_elt(rbnode);
-
-          /* if next element has same value for covariate p, don't consider split */
-          if( data_xp[elt] != data_xp[eltnxt] )
-          {
-       
-            find_best_split(left_child, depth-1, left_trees, empty_trees+1, nil, ranks, n_left, split_step, min_node_size,
-              data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
-              tmp_trees, rewards, rewards2);
-            find_best_split(right_child, depth-1, right_trees, empty_trees+1, nil, ranks, n_right, split_step, min_node_size,
-              data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
-              tmp_trees, rewards, rewards2);
-            
-            reward = left_child->reward + right_child->reward;
+      /* if next element has same value for covariate p, don't consider split */
+      if( data_xp[elt] != data_xp[elts0[i+1]] )
+      {
         
-            if( reward > best_reward )
-            {
-              best_reward = reward;
-              best_split_var = p;
-              best_split_val = data_xp[elt];
-              if( VERBOSE )
-                printf("New best split for %d=%d+%d datapoints for depth %d tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
-                  n,n_left,n_right,depth,p,best_split_val,reward,left_child->reward,right_child->reward);
-              /* save best left and right trees found so far */
-              /* tree_copy(source,target) */
-              tree_copy(left_child,best_left_child);
-              tree_copy(right_child,best_right_child);
-            }
-          }
-          elt = eltnxt;
-       }
+        find_best_split(left_child, depth-1, left_trees, empty_trees+1, nil, ranks, n_left, split_step, min_node_size,
+          data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
+          tmp_trees, rewards, rewards2, elts+1);
+        find_best_split(right_child, depth-1, right_trees, empty_trees+1, nil, ranks, n_right, split_step, min_node_size,
+          data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
+          tmp_trees, rewards, rewards2, elts+1);
+        
+        reward = left_child->reward + right_child->reward;
+        
+        if( reward > best_reward )
+        {
+          best_reward = reward;
+          best_split_var = p;
+          best_split_val = data_xp[elt];
+          if( VERBOSE )
+            printf("New best split for %d=%d+%d datapoints for depth %d tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
+              n,n_left,n_right,depth,p,best_split_val,reward,left_child->reward,right_child->reward);
+          /* save best left and right trees found so far */
+          tree_copy(left_child,best_left_child);
+          tree_copy(right_child,best_right_child);
+        }
+      }
     }
+
+    /* move last element */
+    elt = elts0[i];
+    for( pp = 0; pp < num_cols_x; pp++)
+    {
+      /* look up key=rank for elt for covariate pp, and find node in tree for pp */
+      assert(right_trees[pp] != nil);
+      rbnodepp = iterative_tree_search(right_trees[pp], ranks[pp][elt], nil);
+      /* printf("n_right= %d, i = %d, p = %d, pp = %d, elt = %d val = %g\n", n_right, i, p, pp, elt, vals[i]); */
+      assert(rbnodepp != nil);
+      /* move a single node from right to left */
+      right_trees[pp] = rb_delete(right_trees[pp], rbnodepp, &removed, nil);
+      /* right tree should now be empty */
+      assert(right_trees[pp] == nil);
+      left_trees[pp] = rb_insert(left_trees[pp], removed, nil);
+    }
+
+    
     /* left trees now 'full' and right trees empty
        so swap for next covariate */
     tmp = right_trees;
@@ -737,6 +742,9 @@ NODE* tree_search(
   /* ranks[p][elt] is the rank of datapoint index elt when datapoints ordered according to covariate p */ 
   int** ranks = (int **) malloc(num_cols_x*sizeof(int*));
 
+  /* temporary storage of elements for each depth */
+  int** elts = (int**) malloc((depth+1)*sizeof(int*));
+  
   /* sentinel node */
   RBT* nil = sentinel();
   
@@ -786,6 +794,10 @@ NODE* tree_search(
     for( p = 0; p < num_cols_x; p++)
       empty_trees[i][p] = make_rbt(NULL, 0, nil);
   }
+
+  /* temporary storage for each depth */
+  for(i = 0; i < depth+1; i++)
+    elts[i] = (int*) malloc(num_rows*sizeof(int));
   
   /* find and store best actions */
   store_best_actions(best_actions, data_y, num_rows, num_cols_y);
@@ -793,7 +805,8 @@ NODE* tree_search(
   /* find best tree */
   find_best_split(tree, depth, initial_trees, empty_trees, nil, ranks, num_rows, split_step, min_node_size,
     data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
-    tmp_trees, rewards, rewards2);  /* these 3 temporary reusable storage */
+    tmp_trees, rewards, rewards2, elts);  /* these 3 temporary reusable storage */
+
 
   free(best_actions);
   free(rewards);
@@ -808,6 +821,10 @@ NODE* tree_search(
   }
   free(tmp_trees);
 
+  for(i = 0; i < depth+1; i++)
+    free(elts[i]);
+  free(elts);
+  
   /* free red-black trees */
   for( p = 0; p < num_cols_x; p++)
     free_rbt(initial_trees[p],nil);

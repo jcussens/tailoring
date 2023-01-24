@@ -20,6 +20,23 @@ struct rbt
 };
 
 
+/** put the elements of a tree in key order into an array */ 
+void get_elts
+(
+   RBT* x,       /**< red-black tree */
+   int* elts,    /**< output elements */
+   RBT* nil      /**< sentinel node */
+   )
+{
+   x = tree_minimum(x,nil);
+   while( x != nil )
+   {
+      *(elts++) = x->elt; 
+      x = tree_successor(x,nil);
+   }
+}
+
+
 /** print the key-elements of a tree in key order */ 
 void print_elts
 (

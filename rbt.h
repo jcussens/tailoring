@@ -5,6 +5,15 @@ extern "C" {
 struct rbt;
 typedef struct rbt RBT;
 
+/** put the elements of a tree in key order into an array */ 
+void get_elts
+(
+   RBT* x,       /**< red-black tree */
+   int* elts,    /**< output elements */
+   RBT* nil      /**< sentinel node */
+   );
+
+
 /** print the key-elements of a tree in key order */ 
 void print_elts
 (
