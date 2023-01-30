@@ -19,7 +19,7 @@ struct sorted_set
 {
   int** sorted_universe;    /** sorted universe set for each covariate */
   int n_universe;           /** size of universe */
-  double** data_xx;         /** data_x[p][elt] is the sort value for elt for covariate p */
+  const double** data_xx;   /** data_x[p][elt] is the sort value for elt for covariate p */
   char* present;            /** present[elt] = 1 if i in set */
   int n;                    /** size of subset */
   int** breakpoints;        /** array of (ordered) breakpoints for each covariate, 
@@ -67,7 +67,7 @@ void bottomupmerge(
   int iright,
   int iend,
   int* tmp,
-  double* data_x_p
+  const double* data_x_p
   )
 {
   int i = ileft;
@@ -88,7 +88,7 @@ void bottomupmergesort(
   int* indices,
   int* tmp,
   int n,
-  double* data_x_p
+  const double* data_x_p
   )
 {
   int width;
@@ -252,7 +252,7 @@ static
 SORTED_SET* make_sorted_set(
   int num_indices,            /* size of set */
   int num_cols_x,             /* number of covariates */
-  double** data_xx,           /* ordering key values, one for each covariate */
+  const double** data_xx,           /* ordering key values, one for each covariate */
   int* tmp                    /* temporary storage for ordering */
   )
 {
@@ -390,7 +390,7 @@ void tree_free(
 static
 void find_best_reward(
   SORTED_SET* sorted_set,
-  double* data_y,
+  const double* data_y,
   int num_cols_y,
   int num_rows,
   double* rewards,
@@ -413,7 +413,7 @@ void find_best_reward(
   for( elt = 0; elt < sorted_set->n_universe; elt++ )
     if( sorted_set->present[elt] )
     {
-      double* dy = data_y;
+      const double* dy = data_y;
       for( d = 0; d < num_cols_y; d++ )
       {
         rewards[d] += dy[elt];
@@ -438,8 +438,8 @@ void level_one_learning(
   SORTED_SET* sorted_set,   /** sorted set */
   int split_step,           /** consider splits every split_step'th possible split */
   int min_node_size,        /** smallest terminal node size */
-  double* data_x,           /** covariates, data_x[j] are values for covariate j */
-  double* data_y,           /** gammas, y[i] are the rewards for unit i */
+  const double* data_x,           /** covariates, data_x[j] are values for covariate j */
+  const double* data_y,           /** gammas, y[i] are the rewards for unit i */
   int num_rows,             /** number of units */
   int num_cols_x,           /** number of covariates */
   int num_cols_y,           /** number of rewards */
@@ -494,7 +494,7 @@ void level_one_learning(
   for( elt = 0; elt < sorted_set->n_universe; elt++ )
     if( sorted_set->present[elt] )
     {
-      double* dy = data_y;
+      const double* dy = data_y;
       for( d = 0; d < num_cols_y; d++ )
       {
         nosplit_rewards[d] += dy[elt];
@@ -525,7 +525,7 @@ void level_one_learning(
     while( n_tmp_indices > 0 )
     {
       /* update left rewards */
-      double* dy = data_y;
+      const double* dy = data_y;
       if( num_cols_y == 2 )
       {
          double tmp0 = 0.0;
@@ -650,8 +650,8 @@ void find_best_split(
   SORTED_SET* sorted_set,   /** sorted set */
   int split_step,           /** consider splits every split_step'th possible split */
   int min_node_size,        /** smallest terminal node size */
-  double* data_x,           /** covariates, data_x[j] are values for covariate j */
-  double* data_y,           /** gammas, y[i] are the rewards for unit i */
+  const double* data_x,           /** covariates, data_x[j] are values for covariate j */
+  const double* data_y,           /** gammas, y[i] are the rewards for unit i */
   int num_rows,             /** number of units */
   int num_cols_x,           /** number of covariates */
   int num_cols_y,           /** number of rewards */
@@ -802,7 +802,7 @@ void find_best_split(
  */
 static
 int* store_best_actions(
-  double* data_y,     /** gammas (column major) */
+  const double* data_y,     /** gammas (column major) */
   int num_rows,       /** number of units */
   int num_cols_y      /** number of rewards */
   )
@@ -839,8 +839,8 @@ NODE* tree_search_jc_discretedata(
   int depth,            /** (maximum) depth of returned tree */
   int split_step,       /** consider splits every split_step'th possible split */
   int min_node_size,    /** smallest terminal node size */
-  double* data_x, /** covariates (column major) */
-  double* data_y, /** gammas (column major) */
+  const double* data_x, /** covariates (column major) */
+  const double* data_y, /** gammas (column major) */
   int num_rows,         /** number of units */
   int num_cols_x,       /** number of covariates */
   int num_cols_y        /** number of rewards */
@@ -859,7 +859,7 @@ NODE* tree_search_jc_discretedata(
   SORTED_SET* sorted_set;
   SORTED_SET*** tmp_sorted_sets;
 
-  double** data_xx;
+  double const ** data_xx;
 
   int* best_actions;
   
@@ -875,7 +875,7 @@ NODE* tree_search_jc_discretedata(
 
   tmp_indices = (int*) malloc(num_rows*sizeof(int));
   /* a bit neater to store pointer to each column */
-  data_xx = (double**) malloc(num_cols_x*sizeof(double*));
+  data_xx = (const double**) malloc(num_cols_x*sizeof(double*));
   for( p = 0; p < num_cols_x; p++)
     data_xx[p] = data_x+p*num_rows;
 
