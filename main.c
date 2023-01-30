@@ -86,10 +86,12 @@ int main(
   int offset;
 
   NODE* tree;
+  int method;
+
   
-  if( argc < 2 )
+  if( argc < 3 )
   {
-    printf("Need to supply at least a filename and the number of actions.\n");
+    printf("Need to supply at least a filename, the number of actions and method indicator.\n");
     return 1;
   }
 
@@ -102,10 +104,18 @@ int main(
   }    
 
   num_cols_y = atoi(argv[2]);
-  
-  if( argc > 3)
-    depth = atoi(argv[3]);
 
+  method = atoi(argv[3]);
+  if(method != 1 && method != 2 )
+  {
+    printf("Incorrect method number: %d, should be 1 or 2.\n", method);
+    return 1;
+  }    
+
+  if( argc > 4)
+    depth = atoi(argv[4]);
+
+  
   /* count lines in file, ignoring any lines composed entirely of white space*/
   nlines = 0;
   while( fgets(line,MAX_LINE_LENGTH,file) != NULL)
@@ -201,8 +211,11 @@ int main(
   }
 
   fclose(file);
-  
-  tree = tree_search(depth, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y);
+
+  if( method == 1 )
+     tree = tree_search_jc_policytree(depth, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y);
+  else
+     tree = tree_search_jc_discretedata(depth, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y);
 
   printf("Actions: ");
   for(i = 0; i < num_cols_y; i++)

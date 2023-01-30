@@ -3,23 +3,24 @@
 C and Python code for building policy trees. All code written by James Cussens
 
 For the C code to compile do the following (from Linux command line):
-    `gcc -DNDEBUG -O2 opttree.c main.c`
+    `gcc -DNDEBUG -O2 opttree.c pt_opttree.c main.c`
 which will produce an executable file `a.out`
 
-or, if you want "policytree style" data structures:
-    `gcc -DNDEBUG -O2 pt_opttree.c main.c`
+To run `a.out` using a "policytree-style" approach do:
+    ` ./a.out fakedata.txt 2 1 2`
 
-To run `a.out` do:
-    ` ./a.out IFLS.txt 2 2`
+To run `a.out` using a "discrete data optimised" approach do:
+    ` ./a.out fakedata.txt 2 2 2`
 
-The penultimate argument is the number of actions.
-The final argument is the desired tree depth.
-    
-Here IFLS.txt is a file whose first line is a header giving the names of the covariates, followed by the names of the actions. Each subsequent line has the covariate values for a unit, followed by reward values for that unit for each action. Values are separated by spaces.
+Arguments are: ./a.out <data-filename> <number of actions> <method> [<depth>]
+method must be 1 or 2.
+If depth is omitted it defaults to 3.
+
+Here fakedata.txt is a file whose first line is a header giving the names of the covariates, followed by the names of the actions. Each subsequent line has the covariate values for a unit, followed by reward values for that unit for each action. Values are separated by spaces.
 
 Here is an example of producing a depth 2 tree with 10,622 units, 64 binary covariates and 2 actions. (Note that it takes under a second on James's laptop.)
 
-(base) uw20605@IT079795:~/repos/tailoring$ time ./a.out IFLS.txt 2 2
+(base) uw20605@IT079795:~/repos/tailoring$ time ./a.out IFLS.txt 2 2 2
 Actions: 0: "scores.DML" 1: "scores.DR" 
 node = 0x55913d0cb480
 covariate = "past_ind_mis"

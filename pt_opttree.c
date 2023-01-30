@@ -452,22 +452,22 @@ void tree_copy(
     tree_copy(source->right_child,target->right_child);
 }
 
-/*
- * delete a tree (free the memory it occupied)
- */
-void tree_free(
-  NODE* node
-  )
-{
-  assert(node != NULL);
+/* /\* */
+/*  * delete a tree (free the memory it occupied) */
+/*  *\/ */
+/* void tree_free( */
+/*   NODE* node */
+/*   ) */
+/* { */
+/*   assert(node != NULL); */
   
-  if( node->left_child != NULL )
-  {
-    tree_free(node->left_child);
-    tree_free(node->right_child);
-  }
-  free(node);
-}
+/*   if( node->left_child != NULL ) */
+/*   { */
+/*     tree_free(node->left_child); */
+/*     tree_free(node->right_child); */
+/*   } */
+/*   free(node); */
+/* } */
 
 
 static
@@ -881,7 +881,7 @@ void find_best_split(
  * Notes: A tree of depth 0 is a single node (with no children) where only the reward and action_id members are meaningful.
  */
 
-NODE* tree_search(
+NODE* tree_search_jc_policytree(
   int depth,            /** (maximum) depth of returned tree */
   int split_step,       /** consider splits every split_step'th possible split */
   int min_node_size,    /** smallest terminal node size */

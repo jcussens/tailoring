@@ -835,7 +835,7 @@ int* store_best_actions(
  * Notes: A tree of depth 0 is a single node (with no children) where only the reward and action_id members are meaningful.
  */
 
-NODE* tree_search(
+NODE* tree_search_jc_discretedata(
   int depth,            /** (maximum) depth of returned tree */
   int split_step,       /** consider splits every split_step'th possible split */
   int min_node_size,    /** smallest terminal node size */
