@@ -12,6 +12,204 @@
 
 \maketitle
 
+\section{Abstract description}
+\label{sec:abs}
+
+Let $N$ be the set $\{i,\dots,n\}$ of units. Let $A$ be the set
+of available actions.  Let ${\cal F}_d$ represent the set of functions
+$f:N \rightarrow A$ representable by a tree of depth $d$. $f(i)$
+assigns an action to unit $i$; call such functions \emph{action
+  assignment functions}. Let $S$ be the set of splits available. Let
+$s_{L}(N)$ (resp.\ $s_{R}(N)$) be the units sent left (resp.\ right)
+when unit-set $N$ is split using split $s \in S$. Let $r(i,a)$ be the
+reward for unit $i$ when it is assigned action $a$. For any
+action assignment function $f$ define
+$R(f,N) := \sum_{i \in N} r(i,f(i))$, so $R(f,N)$ is the reward when
+using $f$ to assign actions to all individuals in $N$. Define
+$f^{*}_{d,N} := \arg\max_{f \in {\cal F}_d} R(f,N)$, so $f^{*}_{d,N}$
+is the best function in ${\cal F}_d$ to use to assign actions to all
+individuals in $N$. Given $d$ and $N$ our goal is to find $f^{*}_{d,N}$.
+
+Let $R^{*}_{d,N} = R(f^{*}_{d,N},N)$, so $R^{*}_{d,N}$ is the best
+possible reward for a given $d$ and $N$. We have the basic recursion
+for $d>0$
+\begin{equation}
+  \label{eq:basicrecursion}
+  R^{*}_{d,N}
+  = \max_{s \in S}   R^{*}_{d-1,s_{L}(N)} + R^{*}_{d-1,s_{R}(N)} 
+\end{equation}
+The base case is:
+\begin{equation}
+  \label{eq:base}
+    R^{*}_{0,N} =  \max_{a \in A} \sum_{i \in N}  r(i,a)
+\end{equation}
+If $N = N_{1} \dot\cup N_{2}$ (where $\dot\cup$ denotes disjoint
+union) then
+\begin{eqnarray}
+  \label{eq:genmain}
+ R^{*}_{d,N_{1}} + R(f^{*}_{d,N_{1}},N_{2})  & \leq R^{*}_{d,N}  & \leq  R^{*}_{d,N_{1}} + R^{*}_{d,N_{2}} \\
+ R^{*}_{d,N_{2}} + R(f^{*}_{d,N_{2}},N_{1})  & \leq R^{*}_{d,N}  & \leq  R^{*}_{d,N_{1}} + R^{*}_{d,N_{2}} 
+\end{eqnarray}
+The RHS inequality of (\ref{eq:genmain}) follows from the simple
+observation that an optimal depth $d+1$ tree always has a reward no
+worse than an optimal depth $d$ tree on the same unit-set. The LHS
+inequalities simply state that the reward of the best tree for $N$
+cannot be worse than applying the best tree for $N_{1}$ or $N_2$ to
+all of $N$.
+
+We also have the typically loose bounds which simply states that
+the best we can hope for is for all units to be assigned their best
+action and that we can always do at least as well as a depth 0 tree:
+\begin{equation}
+  \label{eq:loosebound}
+\max_{a \in A} \sum_{i \in N}  r(i,a) \leq  R^{*}_{d,N} \leq \sum_{i \in N} \max_{a \in A} r(i,a) 
+\end{equation}
+Also we have:
+\begin{equation}
+  \label{eq:llb}
+\sum_{i \in N_{2}} \min_{a \in A} r(i,a) \leq R(f^{*}_{d,N_{1}},N_{2})  
+\end{equation}
+Putting these together we have:
+\begin{equation}
+  \label{eq:ub}
+R^{*}_{d,N}   \leq  R^{*}_{d,N_{1}} + \sum_{i \in N_{2}} \max_{a \in A} r(i,a) 
+\end{equation}
+and
+\begin{equation}
+  \label{eq:lb}
+  R^{*}_{d,N_{1}}   \leq R^{*}_{d,N} -  \sum_{i \in N_{2}} \min_{a \in A} r(i,a)
+\end{equation}
+
+Let $s$ be some split and let $s'$ be some other split where
+\begin{eqnarray}
+  \label{eq:splits}
+  s'_{L}(N) & = & s_{L}(N) \dot\cup N' \\
+  s'_{R}(N) & = & s_{R}(N) \setminus N' \\
+\end{eqnarray}
+so split $s'$ is arrived at by starting from split $s'$ and moving the
+units $N'$ from the right side to left.
+We have:
+\begin{eqnarray}
+  \label{eq:splitsub}
+  R^{*}_{d,s'_{L}(N)} & \leq & R^{*}_{d,s_{L}(N)} +  \sum_{i \in N'}
+                               \max_{a \in A} r(i,a) \\
+  R^{*}_{d,s'_{R}(N)} & \leq & R^{*}_{d,s_{R}(N)} - \sum_{i \in N'} \min_{a \in A} r(i,a)
+\end{eqnarray}
+and
+\begin{eqnarray*}
+  \label{eq:sumub}
+  R^{*}_{d,s'_{L}(N)} +  R^{*}_{d,s'_{R}(N)}
+  & \leq
+  &  R^{*}_{d,s_{L}(N)}
+    +  R^{*}_{d,s_{R}(N)}
+    +  \sum_{i \in N'} \max_{a \in A} r(i,a)
+    -  \sum_{i \in N'} \min_{a \in A} r(i,a) \\
+  & \leq
+  & R^{*}_{d,s_{L}(N)}
+    +  R^{*}_{d,s_{R}(N)}
+    +  \sum_{i \in N'} \left[ \max_{a \in A} r(i,a)- \min_{a \in A}
+    r(i,a) \right]
+\end{eqnarray*}
+
+\section{Complex junk}
+\label{sec:junk}
+
+
+% Let $f^*$ be some arbitrary action assignment function then clearly:
+% \begin{equation}
+%   \label{eq:addfun}
+%  \max_{f \in {\cal F}_d \cup \{f^*\}} \sum_{i \in N} r(i,f(i)) \geq \max_{f \in {\cal F}_d} \sum_{i \in N} r(i,f(i)) 
+% \end{equation}
+% since having an extra function to choose from never hurts.
+
+Let $f \in {\cal F}_d$. Define $f_{(j,a)}$ as follows:
+$f_{(j,a)}(j) = a$ and if $i\neq j$ then
+$f_{(j,a)}(i) = f(i)$. So the only difference, if any, between $f$ and
+$f_{(j,a)}$ is that $f_{(j,a)}$ assigns action $a$ to unit $j$.
+Note that $f_{(j,f(j))} = f$.
+Define ${\cal F}_d(j) = \{f_{(j,a)}: f \in {\cal
+  F}_{d}, a \in A\}$. Since  ${\cal F}_d \subseteq {\cal F}_d(j)$
+we have:
+ \begin{equation}
+   \label{eq:addfun}
+  \max_{f \in {\cal F}_d(j)} R(f,N) \geq \max_{f \in {\cal F}_d}
+  R(f,N) = R^{*}_{d,N}
+\end{equation}
+We also have:
+\begin{eqnarray}
+  \label{eq:addfun2}
+  \max_{f \in {\cal F}_d(j)} R(f,N)
+  & =
+  &\max_{f \in {\cal F}_d(j)} \sum_{i \in N} r(i,f(i)) \\
+  & =
+  & \max_{f \in {\cal F}_d(j)} \left[   \sum_{i \in N \setminus
+    \{j\} } r(i,f(i)) + r(j,f(j)) \right] \\
+  & =
+  & \max_{f \in {\cal F}_d(j)} \left[   \sum_{i \in N \setminus
+    \{j\} } r(i,f(i)) + \max_{a
+    \in A} r(j,a) \right] \\
+  & = 
+  & \max_{f \in
+  {\cal F}_d(j)} \sum_{i \in N \setminus \{j\}} r(i,f(i)) +  \max_{a
+    \in A} r(j,a) \\
+  & = 
+  & \max_{f \in
+  {\cal F}_d} \sum_{i \in N \setminus \{j\}} r(i,f(i)) +  \max_{a
+    \in A} r(j,a) \\
+  & =
+  & R^{*}_{d,N \setminus \{j\}} +  \max_{a
+    \in A} r(j,a) 
+\end{eqnarray}
+So
+\begin{equation}
+  \label{eq:maineq}
+  R^{*}_{d,N \setminus \{j\}} 
+  +  \max_{a
+    \in A} r(j,a) \geq   R^{*}_{d,N } 
+\end{equation}
+% This means that if we have computed $R^{*}_{d,N \setminus \{j\}}$ and
+% then add $j$ to $N \setminus \{j\}$ to get $N$ then the best we can
+% hope for is $R^{*}_{d,N \setminus \{j\}} + \max_{a \in A} r(j,a)$. If
+% $f^{*}_{d,N \setminus \{j\}}$, the best depth $d$ tree for unit-set
+% $N \setminus \{j\}$, happens to assign $j$ to an action with maximal
+% reward then it follows that
+% $f^{*}_{d,N \setminus \{j\}} = f^{*}_{d,N}$ and there is no need to
+% spend time finding $f^{*}_{d,N}$, we already have that tree.
+
+
+Also
+\begin{eqnarray}
+  \label{eq:otherbound}
+  R^{*}_{d,N}
+  & \geq
+  & R(f^{*}_{d,N \setminus \{j\}},N)\\
+  & =
+  & r(j,f^{*}_{d,N\setminus \{j\}}(j))  + \sum_{i \in N
+    \setminus\{j\}} r(i,f^{*}_{d,N\setminus \{j\}}(i)) \\
+  & =
+  & r(j,f^{*}_{d,N\setminus \{j\}}(j))  +   R^{*}_{d,N
+    \setminus \{j\}}
+\end{eqnarray}
+So
+\begin{equation}
+  \label{eq:main}
+  R^{*}_{d,N \setminus \{j\}}
+  + r(j,f^{*}_{d,N\setminus \{j\}}(j))
+  \leq
+  R^{*}_{d,N}
+  \leq
+  R^{*}_{d,N \setminus \{j\}} + \max_{a
+    \in A} r(j,a)
+\end{equation}
+So if
+$r(j,f^{*}_{d,N\setminus \{j\}}(j)) = \max_{a \in A}
+r(j,a)$, i.e.\ if $f^{*}_{d,N\setminus \{j\}}$, the best tree
+for unit-set $N\setminus \{j\}$, happens to choose the best action
+for $j$ then $R^{*}_{d,N} = R^{*}_{d,N \setminus \{j\}} +
+r(j,f^{*}_{d,N\setminus \{j\}}(j))$ and so
+$f^{*}_{d,N} = f^{*}_{d,N\setminus \{j\}}$
+
+
 \section{Basic algorithm}
 \label{sec:basics}
 
