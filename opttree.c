@@ -15,7 +15,7 @@
  * a sorted set is a single subset of a universal set, we include the ordering of the universal set for each covariate
  * and also breakpoints for each covariate
 */
-struct sorted_set
+struct sorted_set_bps
 {
   int** sorted_universe;    /** sorted universe set for each covariate */
   int n_universe;           /** size of universe */
@@ -27,7 +27,7 @@ struct sorted_set
                                 su[i-1]<su[i] in underlying ordering */
   int* n_breakpoints;       /** number of breakpoints */
 };
-typedef struct sorted_set SORTED_SET;
+typedef struct sorted_set_bps SORTED_SET_BPS;
 
 
 
@@ -106,18 +106,18 @@ void bottomupmergesort(
 
 static
 double find_split_val(
-  SORTED_SET* sorted_set,
+  SORTED_SET_BPS* sorted_set_bps,
   int p,
   int breakpoint
   )
 {
-  return (sorted_set->data_xx)[p][sorted_set->sorted_universe[p][breakpoint]];
+  return (sorted_set_bps->data_xx)[p][sorted_set_bps->sorted_universe[p][breakpoint]];
 }
 
 /** insert elements into a sorted set, assuming they are not already there */
 static
 void insert_elements(
-  SORTED_SET* sorted_set,
+  SORTED_SET_BPS* sorted_set_bps,
   int* elts,
   int n
   )
@@ -125,18 +125,18 @@ void insert_elements(
   int i;
   
   assert(elts != NULL);
-  assert(sorted_set != NULL);
+  assert(sorted_set_bps != NULL);
   
   for( i = 0; i < n; i++)
-    sorted_set->present[elts[i]] = 1;
+    sorted_set_bps->present[elts[i]] = 1;
 
-  sorted_set->n += n;
+  sorted_set_bps->n += n;
 }
 
 /** remove elements from a sorted set, assuming they are currently there */
 static
 void remove_elements(
-  SORTED_SET* sorted_set,
+  SORTED_SET_BPS* sorted_set_bps,
   int* elts,
   int n
   )
@@ -144,17 +144,17 @@ void remove_elements(
   int i;
   
   assert(elts != NULL);
-  assert(sorted_set != NULL);
+  assert(sorted_set_bps != NULL);
   
   for( i = 0; i < n; i++)
-    sorted_set->present[elts[i]] = 0;
+    sorted_set_bps->present[elts[i]] = 0;
 
-  sorted_set->n -= n;
+  sorted_set_bps->n -= n;
 }
 
 static
 void next_breakpoint(
-  SORTED_SET* sorted_set,
+  SORTED_SET_BPS* sorted_set_bps,
   int p,
   int* indices,
   int* n_indices,
@@ -168,35 +168,35 @@ void next_breakpoint(
   int i;
   int elt;
 
-  assert( sorted_set != NULL );
+  assert( sorted_set_bps != NULL );
   assert( indices != NULL );
   assert( n_indices != NULL );
   assert( next_bki != NULL );
   assert( next_bk != NULL );
   assert( p >= 0);
-  assert( sorted_set->n_breakpoints[p] > 0);
+  assert( sorted_set_bps->n_breakpoints[p] > 0);
   assert( current_bki >= -1 );
   assert( current_bk >= 0 );
   
-  /* bki is the index of the breakpoint in sorted_set->breakpoints
-   * bk is the breakpoint which is an index into sorted_set->sorted_universe
+  /* bki is the index of the breakpoint in sorted_set_bps->breakpoints
+   * bk is the breakpoint which is an index into sorted_set_bps->sorted_universe
    */
   *n_indices = 0;
   *next_bki = -1;
   *next_bk = -1;
   
-  for( *next_bki = current_bki+1; *next_bki < sorted_set->n_breakpoints[p]; (*next_bki)++)
+  for( *next_bki = current_bki+1; *next_bki < sorted_set_bps->n_breakpoints[p]; (*next_bki)++)
   {
     /* get the next breakpoint */
     assert(*next_bki >= 0);
-    *next_bk = sorted_set->breakpoints[p][*next_bki];
+    *next_bk = sorted_set_bps->breakpoints[p][*next_bki];
     assert(*next_bk >= 0);
     
     /* inspect elements in sorted_universe[current_bk:next_bk-1] */
     for( i = current_bk; i < *next_bk; i++)
     {
-      elt = sorted_set->sorted_universe[p][i];
-      if( sorted_set->present[elt] )
+      elt = sorted_set_bps->sorted_universe[p][i];
+      if( sorted_set_bps->present[elt] )
         indices[(*n_indices)++] = elt;
     }
     if( *n_indices > 0 )
@@ -210,18 +210,18 @@ void next_breakpoint(
 /** make a sorted set the empty set */
 static
 void make_empty(
-  SORTED_SET* sorted_set
+  SORTED_SET_BPS* sorted_set_bps
   )
 {
-  memset(sorted_set->present,0,(sorted_set->n_universe)*sizeof(char));
-  sorted_set->n = 0;
+  memset(sorted_set_bps->present,0,(sorted_set_bps->n_universe)*sizeof(char));
+  sorted_set_bps->n = 0;
 }
 
 /** copy a sorted set, overwriting an existing target set */
 static
-void copy_sorted_set(
-  SORTED_SET* source,
-  SORTED_SET* target
+void copy_sorted_set_bps(
+  SORTED_SET_BPS* source,
+  SORTED_SET_BPS* target
   )
 {
 
@@ -232,8 +232,8 @@ void copy_sorted_set(
 /** create a new uninitialised subset from existing sorted subset, universe set is shared */
 static
 void new_sorted_subset(
-  SORTED_SET* source,
-  SORTED_SET* target
+  SORTED_SET_BPS* source,
+  SORTED_SET_BPS* target
   )
 {
   target->sorted_universe = source->sorted_universe;
@@ -249,54 +249,54 @@ void new_sorted_subset(
 
 /* make a (multi-)sorted set from elements 0,...,num_indices-1 */
 static
-SORTED_SET* make_sorted_set(
+SORTED_SET_BPS* make_sorted_set_bps(
   int num_indices,            /* size of set */
   int num_cols_x,             /* number of covariates */
   const double** data_xx,           /* ordering key values, one for each covariate */
   int* tmp                    /* temporary storage for ordering */
   )
 {
-  SORTED_SET* sorted_set;
+  SORTED_SET_BPS* sorted_set_bps;
   int n_breakpoints;
   int i;
   int* indices;
   int p;
   
   indices = (int *) malloc(num_indices*sizeof(int));
-  sorted_set = (SORTED_SET*) malloc(sizeof(SORTED_SET));
-  sorted_set->present = (char *) malloc(num_indices*sizeof(char));
+  sorted_set_bps = (SORTED_SET_BPS*) malloc(sizeof(SORTED_SET_BPS));
+  sorted_set_bps->present = (char *) malloc(num_indices*sizeof(char));
 
   for( i = 0; i < num_indices; i++)
   {
     indices[i] = i;
-    sorted_set->present[i] = 1;
+    sorted_set_bps->present[i] = 1;
   }
   
-  sorted_set->n_universe = num_indices;
-  sorted_set->data_xx = data_xx;
-  sorted_set->n = num_indices;
-  sorted_set->sorted_universe = (int**) malloc(num_cols_x * sizeof(int*));
-  sorted_set->breakpoints = (int**) malloc(num_cols_x * sizeof(int*));
-  sorted_set->n_breakpoints = (int*) malloc(num_cols_x * sizeof(int));
+  sorted_set_bps->n_universe = num_indices;
+  sorted_set_bps->data_xx = data_xx;
+  sorted_set_bps->n = num_indices;
+  sorted_set_bps->sorted_universe = (int**) malloc(num_cols_x * sizeof(int*));
+  sorted_set_bps->breakpoints = (int**) malloc(num_cols_x * sizeof(int*));
+  sorted_set_bps->n_breakpoints = (int*) malloc(num_cols_x * sizeof(int));
   for( p = 0; p < num_cols_x; p++ )
   {
-    sorted_set->sorted_universe[p] = (int*) malloc(num_indices * sizeof(int));
-    sorted_set->breakpoints[p] = (int*) malloc(num_indices * sizeof(int));
-    memcpy(sorted_set->sorted_universe[p],indices,num_indices*sizeof(int));
-    bottomupmergesort(sorted_set->sorted_universe[p],tmp,num_indices,data_xx[p]);
+    sorted_set_bps->sorted_universe[p] = (int*) malloc(num_indices * sizeof(int));
+    sorted_set_bps->breakpoints[p] = (int*) malloc(num_indices * sizeof(int));
+    memcpy(sorted_set_bps->sorted_universe[p],indices,num_indices*sizeof(int));
+    bottomupmergesort(sorted_set_bps->sorted_universe[p],tmp,num_indices,data_xx[p]);
 
     n_breakpoints = 0;
     for(i = 1; i < num_indices; i++)
     {
-      if( data_xx[p][sorted_set->sorted_universe[p][i-1]] < data_xx[p][sorted_set->sorted_universe[p][i]] )
-        sorted_set->breakpoints[p][n_breakpoints++] = i;
+      if( data_xx[p][sorted_set_bps->sorted_universe[p][i-1]] < data_xx[p][sorted_set_bps->sorted_universe[p][i]] )
+        sorted_set_bps->breakpoints[p][n_breakpoints++] = i;
     }
-    sorted_set->breakpoints[p] = (int*) realloc(sorted_set->breakpoints[p],n_breakpoints*sizeof(int));
-    sorted_set->n_breakpoints[p] = n_breakpoints;
+    sorted_set_bps->breakpoints[p] = (int*) realloc(sorted_set_bps->breakpoints[p],n_breakpoints*sizeof(int));
+    sorted_set_bps->n_breakpoints[p] = n_breakpoints;
   }
   free(indices);
   
-  return sorted_set;
+  return sorted_set_bps;
 }
 
 /*
@@ -389,7 +389,7 @@ void tree_free(
 
 static
 void find_best_reward(
-  SORTED_SET* sorted_set,
+  SORTED_SET_BPS* sorted_set_bps,
   const double* data_y,
   int num_cols_y,
   int num_rows,
@@ -401,7 +401,7 @@ void find_best_reward(
   int d;
   int elt;
   
-  assert(sorted_set != NULL);
+  assert(sorted_set_bps != NULL);
   assert(data_y != NULL);
   assert(best_reward != NULL);
   assert(best_action != NULL);
@@ -410,8 +410,8 @@ void find_best_reward(
   for( d = 0; d < num_cols_y; d++ )
     rewards[d] = 0.0;
 
-  for( elt = 0; elt < sorted_set->n_universe; elt++ )
-    if( sorted_set->present[elt] )
+  for( elt = 0; elt < sorted_set_bps->n_universe; elt++ )
+    if( sorted_set_bps->present[elt] )
     {
       const double* dy = data_y;
       for( d = 0; d < num_cols_y; d++ )
@@ -435,7 +435,7 @@ void find_best_reward(
 static
 void level_one_learning(
   NODE* node,               /** skeleton tree to be populated */
-  SORTED_SET* sorted_set,   /** sorted set */
+  SORTED_SET_BPS* sorted_set_bps,   /** sorted set */
   int split_step,           /** consider splits every split_step'th possible split */
   int min_node_size,        /** smallest terminal node size */
   const double* data_x,           /** covariates, data_x[j] are values for covariate j */
@@ -483,7 +483,7 @@ void level_one_learning(
   assert(node->right_child != NULL);
   assert(data_x != NULL);
   assert(data_y != NULL);
-  assert(sorted_set != NULL);
+  assert(sorted_set_bps != NULL);
   assert(tmp_indices != NULL);
 
   
@@ -491,8 +491,8 @@ void level_one_learning(
   /* perhaps do one-off compression? */
   for( d = 0; d < num_cols_y; d++ )
       nosplit_rewards[d] = 0.0;
-  for( elt = 0; elt < sorted_set->n_universe; elt++ )
-    if( sorted_set->present[elt] )
+  for( elt = 0; elt < sorted_set_bps->n_universe; elt++ )
+    if( sorted_set_bps->present[elt] )
     {
       const double* dy = data_y;
       for( d = 0; d < num_cols_y; d++ )
@@ -520,7 +520,7 @@ void level_one_learning(
       left_rewards[d] = 0.0;
     
     /* find first breakpoint, if any, for covariate p s.t. at least one datapoint moves from left to right */
-    next_breakpoint(sorted_set,p,tmp_indices,&n_tmp_indices,-1,0,&breakpoint_i,&breakpoint);
+    next_breakpoint(sorted_set_bps,p,tmp_indices,&n_tmp_indices,-1,0,&breakpoint_i,&breakpoint);
     
     while( n_tmp_indices > 0 )
     {
@@ -578,11 +578,11 @@ void level_one_learning(
         best_right_reward = right_reward;
         best_right_action = right_action;
         best_split_var = p;
-        best_split_val = find_split_val(sorted_set,p,breakpoint);
+        best_split_val = find_split_val(sorted_set_bps,p,breakpoint);
       }
       
       /* find next breakpoint */
-      next_breakpoint(sorted_set,p,tmp_indices,&n_tmp_indices,breakpoint_i,breakpoint,&breakpoint_i,&breakpoint);
+      next_breakpoint(sorted_set_bps,p,tmp_indices,&n_tmp_indices,breakpoint_i,breakpoint,&breakpoint_i,&breakpoint);
     }
   }
   if( best_left_action != -1 )
@@ -607,18 +607,18 @@ void level_one_learning(
 
 static
 int pure(
-  SORTED_SET* sorted_set,
+  SORTED_SET_BPS* sorted_set_bps,
   int* best_actions
   )
 {
   int i;
   int best_action = 0;
   int first = 1;
-  int n = sorted_set->n;
+  int n = sorted_set_bps->n;
   
-  for( i = 0; i < sorted_set->n_universe; i++)
+  for( i = 0; i < sorted_set_bps->n_universe; i++)
   {
-    if( sorted_set->present[i] )
+    if( sorted_set_bps->present[i] )
     {
       if( first )
       {
@@ -639,7 +639,7 @@ int pure(
 }
 
 /* on return, `node` will be the root of an optimal tree of depth `depth` for the data
- * represented by `sorted_set`
+ * represented by `sorted_set_bps`
  * arguments `split_step` to `num_cols_y` are constant values needed to determine optimal tree
  * arguments tmp_trees to rewards2 are pre-allocated working space
  */
@@ -647,7 +647,7 @@ static
 void find_best_split(
   NODE* node,               /** skeleton tree to be populated */
   int depth,                /** depth of tree */
-  SORTED_SET* sorted_set,   /** sorted set */
+  SORTED_SET_BPS* sorted_set_bps,   /** sorted set */
   int split_step,           /** consider splits every split_step'th possible split */
   int min_node_size,        /** smallest terminal node size */
   const double* data_x,           /** covariates, data_x[j] are values for covariate j */
@@ -658,7 +658,7 @@ void find_best_split(
   int* best_actions,        /** best_actions[i] is the best action for unit i */
   NODE*** tmp_trees,                /** trees of various depths for temporary storage */
   int* tmp_indices,                 /** stores indices moved from right branch to left branch */
-  SORTED_SET*** tmp_sorted_sets,  /** e.g have tmp_sorted_sets[depth][LEFT] preallocated space */
+  SORTED_SET_BPS*** tmp_sorted_set_bpss,  /** e.g have tmp_sorted_set_bpss[depth][LEFT] preallocated space */
   double* rewards,                   /** temporary storage for computing best rewards */
   double* rewards2                   /** temporary storage for computing best rewards */
   )
@@ -685,8 +685,8 @@ void find_best_split(
   int pp;
   int n_tmp_indices;
 
-  SORTED_SET* left_sorted_set;
-  SORTED_SET* right_sorted_set;
+  SORTED_SET_BPS* left_sorted_set_bps;
+  SORTED_SET_BPS* right_sorted_set_bps;
 
   int best_reward_for_all;
   
@@ -694,7 +694,7 @@ void find_best_split(
   assert(tmp_trees != NULL);
   assert(data_x != NULL);
   assert(data_y != NULL);
-  assert(sorted_set != NULL);
+  assert(sorted_set_bps != NULL);
   assert(depth >= 0);
   assert(num_rows > 0);
   assert(num_cols_x > 0);
@@ -702,10 +702,10 @@ void find_best_split(
   
 
   /* nothing further to do for a leaf or if too few datapoints for splitting */
-  if( depth == 0 || sorted_set->n <= min_node_size )
+  if( depth == 0 || sorted_set_bps->n <= min_node_size )
   {
     /* find best reward with no split */
-    find_best_reward(sorted_set,data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
+    find_best_reward(sorted_set_bps,data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
 
     /* populate node */
     node->index = -1;
@@ -715,13 +715,13 @@ void find_best_split(
   }
 
   /* best_reward_for_all = -1; */
-  best_reward_for_all = pure(sorted_set,best_actions);
+  best_reward_for_all = pure(sorted_set_bps,best_actions);
   if( best_reward_for_all != -1 )
   {
-    /* printf("Index set of size %d is pure with all units having %d as best action\n", sorted_set->n, best_reward_for_all); */
+    /* printf("Index set of size %d is pure with all units having %d as best action\n", sorted_set_bps->n, best_reward_for_all); */
 
     /* find best reward with no split */
-    find_best_reward(sorted_set,data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
+    find_best_reward(sorted_set_bps,data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
 
     assert(best_reward == best_reward_for_all);
     
@@ -734,7 +734,7 @@ void find_best_split(
   
   if( depth == 1 )
   {
-    level_one_learning(node, sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,  best_actions, tmp_indices,
+    level_one_learning(node, sorted_set_bps, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,  best_actions, tmp_indices,
       rewards, rewards2);
     return;
   }
@@ -743,29 +743,29 @@ void find_best_split(
   right_child = node->right_child;
   best_left_child = tmp_trees[depth-1][LEFT];
   best_right_child = tmp_trees[depth-1][RIGHT];
-  left_sorted_set = tmp_sorted_sets[depth][LEFT];
-  right_sorted_set = tmp_sorted_sets[depth][RIGHT];
+  left_sorted_set_bps = tmp_sorted_set_bpss[depth][LEFT];
+  right_sorted_set_bps = tmp_sorted_set_bpss[depth][RIGHT];
 
   /* consider each covariate for splitting */
   for( p = 0; p < num_cols_x; p++)
   {
     /* reinitialise left and right sorted sets */
-    make_empty(left_sorted_set);
-    copy_sorted_set(sorted_set,right_sorted_set);
+    make_empty(left_sorted_set_bps);
+    copy_sorted_set_bps(sorted_set_bps,right_sorted_set_bps);
 
     /* find first breakpoint, if any, for covariate p s.t. at least one datapoint moves from left to right */
-    next_breakpoint(sorted_set,p,tmp_indices,&n_tmp_indices,-1,0,&breakpoint_i,&breakpoint);
+    next_breakpoint(sorted_set_bps,p,tmp_indices,&n_tmp_indices,-1,0,&breakpoint_i,&breakpoint);
     
     while( n_tmp_indices > 0 )
     {
       /* move points from right to left  */
-      insert_elements(left_sorted_set,tmp_indices,n_tmp_indices);
-      remove_elements(right_sorted_set,tmp_indices,n_tmp_indices);
+      insert_elements(left_sorted_set_bps,tmp_indices,n_tmp_indices);
+      remove_elements(right_sorted_set_bps,tmp_indices,n_tmp_indices);
 
-      find_best_split(left_child, depth-1, left_sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
-         tmp_trees, tmp_indices, tmp_sorted_sets, rewards, rewards2);
-      find_best_split(right_child, depth-1, right_sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
-         tmp_trees, tmp_indices, tmp_sorted_sets, rewards, rewards2);
+      find_best_split(left_child, depth-1, left_sorted_set_bps, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
+         tmp_trees, tmp_indices, tmp_sorted_set_bpss, rewards, rewards2);
+      find_best_split(right_child, depth-1, right_sorted_set_bps, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
+         tmp_trees, tmp_indices, tmp_sorted_set_bpss, rewards, rewards2);
 
       reward = left_child->reward + right_child->reward;
         
@@ -773,14 +773,14 @@ void find_best_split(
       {
         best_reward = reward;
         best_split_var = p;
-        best_split_val = find_split_val(sorted_set,p,breakpoint);
+        best_split_val = find_split_val(sorted_set_bps,p,breakpoint);
         /* tree_copy(source,target) */
         tree_copy(left_child,best_left_child);
         tree_copy(right_child,best_right_child);
       }
 
       /* find next breakpoint */
-      next_breakpoint(sorted_set,p,tmp_indices,&n_tmp_indices,breakpoint_i,breakpoint,&breakpoint_i,&breakpoint);
+      next_breakpoint(sorted_set_bps,p,tmp_indices,&n_tmp_indices,breakpoint_i,breakpoint,&breakpoint_i,&breakpoint);
     }
   }
 
@@ -856,8 +856,8 @@ NODE* tree_search_jc_discretedata(
   double* rewards;
   double* rewards2;
 
-  SORTED_SET* sorted_set;
-  SORTED_SET*** tmp_sorted_sets;
+  SORTED_SET_BPS* sorted_set_bps;
+  SORTED_SET_BPS*** tmp_sorted_set_bpss;
 
   double const ** data_xx;
 
@@ -880,7 +880,7 @@ NODE* tree_search_jc_discretedata(
     data_xx[p] = data_x+p*num_rows;
 
   /* make initial (multi-) sorted set */
-  sorted_set = make_sorted_set(num_rows,num_cols_x,data_xx,tmp_indices);
+  sorted_set_bps = make_sorted_set_bps(num_rows,num_cols_x,data_xx,tmp_indices);
 
   /* make temporary trees (for storing 'best so far' trees) */
   tmp_trees = (NODE***) malloc(depth*sizeof(NODE**));
@@ -892,16 +892,16 @@ NODE* tree_search_jc_discretedata(
   }
 
   /* make temporary sorted sets */
-  tmp_sorted_sets = (SORTED_SET***) malloc((depth+1)*sizeof(SORTED_SET**));
-  tmp_sorted_sets[0] = NULL; /* nothing for depth 0 */
+  tmp_sorted_set_bpss = (SORTED_SET_BPS***) malloc((depth+1)*sizeof(SORTED_SET_BPS**));
+  tmp_sorted_set_bpss[0] = NULL; /* nothing for depth 0 */
   for(i = 1; i < depth+1; i++)
   {
-    tmp_sorted_sets[i] = (SORTED_SET**) malloc(2*sizeof(SORTED_SET*));
-    tmp_sorted_sets[i][LEFT] = (SORTED_SET*) malloc(sizeof(SORTED_SET));
-    tmp_sorted_sets[i][RIGHT] = (SORTED_SET*) malloc(sizeof(SORTED_SET));
+    tmp_sorted_set_bpss[i] = (SORTED_SET_BPS**) malloc(2*sizeof(SORTED_SET_BPS*));
+    tmp_sorted_set_bpss[i][LEFT] = (SORTED_SET_BPS*) malloc(sizeof(SORTED_SET_BPS));
+    tmp_sorted_set_bpss[i][RIGHT] = (SORTED_SET_BPS*) malloc(sizeof(SORTED_SET_BPS));
 
-    new_sorted_subset(sorted_set,tmp_sorted_sets[i][LEFT]);
-    new_sorted_subset(sorted_set,tmp_sorted_sets[i][RIGHT]);
+    new_sorted_subset(sorted_set_bps,tmp_sorted_set_bpss[i][LEFT]);
+    new_sorted_subset(sorted_set_bps,tmp_sorted_set_bpss[i][RIGHT]);
   }
   
   rewards = (double*) malloc(num_cols_y*sizeof(double));
@@ -909,8 +909,8 @@ NODE* tree_search_jc_discretedata(
 
   best_actions = store_best_actions(data_y, num_rows, num_cols_y);
   
-  find_best_split(tree, depth, sorted_set, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
-    tmp_trees, tmp_indices, tmp_sorted_sets, rewards, rewards2);  /* these 3 temporary reusable storage */
+  find_best_split(tree, depth, sorted_set_bps, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
+    tmp_trees, tmp_indices, tmp_sorted_set_bpss, rewards, rewards2);  /* these 3 temporary reusable storage */
 
   free(best_actions);
   
@@ -922,13 +922,13 @@ NODE* tree_search_jc_discretedata(
   /* remove temporary sorted sets */
   for(i = 1; i < depth+1; i++)
   {
-    free(tmp_sorted_sets[i][LEFT]->present);
-    free(tmp_sorted_sets[i][RIGHT]->present);
-    free(tmp_sorted_sets[i][LEFT]);
-    free(tmp_sorted_sets[i][RIGHT]);
-    free(tmp_sorted_sets[i]);
+    free(tmp_sorted_set_bpss[i][LEFT]->present);
+    free(tmp_sorted_set_bpss[i][RIGHT]->present);
+    free(tmp_sorted_set_bpss[i][LEFT]);
+    free(tmp_sorted_set_bpss[i][RIGHT]);
+    free(tmp_sorted_set_bpss[i]);
   }
-  free(tmp_sorted_sets);
+  free(tmp_sorted_set_bpss);
     
   /* remove temporary trees */
   for(i = 0; i < depth; i++)
@@ -942,14 +942,14 @@ NODE* tree_search_jc_discretedata(
   /* free sorted set */
   for( p = 0; p < num_cols_x; p++)
   {
-    free(sorted_set->sorted_universe[p]);
-    free(sorted_set->breakpoints[p]);
+    free(sorted_set_bps->sorted_universe[p]);
+    free(sorted_set_bps->breakpoints[p]);
   }
-  free(sorted_set->sorted_universe);
-  free(sorted_set->breakpoints);
-  free(sorted_set->n_breakpoints);
-  free(sorted_set->present);
-  free(sorted_set);
+  free(sorted_set_bps->sorted_universe);
+  free(sorted_set_bps->breakpoints);
+  free(sorted_set_bps->n_breakpoints);
+  free(sorted_set_bps->present);
+  free(sorted_set_bps);
 
   return tree;
 }

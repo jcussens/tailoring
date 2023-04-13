@@ -13,21 +13,25 @@
 #define VERY_VERBOSE 0
 
 
-/* 
+/** 
  * sorted set, policy tree style
 */
 struct sorted_set
 {
-  int* elements;    /** the sorted set */
-  int n;            /** size of subset */
-  int* rank;        /** rank[elt] is the (unique) rank value for elt  */
+  int*                   elements;           /**< the sorted set */
+  int                    n;                  /**< size of subset */
+  int*                   rank;               /**< elements[rank[elt]] = elt  */
 };
 typedef struct sorted_set SORTED_SET;
 
+/** Determine whether a sorted set is 'pure'.
+ * A pure sorted set is one where each unit has the same best action
+ * @return The best action if the set is pure, otherwise -1
+ */
 static
 int pure(
-  const SORTED_SET* sorted_set,
-  const int* best_actions
+   const SORTED_SET*     sorted_set,         /**< sorted set */
+   const int*            best_actions        /**< best_actions[i] is the best action for unit i */
   )
 {
   int i;
@@ -43,15 +47,16 @@ int pure(
   return best_action;
 }
 
-/*
- * For each datapoint (index) find and record best action for that datapoint
- * Return pointer to the array of best actions
+/**
+ * For each unit find and record the best action for that unit
+ * NB memory pointed to by returned pointer must be freed at some point
+ * @return pointer to the array of best actions (one best action for each unit, in order)
  */
 static
 int* store_best_actions(
-  const double* data_y,     /** gammas (column major) */
-  int num_rows,             /** number of units */
-  int num_cols_y            /** number of rewards */
+  const double*          data_y,             /**< rewards (column major) */
+  int                    num_rows,           /**< number of units */
+  int                    num_cols_y          /**< number of rewards */
   )
 {
   int i;
@@ -78,10 +83,10 @@ int* store_best_actions(
   return best_actions;
 }
 
-
+/** print out a sorted set (for debugging only, not currently used) */
 static
-int print_set(
-  const SORTED_SET* sorted_set
+void print_set(
+   const SORTED_SET*     sorted_set          /**< sorted set */
    )
 {
    int i;
@@ -96,12 +101,13 @@ int print_set(
 }
 
 
-/** remove element into a sorted set, assuming it is already there 
+/** remove an element from a sorted set, assuming it is already there 
+ * @return 1 if the element is a member of the set, else -1
  */
 static
 int remove_element(
-  SORTED_SET* sorted_set,
-  int elt
+   SORTED_SET*           sorted_set,         /**< sorted set */
+   int                   elt                 /**< element to remove */
   )
 {
 
@@ -153,11 +159,11 @@ int remove_element(
    return retval;
 }
 
-/** insert element into a sorted set, assuming it not already there */
+/** insert an element into a sorted set, assuming it is not already there */
 static
 void insert_element(
-  SORTED_SET* sorted_set,
-  int elt
+   SORTED_SET*           sorted_set,         /**< sorted set */
+   int                   elt                 /**< element to insert */ 
   )
 {
   int left;
@@ -242,11 +248,11 @@ void insert_element(
 }
 
 
-/* debugging only */
+/** print a policy tree (debugging only) */
 static
 void print_tree(
-  const NODE* tree,
-  const char** covnames
+   const NODE*           tree,               /**< root of tree to print */ 
+   const char**          covnames            /**< covnames[i] is the name of covariate i */
   )
 {
   printf("node = %p\n", (void*) tree);
@@ -267,18 +273,18 @@ void print_tree(
 }
 
 
-/*
+/** merge a pair of ordered subsequences to get a single ordered subsequence
  * left run is indices[ileft:iright-1]
  * right run is indices[iright:iend-1]
  */
 static
 void bottomupmerge(
-  const int* indices,
-  int ileft,
-  int iright,
-  int iend,
-  int* tmp,
-  const double* data_x_p
+   const int*            indices,            /**< global array */
+   int                   ileft,              /**< index of first element of left subsequence */
+   int                   iright,             /**< index of first element of right subsequence */
+   int                   iend,               /**< iend-1 is index of last element of right subsequence */
+   int*                  tmp,                /**< on output tmp[ileft:iend-1] has the merged subsequence */
+   const double*         data_x_p            /**< data_x_p[i] is ordering key for i */
   )
 {
   int i = ileft;
@@ -294,12 +300,13 @@ void bottomupmerge(
   }
 }
 
+/** sort an array by bottom up merge sort */
 static
 void bottomupmergesort(
-  int* indices,
-  int* tmp,
-  int n,
-  const double* data_x_p
+   int*                  indices,            /**< array to sort */
+   int*                  tmp,                /**< on output, sorted array */              
+   int                   n,                  /**< length of array */
+   const double*         data_x_p            /**< data_x_p[i] is ordering key for i */
   )
 {
   int width;
@@ -318,7 +325,7 @@ void bottomupmergesort(
 /** make a sorted set the empty set */
 static
 void make_empty(
-  SORTED_SET* sorted_set
+   SORTED_SET*           sorted_set          /**< sorted set */
   )
 {
   sorted_set->n = 0;
@@ -327,9 +334,9 @@ void make_empty(
 /** copy a sorted set, overwriting an existing target set */
 static
 void copy_sorted_set(
-  const SORTED_SET* source,
-  SORTED_SET* target
-  )
+   const SORTED_SET*     source,             /**< source sorted set */
+   SORTED_SET*           target              /**< target sorted set */
+   )
 {
 
   memcpy(target->elements,source->elements,source->n*sizeof(int));
@@ -351,12 +358,15 @@ void new_sorted_subset(
 }
 
 
-/* make a sorted set from elements 0,...,num_indices-1 */
+/** make a sorted set from elements 0,...,num_indices-1 
+ * this function allocates all the necessary memory for the sorted set
+ * @return The sorted set
+ */
 static
 SORTED_SET* make_sorted_set(
-  const int num_indices,            /* size of set */
-  const double* data_xx,      /* ordering values */
-  int* tmp                    /* temporary storage for ordering */
+   const int             num_indices,            /**< size of set */
+   const double*         data_xx,                /**< data_xx[i] is ordering key for element i */
+   int*                  tmp                     /**< temporary storage for ordering */
   )
 {
   SORTED_SET* sorted_set;
@@ -382,13 +392,15 @@ SORTED_SET* make_sorted_set(
   return sorted_set;
 }
 
-/*
- * Return a 'skeleton' policy tree of required depth
+/**
+ * Make a policy tree of required depth with dummy values,
+ * which can later be overwritten
+ * @return a policy tree of required depth
  * or NULL if there is insufficient memory
  */
 static
 NODE* make_tree(
-  int depth
+   int                   depth               /**< required depth of tree */
   )
 {
   NODE* node;
@@ -434,8 +446,8 @@ NODE* make_tree(
  */
 static
 void tree_copy(
-  const NODE* source,
-  NODE* target
+   const NODE*           source,             /**< source tree */
+   NODE*                 target              /**< target tree */
   )
 {
 
@@ -470,15 +482,18 @@ void tree_copy(
 /* } */
 
 
+/** find best action and associated reward for a set of units 
+ * (i.e. a leaf)
+ */
 static
 void find_best_reward(
-  const SORTED_SET* sorted_set,
-  const double* data_y,
-  const int num_cols_y,
-  const int num_rows,
-  double* rewards,
-  double* best_reward,
-  int* best_action
+   const SORTED_SET*     sorted_set,         /**< set of units */
+   const double*         data_y,             /**< rewards (column major) */
+   const int             num_cols_y,         /**< number of actions/rewards */
+   const int             num_rows,           /**< number of units in full dataset */
+   double*               rewards,            /**< temp space to store num_cols_y rewards */
+   double*               best_reward,        /**< on return *best_reward is the best reward */ 
+   int*                  best_action         /**< on return *best_action is the best action */ 
   )
 {
   int d;
@@ -517,21 +532,21 @@ void find_best_reward(
     }
 }
 
-/* find optimal depth=1 (ie a single split) tree */
+/** Find an optimal depth=1 (ie a single split) tree for a set of units */
 static
 void level_one_learning(
-  NODE* node,                      /** skeleton tree to be populated */
-  SORTED_SET** sorted_sets,  /** sorted sets */
-  const int split_step,                  /** consider splits every split_step'th possible split */
-  const double* data_x,                  /** covariates, data_x[j] are values for covariate j */
-  const double* data_y,                  /** gammas, y[i] are the rewards for unit i */
-  const int num_rows,                    /** number of units */
-  const int num_cols_x,                  /** number of covariates */
-  const int num_cols_y,                  /** number of rewards */
-  const int* best_actions,         /** best_actions[i] is the best action for unit i */
-  double* rewards,                 /** temporary storage for computing best rewards */
-  double* rewards2                 /** temporary storage for computing best rewards */
-  )
+   NODE*                 node,               /**< uninitialised tree to be populated with optimal tree */
+   SORTED_SET**          sorted_sets,        /**< sorted sets for the units, one for each covariate */
+   const int             split_step,         /**< consider splits every split_step'th possible split */
+   const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+   const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+   const int             num_rows,           /**< number of units in full dataset */
+   const int             num_cols_x,         /**< number of covariates */
+   const int             num_cols_y,         /**< number of rewards/actions */
+   const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
+   double*               rewards,            /**< temporary storage for computing best rewards */
+   double*               rewards2            /**< temporary storage for computing best rewards */
+   )
 {
 
   int d;
@@ -705,7 +720,7 @@ void level_one_learning(
   }
 }
 
-/* on return, `node` will be the root of an optimal tree of depth `depth` for the data
+/** on return, `node` will be the root of an optimal tree of depth `depth` for the data
  * represented by `sorted_sets`
  * sorted_sets[0], sorted_sets[1], ... are the same set, they only differ in the order of the elements
  * sorted_sets[p] has its elements sorted according to their rank which is a strict total order
@@ -715,21 +730,21 @@ void level_one_learning(
  */
 static
 void find_best_split(
-  NODE* node,               /** skeleton tree to be populated */
-  const int depth,                /** depth of tree */
-  SORTED_SET** sorted_sets, /** sorted sets, one for each covariate */
-  const int split_step,           /** consider splits every split_step'th possible split */
-  const int min_node_size,        /** smallest terminal node size */
-  const double* data_x,           /** covariates, data_x[j] are values for covariate j */
-  const double* data_y,           /** gammas, y[i] are the rewards for unit i */
-  const int num_rows,             /** number of units */
-  const int num_cols_x,           /** number of covariates */
-  const int num_cols_y,           /** number of rewards */
-  const int* best_actions,        /** best_actions[i] is the best action for unit i */
-  NODE*** tmp_trees,                /** trees of various depths for temporary storage */
-  SORTED_SET**** tmp_sorted_sets,   /** e.g have tmp_sorted_sets[depth][LEFT][p] preallocated space */
-  double* rewards,                  /** temporary storage for computing best rewards */
-  double* rewards2                  /** temporary storage for computing best rewards */
+   NODE*                 node,               /**< uninitialised tree to be populated with optimal tree */
+   const int             depth,              /**< depth of tree */
+   SORTED_SET**          sorted_sets,        /**< sorted sets for the units, one for each covariate */
+   const int             split_step,         /**< consider splits every split_step'th possible split */
+   const int             min_node_size,      /**< smallest terminal node size */
+   const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+   const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+   const int             num_rows,           /**< number of units in full dataset */
+   const int             num_cols_x,         /**< number of covariates */
+   const int             num_cols_y,         /**< number of rewards/actions */
+   const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
+   NODE***               tmp_trees,          /**< trees of various depths for temporary storage */
+   SORTED_SET****        tmp_sorted_sets,    /**< e.g have tmp_sorted_sets[depth][LEFT][p] preallocated space */
+   double*               rewards,            /**< temporary storage for computing best rewards */
+   double*               rewards2            /**< temporary storage for computing best rewards */
   )
 {
 
@@ -881,15 +896,19 @@ void find_best_split(
  * Notes: A tree of depth 0 is a single node (with no children) where only the reward and action_id members are meaningful.
  */
 
+/** Find an optimal policy tree of given maximal depth 
+ * @return An optimal policy tree
+ */
+
 NODE* tree_search_jc_policytree(
-  int depth,            /** (maximum) depth of returned tree */
-  int split_step,       /** consider splits every split_step'th possible split */
-  int min_node_size,    /** smallest terminal node size */
-  const double* data_x,       /** covariates (column major) */
-  const double* data_y,       /** gammas (column major) */
-  int num_rows,         /** number of units */
-  int num_cols_x,       /** number of covariates */
-  int num_cols_y        /** number of rewards */
+  int                    depth,              /**< (maximum) depth of returned tree */
+  int                    split_step,         /**< consider splits every split_step'th possible split */
+  int                    min_node_size,      /**< smallest terminal node size */
+  const double*          data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+  const double*          data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+  int                    num_rows,           /**< number of units in full dataset */
+  int                    num_cols_x,         /**< number of covariates */
+  int                    num_cols_y          /**< number of rewards/actions */
   )
 {
 
