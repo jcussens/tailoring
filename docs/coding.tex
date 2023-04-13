@@ -31,7 +31,8 @@ is the best function in ${\cal F}_d$ to use to assign actions to all
 individuals in $N$. Given $d$ and $N$ our goal is to find $f^{*}_{d,N}$.
 
 Let $R^{*}_{d,N} = R(f^{*}_{d,N},N)$, so $R^{*}_{d,N}$ is the best
-possible reward for a given $d$ and $N$. We have the basic recursion
+possible reward---the reward resulting from using the best tree
+$f^{*}_{d,N}$---for a given $d$ and $N$. We have the basic recursion
 for $d>0$
 \begin{equation}
   \label{eq:basicrecursion}
@@ -51,11 +52,11 @@ union) then
  R^{*}_{d,N_{2}} + R(f^{*}_{d,N_{2}},N_{1})  & \leq R^{*}_{d,N}  & \leq  R^{*}_{d,N_{1}} + R^{*}_{d,N_{2}} 
 \end{eqnarray}
 The RHS inequality of (\ref{eq:genmain}) follows from the simple
-observation that an optimal depth $d+1$ tree always has a reward no
-worse than an optimal depth $d$ tree on the same unit-set. The LHS
-inequalities simply state that the reward of the best tree for $N$
-cannot be worse than applying the best tree for $N_{1}$ or $N_2$ to
-all of $N$.
+observation that optimising for $N_1$ and $N_2$ separately will always
+allow a summed reward which is no worse that finding a single optimal
+tree for $N = N_{1} \dot\cup N_{2}$. The LHS inequalities simply state
+that the reward of the best tree for $N$ cannot be worse than applying
+the best tree for $N_{1}$ or $N_2$ to all of $N$.
 
 We also have the typically loose bounds which simply states that
 the best we can hope for is for all units to be assigned their best
@@ -64,36 +65,79 @@ action and that we can always do at least as well as a depth 0 tree:
   \label{eq:loosebound}
 \max_{a \in A} \sum_{i \in N}  r(i,a) \leq  R^{*}_{d,N} \leq \sum_{i \in N} \max_{a \in A} r(i,a) 
 \end{equation}
-Also we have:
+Also we have that if we use the best tree for $N_{1}$ to assign
+actions to units in $N_2$ the worst we can do is for every unit in
+$N_2$ to be assigned its worst action:
 \begin{equation}
   \label{eq:llb}
 \sum_{i \in N_{2}} \min_{a \in A} r(i,a) \leq R(f^{*}_{d,N_{1}},N_{2})  
 \end{equation}
-Putting these together we have:
+From (\ref{eq:genmain}) and (\ref{eq:loosebound})  we have:
 \begin{equation}
   \label{eq:ub}
 R^{*}_{d,N}   \leq  R^{*}_{d,N_{1}} + \sum_{i \in N_{2}} \max_{a \in A} r(i,a) 
 \end{equation}
-and
-\begin{equation}
+and from (\ref{eq:genmain}) and (\ref{eq:llb}) we have:
+\begin{eqnarray}
   \label{eq:lb}
-  R^{*}_{d,N_{1}}   \leq R^{*}_{d,N} -  \sum_{i \in N_{2}} \min_{a \in A} r(i,a)
-\end{equation}
+  R^{*}_{d,N_{1}}
+  & \leq
+  & R^{*}_{d,N} -  R(f^{*}_{d,N_{1}},N_{2})
+  \nonumber \\
+  & =
+  & \sum_{i\in N_{1}} r(i, f^{*}_{d,N}(i)) + \sum_{i\in N_{2}} r(i,
+    f^{*}_{d,N}(i))
+    - \sum_{i\in N_{2}} r(i,
+    f^{*}_{d,N_{1}}(i)) \nonumber \\
+  & =
+  & R(f^{*}_{d,N},N_{1})
+    + \sum_{i\in N_{2}} r(i,
+    f^{*}_{d,N}(i))
+    - \sum_{i\in N_{2}} r(i,
+    f^{*}_{d,N_{1}}(i)) \nonumber \\
+  & \leq
+  & R(f^{*}_{d,N},N_{1}) + \sum_{i\in N_{2}} \left(
+    r(i,f^{*}_{d,N}(i)) - \min_{a \in A} r(i,a) \right)
+\end{eqnarray}
+
+If we have found $f^{*}_{d,N_{1}}$ and then add $N_2$ to $N_{1}$ to
+get $N$ then (\ref{eq:ub}) provides an upper bound on
+$R^{*}_{d,N}$. Similarly, if we have found $f^{*}_{d,N}$ and remove
+$N_2$ from $N$ to get $N_1$, (\ref{eq:lb}) provides an upper bound on
+$R^{*}_{d,N_{1}}$.
+
+In some cases these bounds can be used to immediately find optimal
+trees. For example, suppose we have found $f^{*}_{d,N_{1}}$ and that
+it happens to be the case that this tree assigns the highest reward
+action to each unit in $N_2$, i.e.
+$\forall i \in N_{2} : r(f^{*}_{d,N_{1}},i) = \max_{a \in A}
+r(i,a)$. In this case
+$R(f^{*}_{d,N_{1}},N) = R^{*}_{d,N_{1}} + \sum_{i \in N_{2}} \max_{a
+  \in A} r(i,a)$ and so by (\ref{eq:llb}) $f^{*}_{d,N_{1}}$ is an
+optimal tree for $N$, i.e.\ $f^{*}_{d,N} = f^{*}_{d,N_{1}}$.
+
+Similarly, suppose we have found $f^{*}_{d,N}$ and that
+it happens to be the case that this tree assigns the lowest reward
+action to each unit in $N_2$, then from (\ref{eq:llb}) we have $R^{*}_{d,N_{1}}
+\leq R(f^{*}_{d,N},N_{1})$, from which if follows that $f^{*}_{d,N_{1}} = f^{*}_{d,N}$.
+\section{Complex junk}
+\label{sec:junk}
+
 
 Let $s$ be some split and let $s'$ be some other split where
 \begin{eqnarray}
   \label{eq:splits}
   s'_{L}(N) & = & s_{L}(N) \dot\cup N' \\
-  s'_{R}(N) & = & s_{R}(N) \setminus N' \\
+  s'_{R}(N) & = & s_{R}(N) \setminus N' 
 \end{eqnarray}
-so split $s'$ is arrived at by starting from split $s'$ and moving the
+so split $s'$ is arrived at by starting from split $s$ and moving the
 units $N'$ from the right side to left.
 We have:
 \begin{eqnarray}
   \label{eq:splitsub}
   R^{*}_{d,s'_{L}(N)} & \leq & R^{*}_{d,s_{L}(N)} +  \sum_{i \in N'}
                                \max_{a \in A} r(i,a) \\
-  R^{*}_{d,s'_{R}(N)} & \leq & R^{*}_{d,s_{R}(N)} - \sum_{i \in N'} \min_{a \in A} r(i,a)
+  R^{*}_{d,s'_{R}(N)} & \leq & R^{*}_{d,s_{R}(N)} -  R(f^{*}_{d,s'_{R}(N)},N')
 \end{eqnarray}
 and
 \begin{eqnarray*}
@@ -110,9 +154,6 @@ and
     +  \sum_{i \in N'} \left[ \max_{a \in A} r(i,a)- \min_{a \in A}
     r(i,a) \right]
 \end{eqnarray*}
-
-\section{Complex junk}
-\label{sec:junk}
 
 
 % Let $f^*$ be some arbitrary action assignment function then clearly:
