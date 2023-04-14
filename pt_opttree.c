@@ -20,7 +20,7 @@ struct sorted_set
 {
   int*                   elements;           /**< the sorted set */
   int                    n;                  /**< size of subset */
-  int*                   rank;               /**< elements[rank[elt]] = elt  */
+  int*                   rank;               /**< if i < j then rank[elements[i]] < rank[elements[j]]  */
 };
 typedef struct sorted_set SORTED_SET;
 
@@ -328,7 +328,7 @@ void make_empty(
    SORTED_SET*           sorted_set          /**< sorted set */
   )
 {
-  sorted_set->n = 0;
+   sorted_set->n = 0;
 }
 
 /** copy a sorted set, overwriting an existing target set */
@@ -338,23 +338,34 @@ void copy_sorted_set(
    SORTED_SET*           target              /**< target sorted set */
    )
 {
-
-  memcpy(target->elements,source->elements,source->n*sizeof(int));
-  target->n = source->n; 
+   assert( source != NULL );
+   assert( target != NULL );
+   assert( source->elements != NULL );
+   assert( target->elements != NULL );
+   assert( source->rank != NULL );
+   assert( source->rank == target->rank );
+   
+   memcpy(target->elements,source->elements,source->n*sizeof(int));
+   target->n = source->n; 
 }
 
 /** create a new uninitialised subset from existing sorted subset */
 static
 void new_sorted_subset(
-  const SORTED_SET* source,
-  SORTED_SET* target
+   const SORTED_SET*     source,             /**< source sorted set */
+   SORTED_SET*           target              /**< target sorted set */
   )
 {
-  const size_t size = (source->n)*sizeof(int);
-  
-  target->elements = (int*) malloc(size);
-  target->rank = (int*) malloc(size);
-  memcpy(target->rank,source->rank,size);
+
+   assert( source != NULL );
+   assert( target != NULL );
+   assert( source->elements != NULL );
+   assert( source->rank != NULL );
+
+   /* ensure (typically more than) enough space */
+   target->elements = (int*) malloc((source->n)*sizeof(int));
+   target->rank = source->rank;
+   /* don't set target->n since size of target not determined yet */
 }
 
 
@@ -899,7 +910,6 @@ void find_best_split(
 /** Find an optimal policy tree of given maximal depth 
  * @return An optimal policy tree
  */
-
 NODE* tree_search_jc_policytree(
   int                    depth,              /**< (maximum) depth of returned tree */
   int                    split_step,         /**< consider splits every split_step'th possible split */
@@ -987,18 +997,17 @@ NODE* tree_search_jc_policytree(
   /* remove temporary sorted sets */
   for(i = 1; i < depth+1; i++)
   {
-    for( p = 0; p < num_cols_x; p++)
-    {
-      free(tmp_sorted_sets[i][LEFT][p]->elements);
-      free(tmp_sorted_sets[i][LEFT][p]->rank);
-      free(tmp_sorted_sets[i][LEFT][p]);
-      free(tmp_sorted_sets[i][RIGHT][p]->elements);
-      free(tmp_sorted_sets[i][RIGHT][p]->rank);
-      free(tmp_sorted_sets[i][RIGHT][p]);
-    }
-    free(tmp_sorted_sets[i][LEFT]);
-    free(tmp_sorted_sets[i][RIGHT]);
-    free(tmp_sorted_sets[i]);
+     for( p = 0; p < num_cols_x; p++)
+     {
+        /* don't need to free ->rank since these just shared the pointer */
+        free(tmp_sorted_sets[i][LEFT][p]->elements);
+        free(tmp_sorted_sets[i][LEFT][p]);
+        free(tmp_sorted_sets[i][RIGHT][p]->elements);
+        free(tmp_sorted_sets[i][RIGHT][p]);
+     }
+     free(tmp_sorted_sets[i][LEFT]);
+     free(tmp_sorted_sets[i][RIGHT]);
+     free(tmp_sorted_sets[i]);
   }
   free(tmp_sorted_sets);
     
@@ -1015,6 +1024,7 @@ NODE* tree_search_jc_policytree(
   for( p = 0; p < num_cols_x; p++)
   {
     free(initial_sorted_sets[p]->elements);
+    /* have to free rank */
     free(initial_sorted_sets[p]->rank);
     free(initial_sorted_sets[p]);
   }

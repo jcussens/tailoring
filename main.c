@@ -6,10 +6,12 @@
 #define MAX_LINE_LENGTH 2000
 #define MAX_COVARIATE_NAME_LENGTH 50
 
-
+/** count number of space separate fields in a line 
+ * @return The number of space separated fields
+ */
 static
 int getnfields(
-  char* line
+   char*                 line                /**< line */
   )
 {
   int i;
@@ -24,10 +26,11 @@ int getnfields(
 }
 
 
+/** prints a policy tree to standard output */
 static
 void print_tree(
-  NODE* tree,
-  char** covnames
+   NODE*                 tree,               /**< policy tree to print */
+   char**                covnames            /**< covnames[j] is the name of covariate j */
   )
 {
   printf("node = %p\n", (void*) tree);
@@ -57,8 +60,8 @@ void print_tree(
  * assume white space separator with no white space in names of covariates
  */
 int main(
-  int argc,
-  char* argv[]
+   int                   argc,               /**< number of command line arguments */
+   char*                 argv[]              /**< command line arguments */
   )
 {
 
