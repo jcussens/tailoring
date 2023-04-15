@@ -24,6 +24,53 @@ struct sorted_set
 };
 typedef struct sorted_set SORTED_SET;
 
+
+/** add a given reward to those nodes in a tree which a particular element visits */
+static
+void update_rewards(
+   NODE*                 tree,               /**< tree */
+   const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+   int                   num_rows,           /**< number of units */
+   int                   elt,                /**< element */
+   double                reward              /**< reward */
+   )
+{
+   tree->reward += reward;
+
+   if( tree->index == -1 )
+      return;
+   
+   if( data_x[(tree->index)*num_rows+elt] <= tree->value )
+      update_rewards(tree->left_child, data_x, num_rows, elt, reward);
+   else
+      update_rewards(tree->right_child, data_x, num_rows, elt, reward);
+}
+
+/** find the action assigned to a unit by a tree 
+ * @return the assigned action
+ */
+static
+int assigned_action(
+   const NODE*           tree,               /**< tree */
+   const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+   int                   num_rows,           /**< number of units */
+   int                   elt                 /**< element to find assigned action for */
+   )
+{
+   assert( tree != NULL );
+   assert( data_x != NULL );
+   /* if node not a leaf, then both children are present */
+   assert( tree->index == -1 || tree->left_child != NULL );
+   assert( tree->index == -1 || tree->right_child != NULL );
+   
+   if( tree->index == -1 )
+      return tree->action_id;
+   else if( data_x[(tree->index)*num_rows+elt] <= tree->value )
+      return assigned_action(tree->left_child, data_x, num_rows, elt);
+   else
+      return assigned_action(tree->right_child, data_x, num_rows, elt);
+}
+
 /** Determine whether a sorted set is 'pure'.
  * A pure sorted set is one where each unit has the same best action
  * @return The best action if the set is pure, otherwise -1
@@ -48,27 +95,30 @@ int pure(
 }
 
 /**
- * For each unit find and record the best action for that unit
- * NB memory pointed to by returned pointer must be freed at some point
- * @return pointer to the array of best actions (one best action for each unit, in order)
+ * For each unit find and record the best and worst actions for that unit
  */
 static
-int* store_best_actions(
+void store_best_worst_actions(
   const double*          data_y,             /**< rewards (column major) */
   int                    num_rows,           /**< number of units */
-  int                    num_cols_y          /**< number of rewards */
+  int                    num_cols_y,         /**< number of rewards */
+  int*                   best_actions,       /**< best actions */
+  int*                   worst_actions       /**< worst actions */
   )
 {
   int i;
-  int* best_actions = (int*) malloc(num_rows*sizeof(int));
   int best_action;
+  int worst_action;
   int d;
   double best_reward;
+  double worst_reward;
   
   for( i = 0; i < num_rows; i++ )
   {
     best_action = 0;
     best_reward = data_y[i];
+    worst_action = 0;
+    worst_reward = data_y[i];
     
     for( d = 1; d < num_cols_y; d++ )
     {
@@ -77,10 +127,16 @@ int* store_best_actions(
         best_action = d;
         best_reward = data_y[d*num_rows+i];
       }
+      if( data_y[d*num_rows+i] < worst_reward )
+      {
+        worst_action = d;
+        worst_reward = data_y[d*num_rows+i];
+      }
     }
     best_actions[i] = best_action;
+    worst_actions[i] = worst_action;
+    assert(worst_reward <= best_reward);
   }
-  return best_actions;
 }
 
 /** print out a sorted set (for debugging only, not currently used) */
@@ -859,6 +915,7 @@ void find_best_split(
    const int             num_cols_x,         /**< number of covariates */
    const int             num_cols_y,         /**< number of rewards/actions */
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
+   const int*            worst_actions,       /**< worst_actions[i] is the worst action for unit i */
    NODE***               tmp_trees,          /**< trees of various depths for temporary storage */
    SORTED_SET****        tmp_sorted_sets,    /**< e.g have tmp_sorted_sets[depth][LEFT][p] preallocated space */
    double*               rewards,            /**< temporary storage for computing best rewards */
@@ -979,14 +1036,29 @@ void find_best_split(
         /* if a proper split see whether it's a best split */
         if( data_xp[elt] < data_xp[sorted_set->elements[i+1]] )
         {
-           left_perfect = 0;
-           find_best_split(left_child, depth-1, tmp_sorted_sets[depth][LEFT], split_step, min_node_size,
-              data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
-              tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect);
-           right_perfect = 0;
-           find_best_split(right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
-              data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
-              tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect);
+           if( assigned_action(left_child, data_x, num_rows, elt) != best_actions[elt] )
+           {
+              left_perfect = 0;
+              find_best_split(left_child, depth-1, tmp_sorted_sets[depth][LEFT], split_step, min_node_size,
+                 data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
+                 tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect);
+           }
+           else
+           {
+              update_rewards(left_child, data_x, num_rows, elt, data_y[best_actions[elt]*num_rows+elt]);
+           }
+
+           if( assigned_action(right_child, data_x, num_rows, elt) != worst_actions[elt] )
+           {
+              right_perfect = 0;
+              find_best_split(right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
+                 data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
+                 tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect);
+           }
+           else
+           {
+              update_rewards(right_child, data_x, num_rows, elt, -data_y[worst_actions[elt]*num_rows+elt]);
+           }
            
            reward = left_child->reward + right_child->reward;
 
@@ -1062,6 +1134,7 @@ NODE* tree_search_jc_policytree(
   SORTED_SET**** tmp_sorted_sets;
 
   int* best_actions;
+  int* worst_actions;
 
   int perfect;
   
@@ -1111,13 +1184,17 @@ NODE* tree_search_jc_policytree(
   rewards = (double*) malloc(num_cols_y*sizeof(double));
   rewards2 = (double*) malloc(num_cols_y*sizeof(double));
 
-  best_actions = store_best_actions(data_y, num_rows, num_cols_y);
+  best_actions = (int*) malloc(num_rows*sizeof(int));
+  worst_actions = (int*) malloc(num_rows*sizeof(int));
+
+  store_best_worst_actions(data_y, num_rows, num_cols_y, best_actions, worst_actions);
 
   perfect = 0;
-  find_best_split(tree, depth, initial_sorted_sets, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
+  find_best_split(tree, depth, initial_sorted_sets, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
      tmp_trees, tmp_sorted_sets, rewards, rewards2, &perfect);  /* these 3 temporary reusable storage */
 
   free(best_actions);
+  free(worst_actions);
   
   free(rewards);
   free(rewards2);
