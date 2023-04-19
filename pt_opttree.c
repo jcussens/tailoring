@@ -9,7 +9,7 @@
 #define LEFT 0
 #define RIGHT 1
 #define MIN(a,b) (((a)<(b))?(a):(b))
-#define VERBOSE 1
+#define VERBOSE 0
 #define VERY_VERBOSE 0
 
 
@@ -1018,6 +1018,13 @@ void find_best_split(
   /* initially assume that any left or right trees are not perfect */
   int left_perfect = 0;
   int right_perfect = 0;
+
+  /* when looking for an optimal tree for a left/right dataset we can sometimes
+   * save time if we have the 'previous' tree, ie the one for the previous dataset
+   * which differs by one element (one less element on left, one more element on right)
+   */
+  int have_previous_left_child = 0;
+  int have_previous_right_child = 0;
   
   assert(node != NULL);
   assert(tmp_trees != NULL);
@@ -1111,14 +1118,15 @@ void find_best_split(
         /* if a proper split see whether it's a best split */
         if( data_xp[elt] < data_xp[sorted_set->elements[i+1]] )
         {
-           /* if i > 0 then left_child is an optimal tree for the previous split
+           /* if have_previous_left_tree then left_child is an optimal tree for the previous split
             * if this tree assigns elt its best action then left_child is also optimal
             * for the left part of the current split
             */ 
-           if( i > 0 && assigned_action(left_child, data_x, num_rows, elt) == best_actions[elt] )
+           if( 0 && have_previous_left_child && assigned_action(left_child, data_x, num_rows, elt) == best_actions[elt] )
            {
               update_rewards(left_child, data_x, num_rows, elt, data_y[best_actions[elt]*num_rows+elt]);
               /* left_perfect value remains unchanged, so do nothing with it */
+              /* left_child remains the previous_left_child for next elt */
            }
            /* have to resort to computing optimal left tree from scratch */
            else
@@ -1126,13 +1134,14 @@ void find_best_split(
               find_best_split(left_child, depth-1, tmp_sorted_sets[depth][LEFT], split_step, min_node_size,
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect);
+              have_previous_left_child = 1;
            }
 
-           /* if i > 0 then right_child is an optimal tree for the previous split
+           /* if have_previous_right_child then right_child is an optimal tree for the previous split
             * if this tree assigns elt its worst action then right_child is also optimal
             * for the right part of the current split
             */ 
-           if( i > 0 && assigned_action(right_child, data_x, num_rows, elt) == worst_actions[elt] )
+           if( 0 && have_previous_right_child && assigned_action(right_child, data_x, num_rows, elt) == worst_actions[elt] )
            {
               /* usually right_child cannot be a perfect tree for RHS of previous split, since it assigns elt its worst action */
               /* an exception is if the worst action is also the best one */
@@ -1141,7 +1150,7 @@ void find_best_split(
               /* for( j = i+1; j < (sorted_set->n)-1; j++ ) */
               /*    printf("(%d,%d,%d)",sorted_set->elements[j],best_actions[sorted_set->elements[j]],worst_actions[sorted_set->elements[j]]); */
               /* printf("\n"); */
-              assert(!right_perfect || best_actions[elt] == worst_actions[elt]);
+              /* assert(!right_perfect || best_actions[elt] == worst_actions[elt]); */
               update_rewards(right_child, data_x, num_rows, elt, -data_y[worst_actions[elt]*num_rows+elt]);
               /* right_child might be perfect on current split but we don't currently check for this */
            }
@@ -1151,6 +1160,7 @@ void find_best_split(
               find_best_split(right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect);
+              have_previous_right_child = 1;
            }
            
            reward = left_child->reward + right_child->reward;
@@ -1176,6 +1186,13 @@ void find_best_split(
               tree_copy(left_child,best_left_child);
               tree_copy(right_child,best_right_child);
            }
+        }
+        else
+        {
+           /* we moved an element from left to right but did not compute an optimal tree either for left or right dataset
+            * (since we did not have a valid split) so we need to record this */
+           have_previous_left_child = 0;
+           have_previous_right_child = 0;
         }
      }
   }
