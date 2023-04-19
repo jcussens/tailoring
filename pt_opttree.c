@@ -9,7 +9,7 @@
 #define LEFT 0
 #define RIGHT 1
 #define MIN(a,b) (((a)<(b))?(a):(b))
-#define VERBOSE 0
+#define VERBOSE 1
 #define VERY_VERBOSE 0
 
 
@@ -99,44 +99,44 @@ int pure(
  */
 static
 void store_best_worst_actions(
-  const double*          data_y,             /**< rewards (column major) */
-  int                    num_rows,           /**< number of units */
-  int                    num_cols_y,         /**< number of rewards */
-  int*                   best_actions,       /**< best actions */
-  int*                   worst_actions       /**< worst actions */
+   const double*         data_y,             /**< rewards (column major) */
+   int                   num_rows,           /**< number of units */
+   int                   num_cols_y,         /**< number of rewards */
+   int*                  best_actions,       /**< best actions */
+   int*                  worst_actions       /**< worst actions */
   )
 {
-  int i;
-  int best_action;
-  int worst_action;
-  int d;
-  double best_reward;
-  double worst_reward;
+   int i;
+   int best_action;
+   int worst_action;
+   int d;
+   double best_reward;
+   double worst_reward;
   
-  for( i = 0; i < num_rows; i++ )
-  {
-    best_action = 0;
-    best_reward = data_y[i];
-    worst_action = 0;
-    worst_reward = data_y[i];
+   for( i = 0; i < num_rows; i++ )
+   {
+      best_action = 0;
+      best_reward = data_y[i];
+      worst_action = 0;
+      worst_reward = data_y[i];
     
-    for( d = 1; d < num_cols_y; d++ )
-    {
-      if( data_y[d*num_rows+i] > best_reward )
+      for( d = 1; d < num_cols_y; d++ )
       {
-        best_action = d;
-        best_reward = data_y[d*num_rows+i];
+         if( data_y[d*num_rows+i] > best_reward )
+         {
+            best_action = d;
+            best_reward = data_y[d*num_rows+i];
+         }
+         if( data_y[d*num_rows+i] < worst_reward )
+         {
+            worst_action = d;
+            worst_reward = data_y[d*num_rows+i];
+         }
       }
-      if( data_y[d*num_rows+i] < worst_reward )
-      {
-        worst_action = d;
-        worst_reward = data_y[d*num_rows+i];
-      }
-    }
-    best_actions[i] = best_action;
-    worst_actions[i] = worst_action;
-    assert(worst_reward <= best_reward);
-  }
+      best_actions[i] = best_action;
+      worst_actions[i] = worst_action;
+      assert(worst_reward <= best_reward);
+   }
 }
 
 /** print out a sorted set (for debugging only, not currently used) */
@@ -304,28 +304,44 @@ void insert_element(
 }
 
 
-/** print a policy tree (debugging only) */
+/** print a policy tree (debugging only) 
+ * if covariate names are not supplied then the indices for covariates are used
+ */
 static
 void print_tree(
    const NODE*           tree,               /**< root of tree to print */ 
-   const char**          covnames            /**< covnames[i] is the name of covariate i */
+   const char**          covnames            /**< if covnames != NULL, then covnames[i] is the name of covariate i */
   )
 {
-  printf("node = %p\n", (void*) tree);
-  if( tree-> index != -1)
-    printf("covariate = %s\n", covnames[tree->index]);
-  printf("value = %g\n", tree->value);
-  printf("reward = %g\n", tree->reward);
-  printf("action_id = %d\n", tree->action_id);
-  printf("left_child = %p\n", (void*) tree->left_child);
-  printf("right_child = %p\n", (void*) tree->right_child);
-  printf("\n");
+   assert(tree != NULL);
+   assert(tree->index == -1 || tree->left_child != NULL );
+   assert(tree->index == -1 || tree->right_child != NULL );
 
-  if(tree->left_child != NULL)
-    print_tree(tree->left_child,covnames);
+   printf("node = %p\n", (void*) tree);
 
-  if(tree->right_child != NULL)
-    print_tree(tree->right_child,covnames);
+   /* a node is a non-leaf iff its index != -1 */
+   if( tree->index != -1)
+   {
+      if( covnames != NULL )
+         printf("covariate = %s\n", covnames[tree->index]);
+      else
+         printf("covariate = %d\n", tree->index);
+      printf("value = %g\n", tree->value);
+   }
+   else
+      printf("action_id = %d\n", tree->action_id);
+   
+   printf("reward = %g\n", tree->reward);
+   printf("left_child = %p\n", (void*) tree->left_child);
+   printf("right_child = %p\n", (void*) tree->right_child);
+   printf("\n");
+
+   /* a node is a non-leaf iff its index != -1 */
+   if(tree->index != -1)
+   {
+      print_tree(tree->left_child,covnames);
+      print_tree(tree->right_child,covnames);
+   }
 }
 
 
@@ -570,7 +586,7 @@ void find_best_reward(
   int i;
   const double* offset;
   
-  assert(sorted_set != NULL);
+  assert(elements != NULL);
   assert(data_y != NULL);
   assert(best_reward != NULL);
   assert(best_action != NULL);
@@ -614,14 +630,15 @@ void find_best_reward(
     }
 }
 
-/** if a "perfect split" of sorted_set is possible return the index of the last element on the left
+/** if a "perfect split" of an assumed impure sorted_set is possible return the index of the last element on the left
  * of this perfect split. If no perfect split is possible return -1
  * @return The index of the last element on the left of a perfect split or -1
  */
 static
 int perfect_split(
    const SORTED_SET*     sorted_set,         /**< sorted set for some covariate */
-   const int*            best_actions        /**< best_actions[i] is the best action for unit i */
+   const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
+   const double*         data_xp             /**< covariate values for the given covariate */
    )
 {
    int left_best_action;
@@ -630,7 +647,7 @@ int perfect_split(
    int lefti;
    int righti;
 
-   /* a sorted set of size < 2 is pure, so we should not be calling this */
+   /* a set of size < 2 cannot be split, so we should not be calling this */
    assert(sorted_set->n > 1);
 
    /* intialise */
@@ -654,6 +671,14 @@ int perfect_split(
       else
          return -1;
    }
+   assert(righti - lefti == 1);
+   assert(best_actions[sorted_set->elements[lefti]] != best_actions[sorted_set->elements[righti]]); 
+   assert( data_xp[sorted_set->elements[lefti]] <= data_xp[sorted_set->elements[righti]] );
+   
+   /* need to check that this split can be acheived by splitting on the covariate value */
+   if( data_xp[sorted_set->elements[lefti]] == data_xp[sorted_set->elements[righti]] )
+      lefti = -1;
+   
    return lefti;
 }
 
@@ -669,6 +694,7 @@ void level_one_learning(
    const int             num_cols_x,         /**< number of covariates */
    const int             num_cols_y,         /**< number of rewards/actions */
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
+   const int*            worst_actions,      /**< worst_actions[i] is the worst action for unit i */
    double*               rewards,            /**< temporary storage for computing best rewards */
    double*               rewards2,           /**< temporary storage for computing best rewards */
    int*                  perfect             /**< *perfect=1 iff each unit assigned its best action, else *perfect=0 */
@@ -680,9 +706,9 @@ void level_one_learning(
   double* left_rewards = rewards;
 
   double best_left_reward_for_split;
-  int best_left_action_for_split;
+  int best_left_action_for_split = -1;
   double best_right_reward_for_split;
-  int best_right_action_for_split;
+  int best_right_action_for_split = -1;
 
   double best_left_reward;
   int best_left_action = -1;
@@ -705,7 +731,9 @@ void level_one_learning(
 
   int left_perfect;
   int left_perfect_action;
-  
+
+  SORTED_SET* sorted_set0 = sorted_sets[0];
+
   assert(node != NULL);
   assert(node->left_child != NULL);
   assert(node->right_child != NULL);
@@ -715,14 +743,14 @@ void level_one_learning(
 
   
   /* find reward for each action if no split were done */
-  for( d = 0; d < num_cols_y; d++ )
-      nosplit_rewards[d] = 0.0;
   /* use set ordered on first covariate, would get same result
    * if any other covariate were used
    */
-  for( i = 0; i < (sorted_sets[0])->n; i++ )
+  for( d = 0; d < num_cols_y; d++ )
+      nosplit_rewards[d] = 0.0;
+  for( i = 0; i < sorted_set0->n; i++ )
   {
-     elt = (sorted_sets[0])->elements[i];
+     elt = sorted_set0->elements[i];
      dyelt = data_y + elt;
      for( d = 0; d < num_cols_y; d++ )
      {
@@ -746,44 +774,52 @@ void level_one_learning(
   }
   
   if( VERBOSE )
-     printf("No split best reward for %d datapoints is %g, best action is %d\n", sorted_sets[0]->n, best_reward, best_action); 
+     printf("No split best reward for %d datapoints is %g, best action is %d\n", sorted_set0->n, best_reward, best_action); 
 
   /* search for a perfect split */
   for( p = 0; p < num_cols_x; p++)
   {
-    const SORTED_SET* sorted_set = sorted_sets[p];
+    const SORTED_SET* sorted_setp = sorted_sets[p];
     const double* data_xp = data_x+(p*num_rows);
     int perfect_idx;
     
-    perfect_idx = perfect_split(sorted_set, best_actions);
+    perfect_idx = perfect_split(sorted_setp, best_actions, data_xp);
 
     if( perfect_idx != -1 )
     {
        /* we found a perfect split */
 
-       /* only compute rewards for left and right now, rather than when looking for a perfect split, since perfect splits will be rare */
-       best_left_action = best_actions[sorted_set->elements[0]];
-       best_right_action = best_actions[sorted_set->elements[(sorted_set->n)-1]];
-       find_best_reward(sorted_set->elements, perfect_idx+1,
+       /* since split is perfect, best left action must be best action for leftmost unit */ 
+       best_left_action = best_actions[sorted_setp->elements[0]];
+       /* since split is perfect, best right action must be best action for rightmost unit */ 
+       best_right_action = best_actions[sorted_setp->elements[(sorted_setp->n)-1]];
+       find_best_reward(sorted_setp->elements, perfect_idx+1,
           data_y, num_cols_y, num_rows, rewards, &best_left_reward, &best_left_action);
-       find_best_reward((sorted_set->elements)+perfect_idx+1, (sorted_set->n)-(perfect_idx+1),
+       find_best_reward((sorted_setp->elements)+perfect_idx+1, (sorted_setp->n)-(perfect_idx+1),
           data_y, num_cols_y, num_rows, rewards, &best_right_reward, &best_right_action);
+
+       /* set values for node */
        node->index = p;
-       node->value = data_xp[sorted_set->elements[perfect_idx]];
+       /* split value is last covariate value(=vp) on left, so split is xp <= vp */
+       node->value = data_xp[sorted_setp->elements[perfect_idx]];
        node->reward = best_left_reward + best_right_reward;
+
+       /* set values for node->left */
        node->left_child->index = -1;
        node->left_child->reward = best_left_reward;
        node->left_child->action_id = best_left_action;
+
+       /* set values for node->right */
        node->right_child->index = -1;
        node->right_child->reward = best_right_reward;
        node->right_child->action_id = best_right_action;
+
        *perfect = 1;
 
        if( VERBOSE )
           printf("Found perfect split for depth-1 tree with %d=%d+%d datapoints, covariate=%d, split value=%g, reward=%g=%g+%g .\n",
-             sorted_set->n, perfect_idx+1, (sorted_set->n)-(perfect_idx+1),p,node->value,node->reward,best_left_reward,best_right_reward );
+             sorted_setp->n, perfect_idx+1, (sorted_setp->n)-(perfect_idx+1),p,node->value,node->reward,best_left_reward,best_right_reward );
 
-       
        return;
     }
   }  
@@ -834,25 +870,47 @@ void level_one_learning(
          if( VERY_VERBOSE )
             printf("valid split at %d, since %d has different %d value\n",elt,sorted_set->elements[i+1],p); 
 
-         
-        /* find best left and right reward+action */
-        best_left_reward_for_split = left_rewards[0];
-        best_left_action_for_split = 0;
-        best_right_reward_for_split = nosplit_rewards[0] - left_rewards[0];
-        best_right_action_for_split = 0;
-        for( d = 1; d < num_cols_y; d++ )
-        {
-          if( left_rewards[d] > best_left_reward_for_split )
-          {
-            best_left_reward_for_split = left_rewards[d];
-            best_left_action_for_split = d;
-          }
-          if( nosplit_rewards[d] - left_rewards[d] > best_right_reward_for_split )
-          {
+         /* if previous best left action is best action for elt then this remains the best_left_action_for_split */
+         if( best_left_action_for_split == best_actions[elt] )
+         {
+            assert(best_left_action_for_split != -1);
+            best_left_reward_for_split = left_rewards[best_actions[elt]];
+         }
+         else
+         {
+            best_left_reward_for_split = left_rewards[0];
+            best_left_action_for_split = 0;
+            
+            for( d = 1; d < num_cols_y; d++ )
+            {
+               if( left_rewards[d] > best_left_reward_for_split )
+               {
+                  best_left_reward_for_split = left_rewards[d];
+                  best_left_action_for_split = d;
+               }
+            }
+         }
+
+         /* if previous best right action is worst action for elt then this remains the best_right_action_for_split */
+         if( best_right_action_for_split == worst_actions[elt] )
+         {
+            assert(best_right_action_for_split != -1);
+            d = worst_actions[elt];
             best_right_reward_for_split = nosplit_rewards[d] - left_rewards[d];
-            best_right_action_for_split = d;
-          }
-        }
+         }
+         else
+         {
+            best_right_reward_for_split = nosplit_rewards[0] - left_rewards[0];
+            best_right_action_for_split = 0;
+            for( d = 1; d < num_cols_y; d++ )
+            {
+               if( nosplit_rewards[d] - left_rewards[d] > best_right_reward_for_split )
+               {
+                  best_right_reward_for_split = nosplit_rewards[d] - left_rewards[d];
+                  best_right_action_for_split = d;
+               }
+            }
+         }
 
         /* update if new best split */
         if( best_left_reward_for_split + best_right_reward_for_split > best_reward)
@@ -863,12 +921,19 @@ void level_one_learning(
           best_right_reward = best_right_reward_for_split;
           best_right_action = best_right_action_for_split;
           best_split_var = p;
+          /* split value is last covariate value(=vp) on left, so split is xp <= vp */
           best_split_val = data_xp[elt];
 
-          if( VERBOSE )
+          if( 0 && VERBOSE )
              printf("New best split for %d=%d+%d datapoints for depth 1 tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
                 sorted_set->n,n_left,n_right,p,best_split_val,best_reward,best_left_reward,best_right_reward);
         }
+      }
+      else
+      {
+         /* if no split possible then we don't have valid best actions to use for next split */
+         best_left_action_for_split = -1;
+         best_right_action_for_split = -1;
       }
     }
   }
@@ -888,9 +953,9 @@ void level_one_learning(
   }
   else
   {
-    node->index = -1;
-    node->reward = best_reward;
-    node->action_id = best_action;
+     node->index = -1;   /* dummy value*/
+     node->reward = best_reward;
+     node->action_id = best_action;
   }
 }
 
@@ -928,6 +993,7 @@ void find_best_split(
 
   int p;
   int i;
+  int j;
   NODE* left_child;
   NODE* right_child;
   NODE* best_left_child;   /* will store the best left child 'so far' */
@@ -949,6 +1015,10 @@ void find_best_split(
 
   int best_reward_for_all;
 
+  /* initially assume that any left or right trees are not perfect */
+  int left_perfect = 0;
+  int right_perfect = 0;
+  
   assert(node != NULL);
   assert(tmp_trees != NULL);
   assert(data_x != NULL);
@@ -959,24 +1029,29 @@ void find_best_split(
   assert(num_cols_x > 0);
   assert(num_cols_y > 0);
 
+  /* we have yet to find a perfect tree for this dataset */
   *perfect = 0;
+  
+  /* determine whether the dataset is pure, i.e. whether each unit has same best action */
   best_action = pure(sorted_sets[0],best_actions);
 
-  /* if each unit has the same best action then this dataset is pure and we can make a perfect leaf */
+  /* if this dataset is pure and we can make a perfect leaf */
   if( best_action != -1 )
      *perfect = 1;
 
   /* nothing further to do for a leaf or if too few datapoints for splitting or if dataset is pure */
   if( depth == 0 || sorted_sets[0]->n <= min_node_size || *perfect )
   {
-    /* find best reward with no split */
+    /* find best reward with no split 
+     * ( if best_action != 1 then we already know the best action and
+     * find_best_reward doesn't try to recompute it  
+    */
      find_best_reward(sorted_sets[0]->elements,sorted_sets[0]->n,data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
 
     if( VERBOSE && *perfect )
        printf("Node with %d datapoints for depth %d tree is pure with best action %d and reward=%g\n",
           sorted_sets[0]->n,depth,best_action,best_reward);
 
-    
     /* populate node */
     node->index = -1;
     node->reward = best_reward;
@@ -987,10 +1062,11 @@ void find_best_split(
   if( depth == 1 )
   {
      level_one_learning(node, sorted_sets, split_step, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
-        rewards, rewards2, perfect);
+        worst_actions, rewards, rewards2, perfect);
     return;
   }
 
+  /* all of these trees are unitialised at this point */
   left_child = node->left_child;
   right_child = node->right_child;
   best_left_child = tmp_trees[depth-1][LEFT];
@@ -1002,13 +1078,12 @@ void find_best_split(
      
      int n_left = 0;
      int n_right = sorted_sets[0]->n;
-     int left_perfect;
-     int right_perfect;
-     
+    
+     /* set sorted_set to be the dataset sorted according to covariate p */
      SORTED_SET* sorted_set = sorted_sets[p];
      const double* data_xp = data_x+(p*num_rows);
 
-     /* initialise all sorted sets to be empty on left, and full on right */
+     /* initialise all sorted sets for splits of this dataset to be empty on left, and full on right */
      for( pp = 0; pp < num_cols_x; pp++)
      {
         make_empty(tmp_sorted_sets[depth][LEFT][pp]);
@@ -1029,35 +1104,53 @@ void find_best_split(
         
         n_left++;
         n_right--;
-        
-      
+
+        /* check sorted set is indeed sorted for covariate p */
         assert( data_xp[elt] <= data_xp[sorted_set->elements[i+1]] );
         
         /* if a proper split see whether it's a best split */
         if( data_xp[elt] < data_xp[sorted_set->elements[i+1]] )
         {
-           if( assigned_action(left_child, data_x, num_rows, elt) != best_actions[elt] )
+           /* if i > 0 then left_child is an optimal tree for the previous split
+            * if this tree assigns elt its best action then left_child is also optimal
+            * for the left part of the current split
+            */ 
+           if( i > 0 && assigned_action(left_child, data_x, num_rows, elt) == best_actions[elt] )
            {
-              left_perfect = 0;
+              update_rewards(left_child, data_x, num_rows, elt, data_y[best_actions[elt]*num_rows+elt]);
+              /* left_perfect value remains unchanged, so do nothing with it */
+           }
+           /* have to resort to computing optimal left tree from scratch */
+           else
+           {
               find_best_split(left_child, depth-1, tmp_sorted_sets[depth][LEFT], split_step, min_node_size,
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect);
            }
+
+           /* if i > 0 then right_child is an optimal tree for the previous split
+            * if this tree assigns elt its worst action then right_child is also optimal
+            * for the right part of the current split
+            */ 
+           if( i > 0 && assigned_action(right_child, data_x, num_rows, elt) == worst_actions[elt] )
+           {
+              /* usually right_child cannot be a perfect tree for RHS of previous split, since it assigns elt its worst action */
+              /* an exception is if the worst action is also the best one */
+              /* printf("problem tree\n"); */
+              /* print_tree(right_child, NULL); */
+              /* for( j = i+1; j < (sorted_set->n)-1; j++ ) */
+              /*    printf("(%d,%d,%d)",sorted_set->elements[j],best_actions[sorted_set->elements[j]],worst_actions[sorted_set->elements[j]]); */
+              /* printf("\n"); */
+              assert(!right_perfect || best_actions[elt] == worst_actions[elt]);
+              update_rewards(right_child, data_x, num_rows, elt, -data_y[worst_actions[elt]*num_rows+elt]);
+              /* right_child might be perfect on current split but we don't currently check for this */
+           }
+           /* have to resort to computing optimal left tree from scratch */
            else
            {
-              update_rewards(left_child, data_x, num_rows, elt, data_y[best_actions[elt]*num_rows+elt]);
-           }
-
-           if( assigned_action(right_child, data_x, num_rows, elt) != worst_actions[elt] )
-           {
-              right_perfect = 0;
               find_best_split(right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect);
-           }
-           else
-           {
-              update_rewards(right_child, data_x, num_rows, elt, -data_y[worst_actions[elt]*num_rows+elt]);
            }
            
            reward = left_child->reward + right_child->reward;
@@ -1069,7 +1162,7 @@ void find_best_split(
               best_reward = reward;
               best_split_var = p;
               best_split_val = data_xp[elt];
-              if( VERBOSE )
+              if( VERBOSE && *perfect )
               {
                  printf("New best split for %d=%d+%d datapoints for depth %d tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
                     sorted_set->n,n_left,n_right,depth,p,best_split_val,reward,left_child->reward,right_child->reward);
@@ -1089,10 +1182,10 @@ void find_best_split(
 
   /* populate node */
   node->index = best_split_var;
-  node->value = best_split_val;
   node->reward = best_reward;
   if( best_split_var != -1 )
   {
+     node->value = best_split_val;
     /* retrieve saved best left and right trees */
     /* tree_copy(source,target) */
     tree_copy(best_left_child,left_child);

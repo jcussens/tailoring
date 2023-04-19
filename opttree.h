@@ -2,14 +2,18 @@
 extern "C" {
 #endif
 
+/** node of a policytree (for a particular dataset of units)
+ *  the associated dataset of units is not represented, only the 
+ *  reward for the associated dataset for the tree with the node as root
+ */
 struct node
 {
-  int index;                 /** splitting covariate */      
-  double value;              /** split value */
-  double reward;             /** reward (see above) */
-  int action_id;             /** best action (only meaningful for leaves) */
-  struct node* left_child;   /** left child (or NULL) */
-  struct node* right_child;  /** right child (or NULL) */
+  int                    index;              /** splitting covariate */      
+  double                 value;              /** split value */
+  double                 reward;             /** reward for tree with this node on an unrepresented associated dataset of units */
+  int                    action_id;          /** best action (only meaningful for leaves) */
+  struct node*           left_child;         /** left child (or NULL) */
+  struct node*           right_child;        /** right child (or NULL) */
 };
 typedef struct node NODE;
 

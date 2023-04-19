@@ -5,32 +5,41 @@
 \newcommand{\depth}{\ensuremath{D}}
 \newcommand{\policytree}{\texttt{policytree}}
 
-\title{Notes on implementing optimal policy tree learning}
+\title{Algorithms and implementation methods for finding optimal policy trees}
 \author{James Cussens}
 
 \begin{document}
 
 \maketitle
 
-\section{Abstract description}
-\label{sec:abs}
+\section{Introduction}
+\label{sec:intro}
 
-Let $N$ be the set $\{i,\dots,n\}$ of units. Let $A$ be the set
-of available actions.  Let ${\cal F}_d$ represent the set of functions
-$f:N \rightarrow A$ representable by a tree of depth $d$. $f(i)$
-assigns an action to unit $i$; call such functions \emph{action
-  assignment functions}. Let $S$ be the set of splits available. Let
-$s_{L}(N)$ (resp.\ $s_{R}(N)$) be the units sent left (resp.\ right)
-when unit-set $N$ is split using split $s \in S$. Let $r(i,a)$ be the
-reward for unit $i$ when it is assigned action $a$. For any
+In this note we consider the problem of finding an optimal policy tree
+for a set of \emph{units}, where a unit is a collection of covariate
+values together with a reward for each possible action. First, let us
+define some notation.  Let $N$ be the set $\{1,\dots,n\}$ of
+units. Let $A$ be the set of available actions.  Let ${\cal F}_d$
+represent the set of functions $f:N \rightarrow A$ representable by a
+policy tree of depth $d$. $f(i)$ assigns an action to unit $i$, so it
+is an \emph{action assignment functions}. Let $S$ be the set of splits
+available, each split being defined by a choice of covariate $j$ and
+a value $v_j$ for that covariate. If a unit $i$ is such that
+$x_{ij} \leq v_{j}$ then we say the unit is sent left by the split,
+otherwise it is sent right.
+
+Let $s_{L}(N)$ (resp.\ $s_{R}(N)$) be the units sent left (resp.\
+right) when unit-set $N$ is split using split $s \in S$. Let $r(i,a)$
+be the reward for unit $i$ when it is assigned action $a$. For any
 action assignment function $f$ define
 $R(f,N) := \sum_{i \in N} r(i,f(i))$, so $R(f,N)$ is the reward when
 using $f$ to assign actions to all individuals in $N$. Define
 $f^{*}_{d,N} := \arg\max_{f \in {\cal F}_d} R(f,N)$, so $f^{*}_{d,N}$
-is the best function in ${\cal F}_d$ to use to assign actions to all
-individuals in $N$. Given $d$ and $N$ our goal is to find $f^{*}_{d,N}$.
+is the best function in ${\cal F}_d$ (the best depth $d$ policy tree)
+to use to assign actions to all individuals in $N$. Given $d$ and $N$
+our goal is to find $f^{*}_{d,N}$.
 
-Let $R^{*}_{d,N} = R(f^{*}_{d,N},N)$, so $R^{*}_{d,N}$ is the best
+Abbreviate $R(f^{*}_{d,N},N)$ to $R^{*}_{d,N}$, so $R^{*}_{d,N}$ is the best
 possible reward---the reward resulting from using the best tree
 $f^{*}_{d,N}$---for a given $d$ and $N$. We have the basic recursion
 for $d>0$
@@ -44,6 +53,18 @@ The base case is:
   \label{eq:base}
     R^{*}_{0,N} =  \max_{a \in A} \sum_{i \in N}  r(i,a)
 \end{equation}
+(\ref{eq:basicrecursion}) and (\ref{eq:base}) lead to a simple
+algorithm for finding $f^{*}_{d,N}$: compute $R^{*}_{d-1,s_{L}(N)} +
+R^{*}_{d-1,s_{R}(N)}$ by recursion for each split $s \in S$ and record
+which has the highest reward. By recording the maximising
+split during the recursive computation we can recover the policy tree
+which produces this maximal reward. In the rest of this note we
+present optimisations to this basic algorithm and also discuss how
+best to implement the algorithm.
+
+\section{Some useful bounds}
+\label{sec:bounds}
+
 If $N = N_{1} \dot\cup N_{2}$ (where $\dot\cup$ denotes disjoint
 union) then
 \begin{eqnarray}
@@ -58,9 +79,9 @@ tree for $N = N_{1} \dot\cup N_{2}$. The LHS inequalities simply state
 that the reward of the best tree for $N$ cannot be worse than applying
 the best tree for $N_{1}$ or $N_2$ to all of $N$.
 
-We also have the typically loose bounds which simply states that
+We also have the (typically loose) bounds which  state that
 the best we can hope for is for all units to be assigned their best
-action and that we can always do at least as well as a depth 0 tree:
+action and that we can always do at least as well as an optimal depth 0 tree:
 \begin{equation}
   \label{eq:loosebound}
 \max_{a \in A} \sum_{i \in N}  r(i,a) \leq  R^{*}_{d,N} \leq \sum_{i \in N} \max_{a \in A} r(i,a) 
@@ -100,18 +121,47 @@ and from (\ref{eq:genmain}) and (\ref{eq:llb}) we have:
     r(i,f^{*}_{d,N}(i)) - \min_{a \in A} r(i,a) \right)
 \end{eqnarray}
 
-If we have found $f^{*}_{d,N_{1}}$ and then add $N_2$ to $N_{1}$ to
-get $N$ then (\ref{eq:ub}) provides an upper bound on
-$R^{*}_{d,N}$. Similarly, if we have found $f^{*}_{d,N}$ and remove
-$N_2$ from $N$ to get $N_1$, (\ref{eq:lb}) provides an upper bound on
-$R^{*}_{d,N_{1}}$.
+\section{Optimising the algorithm}
+\label{sec:optimising}
 
-In some cases these bounds can be used to immediately find optimal
-trees. For example, suppose we have found $f^{*}_{d,N_{1}}$ and that
+There are three simple methods for optimising the basic algorithm
+given in Section~\ref{sec:intro}:
+\begin{enumerate}
+\item If we have found a policy tree that is known to be optimal we
+  can terminate the algorithm.
+\item If we have a policy tree $f^{*}(d,N)$ that is known to be
+  optimal for some set of units $N$ and we know that $f^{*}(d,N)$ is
+  also optimal for some other set of units $N'$ (i.e.\  $f^{*}(d,N) =
+  f^{*}(d,N')$) then we do not need to find $f^{*}(d,N')$ by recursive
+  computation.
+\item If for two splits $s, s' \in S$ we know that $R^{*}_{d-1,s_{L}(N)} + R^{*}_{d-1,s_{R}(N)} 
+  < R^{*}_{d-1,s'_{L}(N)} + R^{*}_{d-1,s'_{R}(N)}$ then there is no
+  need to compute either  $R^{*}_{d-1,s_{L}(N)}$ or
+  $R^{*}_{d-1,s_{R}(N)}$, since we know $s$ cannot be a split in an
+  optimal tree for dataset $N$ (since it is `beaten' by $s'$).
+\end{enumerate}
+
+\subsection{Finding perfect trees}
+\label{sec:perfect}
+
+Regarding the first optimisation, let us call a policy tree for a
+dataset of units \emph{perfect} if it assigns each unit its maximal
+reward. It is obvious that a perfect policy tree is optimal, so we can
+stop the search for an optimal tree if we ever come across one that is
+perfect. Note that for any dataset there will be always be a tree
+depth that will allow a perfect tree, and also that perfect trees are
+more likely to exist for small datasets.
+
+\subsection{Avoiding recursive computation}
+\label{sec:avoiding}
+
+In some cases the bounds found in Section~\ref{sec:bounds} can be used
+to immediately find optimal trees. For example, let $N_1$ be some
+dataset of units and suppose we have found $f^{*}_{d,N_{1}}$ and that
 it happens to be the case that this tree assigns the highest reward
-action to each unit in $N_2$, i.e.
+action to each unit in a disjoint dataset of units $N_2$, i.e.
 $\forall i \in N_{2} : r(f^{*}_{d,N_{1}},i) = \max_{a \in A}
-r(i,a)$. In this case
+r(i,a)$. Let $N = N_{1} \dot\cup N_{2}$, then, in this case
 $R(f^{*}_{d,N_{1}},N) = R^{*}_{d,N_{1}} + \sum_{i \in N_{2}} \max_{a
   \in A} r(i,a)$ and so by (\ref{eq:llb}) $f^{*}_{d,N_{1}}$ is an
 optimal tree for $N$, i.e.\ $f^{*}_{d,N} = f^{*}_{d,N_{1}}$.
@@ -120,6 +170,20 @@ Similarly, suppose we have found $f^{*}_{d,N}$ and that
 it happens to be the case that this tree assigns the lowest reward
 action to each unit in $N_2$, then from (\ref{eq:llb}) we have $R^{*}_{d,N_{1}}
 \leq R(f^{*}_{d,N},N_{1})$, from which if follows that $f^{*}_{d,N_{1}} = f^{*}_{d,N}$.
+
+
+\subsection{todo}
+\label{sec:todo}
+
+
+
+Suppose we have found $f^{*}_{d,N_{1}}$
+and then add $N_2$ to $N_{1}$ to get $N$ then (\ref{eq:ub}) provides
+an upper bound on $R^{*}_{d,N}$. Similarly, if we have found
+$f^{*}_{d,N}$ and remove $N_2$ from $N$ to get $N_1$, (\ref{eq:lb})
+provides an upper bound on $R^{*}_{d,N_{1}}$.
+
+
 \section{Complex junk}
 \label{sec:junk}
 
