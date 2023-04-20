@@ -978,7 +978,7 @@ void find_best_split(
    const int             num_cols_x,         /**< number of covariates */
    const int             num_cols_y,         /**< number of rewards/actions */
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
-   const int*            worst_actions,       /**< worst_actions[i] is the worst action for unit i */
+   const int*            worst_actions,      /**< worst_actions[i] is the worst action for unit i */
    NODE***               tmp_trees,          /**< trees of various depths for temporary storage */
    SORTED_SET****        tmp_sorted_sets,    /**< e.g have tmp_sorted_sets[depth][LEFT][p] preallocated space */
    double*               rewards,            /**< temporary storage for computing best rewards */
@@ -1088,6 +1088,9 @@ void find_best_split(
      SORTED_SET* sorted_set = sorted_sets[p];
      const double* data_xp = data_x+(p*num_rows);
 
+     double ub;
+     int haveub;
+     
      /* initialise all sorted sets for splits of this dataset to be empty on left, and full on right */
      for( pp = 0; pp < num_cols_x; pp++)
      {
@@ -1116,6 +1119,19 @@ void find_best_split(
         /* if a proper split see whether it's a best split */
         if( data_xp[elt] < data_xp[sorted_set->elements[i+1]] )
         {
+           /* if we computed both left and right trees for split before elt was moved from
+              right to left, then we can compute an upper bound on the optimal reward for this split */
+           if( have_previous_left_child && have_previous_right_child )
+           {
+              ub = (left_child->reward + data_y[best_actions[elt]*num_rows+elt])
+                 + (right_child->reward - data_y[worst_actions[elt]*num_rows+elt]);
+              haveub = 1;
+           }
+           else
+           {
+              haveub = 0;
+           }
+           
            /* if have_previous_left_tree then left_child is an optimal tree for the previous split
             * if this tree assigns elt its best action then left_child is also optimal
             * for the left part of the current split
@@ -1126,12 +1142,19 @@ void find_best_split(
               /* left_perfect value remains unchanged, so do nothing with it */
               /* left_child remains the previous_left_child for next elt */
            }
+           else if( haveub && ub <= best_reward )
+           {
+              /* this split won't be optimal, don't bother finding the left tree */
+              /* indicate to next iteration that left tree was not found */
+              have_previous_left_child = 0;
+           }
            /* have to resort to computing optimal left tree from scratch */
            else
            {
               find_best_split(left_child, depth-1, tmp_sorted_sets[depth][LEFT], split_step, min_node_size,
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect);
+              /* indicate to next iteration that left tree was found */
               have_previous_left_child = 1;
            }
 
@@ -1145,37 +1168,51 @@ void find_best_split(
               update_rewards(right_child, data_x, num_rows, elt, -data_y[worst_actions[elt]*num_rows+elt]);
               /* right_child might be perfect on current split but we don't currently check for this */
            }
+           else if( haveub && ub <= best_reward )
+           {
+              /* this split won't be optimal, don't bother finding the left tree */
+              /* indicate to next iteration that right tree was not found */
+              have_previous_right_child = 0;
+           }
            /* have to resort to computing optimal right tree from scratch */
            else
            {
               find_best_split(right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect);
+              /* indicate to next iteration that right tree was found */
               have_previous_right_child = 1;
            }
-           
-           reward = left_child->reward + right_child->reward;
 
-           *perfect = left_perfect && right_perfect;
-           
-           if( reward > best_reward )
+           /* only check whether we have a new incumbent if we actually have both the left and right tree */
+           /* NB have_previous_left_child indicates a left tree found on this iteration, variable has the name
+            * to indicate this in next iteration
+            */
+           if( have_previous_left_child && have_previous_right_child )
            {
-              best_reward = reward;
-              best_split_var = p;
-              best_split_val = data_xp[elt];
-              if( VERBOSE )
-              {
-                 printf("New best split for %d=%d+%d datapoints for depth %d tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
-                    sorted_set->n,n_left,n_right,depth,p,best_split_val,reward,left_child->reward,right_child->reward);
+              reward = left_child->reward + right_child->reward;
 
-                 if( *perfect )
-                    printf("Split was perfect, no need to consider any others\n");
-              }
+              *perfect = left_perfect && right_perfect;
+           
+              if( reward > best_reward )
+              {
+                 best_reward = reward;
+                 best_split_var = p;
+                 best_split_val = data_xp[elt];
+                 if( VERBOSE )
+                 {
+                    printf("New best split for %d=%d+%d datapoints for depth %d tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
+                       sorted_set->n,n_left,n_right,depth,p,best_split_val,reward,left_child->reward,right_child->reward);
+                    
+                    if( *perfect )
+                       printf("Split was perfect, no need to consider any others\n");
+                 }
                  
-              /* save best left and right trees found so far */
-              /* tree_copy(source,target) */
-              tree_copy(left_child,best_left_child);
-              tree_copy(right_child,best_right_child);
+                 /* save best left and right trees found so far */
+                 /* tree_copy(source,target) */
+                 tree_copy(left_child,best_left_child);
+                 tree_copy(right_child,best_right_child);
+              }
            }
         }
         else
@@ -1294,14 +1331,13 @@ NODE* tree_search_jc_policytree(
   ub = 0.0;
   for(i = 0; i < num_rows; i++ )
   {
-     /* printf("Best action for %d has reward %g.\n", i, data_y[best_actions[i]*num_rows+i]);  */
      ub += data_y[best_actions[i]*num_rows+i];
   }
   printf("A perfect tree has reward %g.\n", ub);
   
   perfect = 0;
   find_best_split(tree, depth, initial_sorted_sets, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
-     tmp_trees, tmp_sorted_sets, rewards, rewards2, &perfect);  /* these 3 temporary reusable storage */
+     tmp_trees, tmp_sorted_sets, rewards, rewards2, &perfect);  /* tmp_sorted_sets, rewards and rewards2 are temporary reusable storage */
 
   free(best_actions);
   free(worst_actions);
