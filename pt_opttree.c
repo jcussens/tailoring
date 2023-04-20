@@ -983,7 +983,8 @@ void find_best_split(
    SORTED_SET****        tmp_sorted_sets,    /**< e.g have tmp_sorted_sets[depth][LEFT][p] preallocated space */
    double*               rewards,            /**< temporary storage for computing best rewards */
    double*               rewards2,           /**< temporary storage for computing best rewards */
-   int*                  perfect             /**< *perfect=1 iff each unit assigned its best action, else *perfect=0 */
+   int*                  perfect,            /**< *perfect=1 iff each unit assigned its best action, else *perfect=0 */
+   int                   root                /**< is this the root node? */ 
   )
 {
 
@@ -1153,7 +1154,7 @@ void find_best_split(
            {
               find_best_split(left_child, depth-1, tmp_sorted_sets[depth][LEFT], split_step, min_node_size,
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
-                 tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect);
+                 tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect, 0);
               /* indicate to next iteration that left tree was found */
               have_previous_left_child = 1;
            }
@@ -1179,7 +1180,7 @@ void find_best_split(
            {
               find_best_split(right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
-                 tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect);
+                 tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect, 0);
               /* indicate to next iteration that right tree was found */
               have_previous_right_child = 1;
            }
@@ -1199,7 +1200,7 @@ void find_best_split(
                  best_reward = reward;
                  best_split_var = p;
                  best_split_val = data_xp[elt];
-                 if( VERBOSE )
+                 if( VERBOSE || root )
                  {
                     printf("New best split for %d=%d+%d datapoints for depth %d tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
                        sorted_set->n,n_left,n_right,depth,p,best_split_val,reward,left_child->reward,right_child->reward);
@@ -1337,7 +1338,7 @@ NODE* tree_search_jc_policytree(
   
   perfect = 0;
   find_best_split(tree, depth, initial_sorted_sets, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
-     tmp_trees, tmp_sorted_sets, rewards, rewards2, &perfect);  /* tmp_sorted_sets, rewards and rewards2 are temporary reusable storage */
+     tmp_trees, tmp_sorted_sets, rewards, rewards2, &perfect, 1);  /* tmp_sorted_sets, rewards and rewards2 are temporary reusable storage */
 
   free(best_actions);
   free(worst_actions);
