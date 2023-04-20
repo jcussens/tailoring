@@ -318,8 +318,7 @@ void print_tree(
    assert(tree->index == -1 || tree->right_child != NULL );
 
    printf("node = %p\n", (void*) tree);
-
-   /* a node is a non-leaf iff its index != -1 */
+   printf("reward = %g\n", tree->reward);
    if( tree->index != -1)
    {
       if( covnames != NULL )
@@ -327,17 +326,16 @@ void print_tree(
       else
          printf("covariate = %d\n", tree->index);
       printf("value = %g\n", tree->value);
+      printf("left_child = %p\n", (void*) tree->left_child);
+      printf("right_child = %p\n", (void*) tree->right_child);
    }
    else
+   {
       printf("action_id = %d\n", tree->action_id);
-   
-   printf("reward = %g\n", tree->reward);
-   printf("left_child = %p\n", (void*) tree->left_child);
-   printf("right_child = %p\n", (void*) tree->right_child);
+   }
    printf("\n");
-
-   /* a node is a non-leaf iff its index != -1 */
-   if(tree->index != -1)
+   
+   if( tree->index != -1)
    {
       print_tree(tree->left_child,covnames);
       print_tree(tree->right_child,covnames);
@@ -1015,17 +1013,6 @@ void find_best_split(
 
   int best_reward_for_all;
 
-  /* initially assume that any left or right trees are not perfect */
-  int left_perfect = 0;
-  int right_perfect = 0;
-
-  /* when looking for an optimal tree for a left/right dataset we can sometimes
-   * save time if we have the 'previous' tree, ie the one for the previous dataset
-   * which differs by one element (one less element on left, one more element on right)
-   */
-  int have_previous_left_child = 0;
-  int have_previous_right_child = 0;
-  
   assert(node != NULL);
   assert(tmp_trees != NULL);
   assert(data_x != NULL);
@@ -1082,7 +1069,18 @@ void find_best_split(
   /* consider each covariate for splitting */
   for( p = 0; !(*perfect) && p < num_cols_x; p++)
   {
-     
+
+     /* initially assume that any left or right trees are not perfect */
+     int left_perfect = 0;
+     int right_perfect = 0;
+
+     /* when looking for an optimal tree for a left/right dataset we can sometimes
+      * save time if we have the 'previous' tree, ie the one for the previous dataset
+      * which differs by one element (one less element on left, one more element on right)
+      */
+     int have_previous_left_child = 0;
+     int have_previous_right_child = 0;
+
      int n_left = 0;
      int n_right = sorted_sets[0]->n;
     
@@ -1143,18 +1141,11 @@ void find_best_split(
             */ 
            if( have_previous_right_child && assigned_action(right_child, data_x, num_rows, elt) == worst_actions[elt] )
            {
-              /* usually right_child cannot be a perfect tree for RHS of previous split, since it assigns elt its worst action */
-              /* an exception is if the worst action is also the best one */
-              /* printf("problem tree\n"); */
-              /* print_tree(right_child, NULL); */
-              /* for( j = i+1; j < (sorted_set->n)-1; j++ ) */
-              /*    printf("(%d,%d,%d)",sorted_set->elements[j],best_actions[sorted_set->elements[j]],worst_actions[sorted_set->elements[j]]); */
-              /* printf("\n"); */
-              /* assert(!right_perfect || best_actions[elt] == worst_actions[elt]); */
+              assert(!right_perfect); 
               update_rewards(right_child, data_x, num_rows, elt, -data_y[worst_actions[elt]*num_rows+elt]);
               /* right_child might be perfect on current split but we don't currently check for this */
            }
-           /* have to resort to computing optimal left tree from scratch */
+           /* have to resort to computing optimal right tree from scratch */
            else
            {
               find_best_split(right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
@@ -1172,7 +1163,7 @@ void find_best_split(
               best_reward = reward;
               best_split_var = p;
               best_split_val = data_xp[elt];
-              if( VERBOSE && *perfect )
+              if( VERBOSE )
               {
                  printf("New best split for %d=%d+%d datapoints for depth %d tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
                     sorted_set->n,n_left,n_right,depth,p,best_split_val,reward,left_child->reward,right_child->reward);
