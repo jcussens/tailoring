@@ -924,7 +924,7 @@ void level_one_learning(
           /* split value is last covariate value(=vp) on left, so split is xp <= vp */
           best_split_val = data_xp[elt];
 
-          if( 0 && VERBOSE )
+          if( VERBOSE )
              printf("New best split for %d=%d+%d datapoints for depth 1 tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
                 sorted_set->n,n_left,n_right,p,best_split_val,best_reward,best_left_reward,best_right_reward);
         }
@@ -1122,7 +1122,7 @@ void find_best_split(
             * if this tree assigns elt its best action then left_child is also optimal
             * for the left part of the current split
             */ 
-           if( 0 && have_previous_left_child && assigned_action(left_child, data_x, num_rows, elt) == best_actions[elt] )
+           if( have_previous_left_child && assigned_action(left_child, data_x, num_rows, elt) == best_actions[elt] )
            {
               update_rewards(left_child, data_x, num_rows, elt, data_y[best_actions[elt]*num_rows+elt]);
               /* left_perfect value remains unchanged, so do nothing with it */
@@ -1141,7 +1141,7 @@ void find_best_split(
             * if this tree assigns elt its worst action then right_child is also optimal
             * for the right part of the current split
             */ 
-           if( 0 && have_previous_right_child && assigned_action(right_child, data_x, num_rows, elt) == worst_actions[elt] )
+           if( have_previous_right_child && assigned_action(right_child, data_x, num_rows, elt) == worst_actions[elt] )
            {
               /* usually right_child cannot be a perfect tree for RHS of previous split, since it assigns elt its worst action */
               /* an exception is if the worst action is also the best one */
@@ -1247,6 +1247,7 @@ NODE* tree_search_jc_policytree(
   int* worst_actions;
 
   int perfect;
+  double ub;
   
   /* data_x[col * num_rows + row] is the value of covariate 'col' in datapoint
    * 'row', so column major storage, all values for covariate 0 first
@@ -1299,6 +1300,14 @@ NODE* tree_search_jc_policytree(
 
   store_best_worst_actions(data_y, num_rows, num_cols_y, best_actions, worst_actions);
 
+  ub = 0.0;
+  for(i = 0; i < num_rows; i++ )
+  {
+     /* printf("Best action for %d has reward %g.\n", i, data_y[best_actions[i]*num_rows+i]);  */
+     ub += data_y[best_actions[i]*num_rows+i];
+  }
+  printf("A perfect tree has reward %g.\n", ub);
+  
   perfect = 0;
   find_best_split(tree, depth, initial_sorted_sets, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
      tmp_trees, tmp_sorted_sets, rewards, rewards2, &perfect);  /* these 3 temporary reusable storage */

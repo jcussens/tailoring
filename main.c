@@ -34,23 +34,25 @@ void print_tree(
   )
 {
   printf("node = %p\n", (void*) tree);
+  printf("reward = %g\n", tree->reward);
   if( tree->index != -1)
   {
     printf("covariate = %s\n", covnames[tree->index]);
     printf("value = %g\n", tree->value);
+    printf("left_child = %p\n", (void*) tree->left_child);
+    printf("right_child = %p\n", (void*) tree->right_child);
   }
-  printf("reward = %g\n", tree->reward);
-  if( tree->action_id != -1)
+  else
+  {
      printf("action_id = %d\n", tree->action_id);
-  printf("left_child = %p\n", (void*) tree->left_child);
-  printf("right_child = %p\n", (void*) tree->right_child);
+  }
   printf("\n");
 
-  if(tree->left_child != NULL)
+  if( tree->index != -1)
+  {
     print_tree(tree->left_child,covnames);
-
-  if(tree->right_child != NULL)
     print_tree(tree->right_child,covnames);
+  }
 }
 
 
