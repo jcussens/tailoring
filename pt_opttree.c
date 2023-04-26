@@ -591,7 +591,12 @@ void find_best_reward(
   assert(best_reward != NULL);
   assert(best_action != NULL);
   assert(num_cols_y >= 0);
-
+  assert(rewards != NULL);
+  assert(best_reward != NULL);
+  assert(best_action != NULL);
+  assert(*best_action >= -1);
+  assert(*best_action < num_cols_y);
+     
   /* special case when best action is already known */
   if( *best_action != -1 )
   {
@@ -986,7 +991,7 @@ void find_greedy_split(
   )
 {
 
-  int best_action;
+  int best_action = -1;
 
   int p;
   int i;
@@ -1131,7 +1136,7 @@ void find_best_split(
   )
 {
 
-  int best_action;
+  int best_action = -1;
 
   int p;
   int i;
