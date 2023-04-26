@@ -1012,14 +1012,6 @@ void find_greedy_split(
 
   int best_reward_for_all;
 
-  /* /\* make trees, will change this to pre-allocate memory at some point *\/ */
-  /* NODE* most_recent_left_tree = make_tree(depth-1); */
-  /* NODE* most_recent_right_tree = make_tree(depth-1); */
-
-  /* /\* similarly need to store elts added/removed from left/right since most recent *\/ */
-  /* int* added_to_left_since_previous_tree = (int*) malloc (sorted_sets[0]->n * sizeof(int)); */
-  /* int* removed_from_right_since_previous_tree = (int*) malloc (sorted_sets[0]->n * sizeof(int)); */
-  
   assert(node != NULL);
   assert(tmp_trees != NULL);
   assert(data_x != NULL);
@@ -1160,13 +1152,14 @@ void find_best_split(
 
   int best_reward_for_all;
 
-  /* /\* make trees, will change this to pre-allocate memory at some point *\/ */
-  /* NODE* most_recent_left_tree = make_tree(depth-1); */
-  /* NODE* most_recent_right_tree = make_tree(depth-1); */
+  double most_recent_left_tree_reward;
+  double most_recent_right_tree_reward;
 
-  /* /\* similarly need to store elts added/removed from left/right since most recent *\/ */
-  /* int* added_to_left_since_previous_tree = (int*) malloc (sorted_sets[0]->n * sizeof(int)); */
-  /* int* removed_from_right_since_previous_tree = (int*) malloc (sorted_sets[0]->n * sizeof(int)); */
+  /* similarly need to store elts added/removed from left/right since most recent */
+  int* added_to_left_since_previous_tree;
+  int* removed_from_right_since_previous_tree;
+  int n_added;
+  int n_removed;
   
   assert(node != NULL);
   assert(tmp_trees != NULL);
@@ -1240,7 +1233,11 @@ void find_best_split(
   {
      printf("Greedily-found tree has reward %g\n", node->reward);
   }
-  
+
+  /* similarly need to store elts added/removed from left/right since most recent */
+  added_to_left_since_previous_tree = (int*) malloc (sorted_sets[0]->n * sizeof(int));
+  removed_from_right_since_previous_tree = (int*) malloc (sorted_sets[0]->n * sizeof(int));
+
 
   /* consider each covariate for splitting */
   for( p = 0; !(*perfect) && p < num_cols_x; p++)
@@ -1256,6 +1253,8 @@ void find_best_split(
       */
      int have_previous_left_child = 0;
      int have_previous_right_child = 0;
+     int have_most_recent_left_tree = 0;
+     int have_most_recent_right_tree = 0;
 
      int n_left = 0;
      int n_right = sorted_sets[0]->n;
@@ -1266,6 +1265,9 @@ void find_best_split(
 
      double ub;
      int haveub;
+
+     n_added = 0;
+     n_removed = 0;
      
      /* initialise all sorted sets for splits of this dataset to be empty on left, and full on right */
      for( pp = 0; pp < num_cols_x; pp++)
@@ -1303,10 +1305,30 @@ void find_best_split(
                  + (right_child->reward - data_y[worst_actions[elt]*num_rows+elt]);
               haveub = 1;
            }
+           /* can also do this with an earlier tree */
+           else if( USE_BOUNDS && have_most_recent_left_tree && have_most_recent_right_tree )
+           {
+              int tmpelt;
+              ub = most_recent_left_tree_reward + most_recent_right_tree_reward;
+              for( j = 0; j < n_added; j++)
+              {
+                 tmpelt = added_to_left_since_previous_tree[j];
+                 ub += data_y[best_actions[tmpelt]*num_rows+tmpelt];
+              }
+              for( j = 0; j < n_removed; j++)
+              {
+                 tmpelt = removed_from_right_since_previous_tree[j];
+                 ub -= data_y[worst_actions[elt]*num_rows+elt];
+              }
+              haveub = 1;
+           }
            else
            {
               haveub = 0;
            }
+
+           if( root && haveub )
+              printf("upper bound is %g. ", ub);
            
            /* if have_previous_left_tree then left_child is an optimal tree for the previous split
             * if this tree assigns elt its best action then left_child is also optimal
@@ -1323,6 +1345,7 @@ void find_best_split(
               /* this split won't be optimal, don't bother finding the left tree */
               /* indicate to next iteration that left tree was not found */
               have_previous_left_child = 0;
+              added_to_left_since_previous_tree[n_added++] = elt;
            }
            /* have to resort to computing optimal left tree from scratch */
            else
@@ -1332,6 +1355,10 @@ void find_best_split(
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect, 0);
               /* indicate to next iteration that left tree was found */
               have_previous_left_child = 1;
+              n_added = 0;
+              most_recent_left_tree_reward = left_child->reward;
+              have_most_recent_left_tree = 1;
+
            }
 
            /* if have_previous_right_child then right_child is an optimal tree for the previous split
@@ -1349,6 +1376,7 @@ void find_best_split(
               /* this split won't be optimal, don't bother finding the left tree */
               /* indicate to next iteration that right tree was not found */
               have_previous_right_child = 0;
+              removed_from_right_since_previous_tree[n_removed++] = elt;
            }
            /* have to resort to computing optimal right tree from scratch */
            else
@@ -1358,6 +1386,9 @@ void find_best_split(
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect, 0);
               /* indicate to next iteration that right tree was found */
               have_previous_right_child = 1;
+              n_removed = 0;
+              most_recent_right_tree_reward = right_child->reward;
+              have_most_recent_right_tree = 1;
            }
 
            /* only check whether we have a new incumbent if we actually have both the left and right tree */
@@ -1367,7 +1398,9 @@ void find_best_split(
            if( have_previous_left_child && have_previous_right_child )
            {
               reward = left_child->reward + right_child->reward;
-
+              if( root )
+                 printf("Reward is %g\n", reward);
+              
               *perfect = left_perfect && right_perfect;
            
               if( reward > best_reward )
@@ -1397,6 +1430,8 @@ void find_best_split(
             * (since we did not have a valid split) so we need to record this */
            have_previous_left_child = 0;
            have_previous_right_child = 0;
+           added_to_left_since_previous_tree[n_added++] = elt;
+           removed_from_right_since_previous_tree[n_removed++] = elt;
         }
      }
   }
@@ -1412,6 +1447,8 @@ void find_best_split(
     tree_copy(best_left_child,left_child);
     tree_copy(best_right_child,right_child);
   }
+  free(added_to_left_since_previous_tree);
+  free(removed_from_right_since_previous_tree);
 }
 
 
