@@ -1012,6 +1012,9 @@ void find_greedy_split(
 
   int best_reward_for_all;
 
+  int left_perfect;
+  int right_perfect;
+  
   assert(node != NULL);
   assert(tmp_trees != NULL);
   assert(data_x != NULL);
@@ -1082,12 +1085,14 @@ void find_greedy_split(
 
   find_greedy_split(node->left_child, depth-1, tmp_sorted_sets[depth][LEFT], split_step, min_node_size,
      data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
-     tmp_trees, tmp_sorted_sets, rewards, rewards2, perfect, 0);
+     tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect, 0);
 
   find_greedy_split(node->right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
      data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
-     tmp_trees, tmp_sorted_sets, rewards, rewards2, perfect, 0);
+     tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect, 0);
 
+  *perfect = left_perfect && right_perfect;
+  
   /* at this point the reward recorded for node will be that for a single split since level_one_learning is used,
    * so now need to update with correct reward
    */
