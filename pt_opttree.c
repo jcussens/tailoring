@@ -26,6 +26,46 @@ struct sorted_set
 };
 typedef struct sorted_set SORTED_SET;
 
+/** print a policy tree (debugging only) 
+ * if covariate names are not supplied then the indices for covariates are used
+ */
+static
+void print_tree(
+   const NODE*           tree,               /**< root of tree to print */ 
+   const char**          covnames            /**< if covnames != NULL, then covnames[i] is the name of covariate i */
+  )
+{
+   assert(tree != NULL);
+   assert(tree->index == -1 || tree->left_child != NULL );
+   assert(tree->index == -1 || tree->right_child != NULL );
+
+   printf("node = %p\n", (void*) tree);
+   printf("reward = %g\n", tree->reward);
+   if( tree->index != -1)
+   {
+      if( covnames != NULL )
+         printf("covariate = %s\n", covnames[tree->index]);
+      else
+         printf("covariate = %d\n", tree->index);
+      printf("value = %g\n", tree->value);
+      printf("left_child = %p\n", (void*) tree->left_child);
+      printf("right_child = %p\n", (void*) tree->right_child);
+   }
+   else
+   {
+      printf("action_id = %d\n", tree->action_id);
+   }
+   printf("\n");
+   
+   if( tree->index != -1)
+   {
+      print_tree(tree->left_child,covnames);
+      print_tree(tree->right_child,covnames);
+   }
+}
+
+
+
 
 /** add a given reward to those nodes in a tree which a particular element visits */
 static
@@ -73,6 +113,33 @@ int assigned_action(
       return assigned_action(tree->right_child, data_x, num_rows, elt);
 }
 
+static
+int check_perfect(
+   const NODE*           tree,               /**< allegedly perfect tree */
+   const SORTED_SET*     sorted_set,         /**< data set for tree */
+   const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+   const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
+   int                   num_rows            /**< number of units */
+   )
+{
+   int i;
+
+   for(i = 0; i < sorted_set->n; i++)
+   {
+        int elt = sorted_set->elements[i];
+        int assigned = assigned_action(tree, data_x, num_rows, elt);
+        if( assigned != best_actions[elt] )
+        {
+           printf("Tree for %d elements is not, in fact, perfect!\n", sorted_set->n);
+           printf("elt %d is assigned %d but best action is %d in following tree.\n", elt, assigned, best_actions[elt]);
+           print_tree(tree, NULL);
+           return 0;
+        }
+   }
+   return 1;
+}
+
+
 /** Determine whether a sorted set is 'pure'.
  * A pure sorted set is one where each unit has the same best action
  * @return The best action if the set is pure, otherwise -1
@@ -114,15 +181,24 @@ void store_best_worst_actions(
    int d;
    double best_reward;
    double worst_reward;
-  
+
+   assert(num_cols_y > 1);
+   
    for( i = 0; i < num_rows; i++ )
    {
+      /* there are always at least two actions
+         initialise best to action 0
+         and worst to action 1, so that even
+         if we get equal rewards the best and worst action must differ
+         (it is just simpler to assume that best and worst differ
+      */
+      
       best_action = 0;
       best_reward = data_y[i];
-      worst_action = 0;
-      worst_reward = data_y[i];
+      worst_action = 1;
+      worst_reward = data_y[num_rows+i];
     
-      for( d = 1; d < num_cols_y; d++ )
+      for( d = 0; d < num_cols_y; d++ )
       {
          if( data_y[d*num_rows+i] > best_reward )
          {
@@ -137,6 +213,7 @@ void store_best_worst_actions(
       }
       best_actions[i] = best_action;
       worst_actions[i] = worst_action;
+      assert(worst_action != best_action);
       assert(worst_reward <= best_reward);
    }
 }
@@ -306,43 +383,6 @@ void insert_element(
 }
 
 
-/** print a policy tree (debugging only) 
- * if covariate names are not supplied then the indices for covariates are used
- */
-static
-void print_tree(
-   const NODE*           tree,               /**< root of tree to print */ 
-   const char**          covnames            /**< if covnames != NULL, then covnames[i] is the name of covariate i */
-  )
-{
-   assert(tree != NULL);
-   assert(tree->index == -1 || tree->left_child != NULL );
-   assert(tree->index == -1 || tree->right_child != NULL );
-
-   printf("node = %p\n", (void*) tree);
-   printf("reward = %g\n", tree->reward);
-   if( tree->index != -1)
-   {
-      if( covnames != NULL )
-         printf("covariate = %s\n", covnames[tree->index]);
-      else
-         printf("covariate = %d\n", tree->index);
-      printf("value = %g\n", tree->value);
-      printf("left_child = %p\n", (void*) tree->left_child);
-      printf("right_child = %p\n", (void*) tree->right_child);
-   }
-   else
-   {
-      printf("action_id = %d\n", tree->action_id);
-   }
-   printf("\n");
-   
-   if( tree->index != -1)
-   {
-      print_tree(tree->left_child,covnames);
-      print_tree(tree->right_child,covnames);
-   }
-}
 
 
 /** merge a pair of ordered subsequences to get a single ordered subsequence
@@ -687,7 +727,9 @@ int perfect_split(
    return lefti;
 }
 
-/** Find an optimal depth=1 (ie a single split) tree for a set of units */
+/** Find an optimal depth=1 (ie at most one single split) tree for a set of units 
+ * If no split is optimal, then that is returned, ie a leaf is returned
+ */
 static
 void level_one_learning(
    NODE*                 node,               /**< uninitialised tree to be populated with optimal tree */
@@ -791,7 +833,7 @@ void level_one_learning(
     if( USE_PERFECT )
     {
        perfect_idx = perfect_split(sorted_setp, best_actions, data_xp);
-       
+
        if( perfect_idx != -1 )
        {
           /* we found a perfect split */
@@ -821,6 +863,8 @@ void level_one_learning(
           node->right_child->reward = best_right_reward;
           node->right_child->action_id = best_right_action;
 
+          assert(check_perfect(node, sorted_setp, data_x, best_actions, num_rows));
+          
           *perfect = 1;
 
           if( VERBOSE )
@@ -1060,14 +1104,28 @@ void find_greedy_split(
     node->index = -1;
     node->reward = best_reward;
     node->action_id = best_action;
+
+    assert(!(*perfect) || check_perfect(node, sorted_sets[0], data_x, best_actions, num_rows) );
+    
     return;
   }
 
 
   /* find best depth=1 tree for this dataset */
+  /* NB this call will set *perfect incorrectly, but it is overwritten later, so no matter */
   level_one_learning(node, sorted_sets, split_step, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
      worst_actions, rewards, rewards2, perfect);
 
+  /* deal with the case where there is no depth=1 tree is better than a depth=0 tree */
+  if( node->index == -1 )
+  {
+     /* if the leaf were pure this would have been discovered earlier */
+     assert(!(*perfect));
+
+     /* don't choose an arbitrary split and keep going, instead just return the leaf */
+     return;
+  }
+  
   /* initialise all sorted sets for splits of this dataset to be empty on left, and empty on right */
   for( pp = 0; pp < num_cols_x; pp++)
   {
@@ -1076,8 +1134,9 @@ void find_greedy_split(
   }
 
   /* put each datapoint on either the left or right */
-  
-  for( i = 0; i < (sorted_sets[0]->n)-1; i++ )
+
+  assert(node->index > -1);
+  for( i = 0; i < sorted_sets[0]->n; i++ )
   {
      int elt = sorted_sets[0]->elements[i];
      if( data_x[(node->index)*num_rows+elt] <= node->value )
@@ -1097,11 +1156,13 @@ void find_greedy_split(
      tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect, 0);
 
   *perfect = left_perfect && right_perfect;
-  
+
   /* at this point the reward recorded for node will be that for a single split since level_one_learning is used,
    * so now need to update with correct reward
    */
   node->reward = node->left_child->reward + node->right_child->reward;
+
+  assert(!(*perfect) || check_perfect(node, sorted_sets[0], data_x, best_actions, num_rows) );
 }
 
 
@@ -1211,6 +1272,9 @@ void find_best_split(
     node->index = -1;
     node->reward = best_reward;
     node->action_id = best_action;
+
+    assert(!(*perfect) || check_perfect(node, sorted_sets[0], data_x, best_actions, num_rows) );
+    
     return;
   }
 
@@ -1459,6 +1523,8 @@ void find_best_split(
   }
   free(added_to_left_since_previous_tree);
   free(removed_from_right_since_previous_tree);
+
+  assert(!(*perfect) ||  check_perfect(node, sorted_sets[0], data_x, best_actions, num_rows) );
 }
 
 
