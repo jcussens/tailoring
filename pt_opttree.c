@@ -1231,6 +1231,9 @@ void find_best_split(
   int* removed_from_right_since_previous_tree;
   int n_added;
   int n_removed;
+
+  int n_calls = 0;
+  int n_potential_calls = 0;
   
   assert(node != NULL);
   assert(tmp_trees != NULL);
@@ -1371,6 +1374,8 @@ void find_best_split(
         /* if a proper split see whether it's a best split */
         if( data_xp[elt] < data_xp[sorted_set->elements[i+1]] )
         {
+           n_potential_calls += 2;
+           
            /* if we computed both left and right trees for split before elt was moved from
               right to left, then we can compute an upper bound on the optimal reward for this split */
            if( USE_BOUNDS && have_previous_left_child && have_previous_right_child )
@@ -1424,6 +1429,7 @@ void find_best_split(
            /* have to resort to computing optimal left tree from scratch */
            else
            {
+              n_calls++;
               find_best_split(left_child, depth-1, tmp_sorted_sets[depth][LEFT], split_step, min_node_size,
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect, 0);
@@ -1455,6 +1461,7 @@ void find_best_split(
            /* have to resort to computing optimal right tree from scratch */
            else
            {
+              n_calls++;
               find_best_split(right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect, 0);
@@ -1525,6 +1532,9 @@ void find_best_split(
   free(removed_from_right_since_previous_tree);
 
   assert(!(*perfect) ||  check_perfect(node, sorted_sets[0], data_x, best_actions, num_rows) );
+
+  if(root)
+     printf("\n%d recursive calls executed out of a possible %d recursive calls.\n\n", n_calls, n_potential_calls);
 }
 
 
@@ -1611,6 +1621,14 @@ NODE* tree_search_jc_policytree(
       new_sorted_subset(initial_sorted_sets[p],tmp_sorted_sets[i][RIGHT][p]);
     }
   }
+
+  /* tmp_sets = (int***) malloc(depth*sizeof(int**)); */
+  /* for(i = 0; i < depth; i++) */
+  /* { */
+  /*   tmp_sets[i] = (int**) malloc(2*sizeof(int*)); */
+  /*   tmp_sets[i][LEFT] = (int*) malloc (num_rows * sizeof(int)); */
+  /*   tmp_sets[i][RIGHT] = (int*) malloc (num_rows * sizeof(int)); */
+  /* } */
   
   rewards = (double*) malloc(num_cols_y*sizeof(double));
   rewards2 = (double*) malloc(num_cols_y*sizeof(double));
@@ -1618,6 +1636,8 @@ NODE* tree_search_jc_policytree(
   best_actions = (int*) malloc(num_rows*sizeof(int));
   worst_actions = (int*) malloc(num_rows*sizeof(int));
 
+  
+  
   store_best_worst_actions(data_y, num_rows, num_cols_y, best_actions, worst_actions);
 
   ub = 0.0;

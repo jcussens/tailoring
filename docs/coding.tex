@@ -1,5 +1,7 @@
 \documentclass{article}
 
+\usepackage{algorithm2e}
+
 \newcommand{\splitval}{\ensuremath{\theta}}
 \newcommand{\splitvals}{\ensuremath{\Theta}}
 \newcommand{\depth}{\ensuremath{D}}
@@ -204,6 +206,115 @@ an upper bound on $R^{*}_{d,N}$. Similarly, if we have found
 $f^{*}_{d,N}$ and remove $N_2$ from $N$ to get $N_1$, (\ref{eq:lb})
 provides an upper bound on $R^{*}_{d,N_{1}}$.
 
+\begin{table}
+  \centering
+  \begin{tabular}{|l|l|} \hline
+    $d$ & Depth of optimal tree \\ \hline
+    $N$ & Set of individuals \\ \hline
+    $f^{*}(d,N)$ & Incumbent tree (optimal on exit) \\ \hline
+    $R(f^{*}(d,N),N)$ & Reward for the incumbent tree \\ \hline
+    greedytree & Finds a tree using greedy search and indicates
+                 whether it is perfect \\ \hline
+    $f_{0}$ & Initial tree for each covariate from a dummy split \\
+    \hline
+    best & Returns true iff given tree is non-NULL and assigns every
+           given unit its best action \\ \hline
+    worst & Returns true iff given tree is non-NULL and assigns every
+           given unit its worst action \\ \hline 
+    $P$ & Set of covariates \\ \hline
+    $j$ & A covariate \\ \hline
+    $f_L$ & The current left tree, or NULL if non-existent   \\ \hline
+    $f_R$ & The current right tree, or NULL if non-existent   \\ \hline
+    $R_L$ & The reward for the most recent left tree \\ \hline
+    $R_R$ & The reward for the most recent right tree \\ \hline
+    $S_j$ & Set of splits using covariate $j$ \\ \hline
+    $s_{L}(N)$ & The left set for split $s$ \\ \hline
+    $s_{R}(N)$ & The right set for split $s$ \\ \hline
+    $s$ & The current split \\ \hline
+    $s'$ & The split preceding the current split \\ \hline
+    $M$ & The units moved from right to left by the current split \\
+    \hline
+    $M_L$ & The units moved from right to left since the most recent
+            left tree \\ \hline
+    $M_R$ & The units moved from right to left since the most recent
+            right tree \\ \hline
+    $u_L$ & An upper bound on the reward of an optimal tree for the
+            current left set \\ \hline
+    $u_R$ & An upper bound on the reward of an optimal tree for the
+            current right set \\ \hline
+  \end{tabular}
+  \caption{Values in optimal tree algorithm}
+  
+  \label{tab:explanation}
+\end{table}
+
+\begin{algorithm}
+  \SetKwFunction{greedy}{greedytree}
+  \SetKwData{perfect}{perfect}
+  \SetKwData{lperfect}{lperfect}
+  \SetKwData{rperfect}{rperfect}
+  \SetKwFunction{best}{best}
+  \SetKwFunction{worst}{worst}
+  \SetKwFunction{opttree}{opttree}
+  \KwIn{$d$, $N$}
+  \KwOut{$(f^{*}(d,N),\perfect)$}
+  $(f^{*}_{d,N}, \perfect) \leftarrow \greedy(d,N)$\;
+  % $R^{*} \leftarrow R(f^{*}_{d,N})$\;
+  \lIf{$\perfect$}{\Return{$(f^{*}_{d,N},\perfect)$}}
+  $f_{0} \leftarrow \opttree(d-1,N)$\;
+  \ForEach{$j \in P$}{
+    $f_{R} \leftarrow f_{0}$,
+    $f_{L} \leftarrow f_{0}$\;
+    $M_{L} \leftarrow \emptyset$,
+    $M_{R} \leftarrow \emptyset$\;
+    $R_{L} \leftarrow 0$,
+    $R_{R} \leftarrow R(f_{0},N)$\;
+    $s'_{L}(N) \leftarrow \emptyset$\;
+    \ForEach{$s \in S_{j}$}{
+      $M \leftarrow s_{L}(N) \setminus s'_{L}(N)$\;
+      $M_{L} \leftarrow M_{L} \cup M$,
+      $M_{R} \leftarrow M_{R} \cup M$\;
+      \If{$b \leftarrow \best(f_{L},M)$}{
+        $R_{L} \leftarrow R(f_{L},s_{L}(N))$\;
+        $M_{L} \leftarrow \emptyset$,
+        $u_{L} \leftarrow R_{L}$}
+      \If{$w \leftarrow \worst(f_{R},M)$}{
+        $R_{R} \leftarrow R(f_{R},s_{R}(N))$\;
+        $M_{R} \leftarrow \emptyset$,
+        $u_{R} \leftarrow R_{R}$}
+      \If{$\neg b \vee \neg w$}{
+        \lIf{$\neg b$}{$u_{L} \leftarrow R_{L} + \sum_{i \in M_{L}}
+          r^{*}(i)$}
+        \lIf{$\neg w$}{$u_{R} \leftarrow R_{R} - \sum_{i \in M_{R}}
+          r_{*}(i)$}
+        \If{$u_{L} + u_{R} \leq R(f^{*}_{d,N},N)$}{
+          \lIf{$\neg b$}{$f_{L} \leftarrow
+            \mbox{NULL}$}
+          \lIf{$\neg w$}{$f_{R} \leftarrow
+            \mbox{NULL}$}
+          Continue\;
+        }
+      }
+      \If{$\neg b$}{
+        $(f_{L},\lperfect) \leftarrow \opttree(d-1,s_{L}(N))$\;
+        $R_{L} \leftarrow R(f_{L},s_{L}(N))$\;
+        $M_{L} \leftarrow \emptyset$
+      }
+      \If{$\neg w$}{
+        $(f_{R},\rperfect) \leftarrow \opttree(d-1,s_{R}(N))$\;
+        $R_{R} \leftarrow R(f_{R},s_{R}(N))$\;
+        $M_{R} \leftarrow \emptyset$
+      }
+      \If{$R_{L} + R_{R} > R(f^{*}_{d,N},N)$}{
+        $f^{*}_{d,N} \leftarrow f_{L} + f_{R}$\;
+        $\perfect \leftarrow \lperfect \wedge \rperfect$\; 
+        \lIf{$\perfect$}{\Return{$(f^{*}_{d,N},\perfect)$}}
+      }
+      $s'_{L}(N) \leftarrow s_{L}(N)$\;
+      }
+    }
+    \Return{$(f^{*}_{d,N},\perfect)$}
+\end{algorithm}
 
 \section{Complex junk}
 \label{sec:junk}
