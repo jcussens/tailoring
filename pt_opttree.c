@@ -253,14 +253,13 @@ int remove_element(
    int midsave;
    int midval;
    int eltval;
-   int* rank;
+   const int* rank = sorted_set->rank;
    int n;
    int* set;  
    int retval = -1;
    
    assert(sorted_set != NULL);
    
-   rank = sorted_set->rank;
    n = sorted_set->n;
    set = sorted_set->elements;  
    eltval = rank[elt];
@@ -302,18 +301,17 @@ void insert_element(
    int                   elt                 /**< element to insert */ 
   )
 {
-  int left;
-  int right;
+  unsigned int left;
+  unsigned int right;
   int mid;
   int eltval;
-  int* rank;
+  const int* rank = sorted_set->rank;
   int n;
   int* set;  
   
   assert(sorted_set != NULL);
   assert(elt >= 0);
   
-  rank = sorted_set->rank;
   n = sorted_set->n;
   set = sorted_set->elements;  
   eltval = rank[elt];
@@ -378,7 +376,7 @@ void insert_element(
   if( mid < n )
     memmove(set+mid+2,set+mid+1,(n-mid-1)*sizeof(int));
   
-  /* insert at mid */
+  /* insert at mid+1 */
   set[mid+1] = elt;
   sorted_set->n++;
 }
