@@ -1568,14 +1568,14 @@ void find_best_split(
                  best_reward = reward;
                  best_split_var = p;
                  best_split_val = data_xp[elt];
-                 if( VERBOSE || root )
-                 {
-                    printf("New best split for %d=%d+%d datapoints for depth %d tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n",
-                       sorted_set->n,n_left,n_right,depth,p,best_split_val,reward,left_child->reward,right_child->reward);
+                 /* if( VERBOSE || root ) */
+                 /* { */
+                 /*    printf("New best split for %d=%d+%d datapoints for depth %d tree is: covariate=%d, split value=%g, reward=%g=%g+%g\n", */
+                 /*       sorted_set->n,n_left,n_right,depth,p,best_split_val,reward,left_child->reward,right_child->reward); */
                     
-                    if( *perfect )
-                       printf("Split was perfect, no need to consider any others\n");
-                 }
+                 /*    if( *perfect ) */
+                 /*       printf("Split was perfect, no need to consider any others\n"); */
+                 /* } */
                  
                  /* save best left and right trees found so far */
                  /* tree_copy(source,target) */
@@ -1606,8 +1606,8 @@ void find_best_split(
   free(mr);
   tree_free(f0);
 
-  if(root)
-     printf("\n%d recursive calls executed out of a possible %d recursive calls.\n\n", n_calls, n_potential_calls);
+  /* if(root) */
+  /*    printf("\n%d recursive calls executed out of a possible %d recursive calls.\n\n", n_calls, n_potential_calls); */
 }
 
 
@@ -1718,7 +1718,7 @@ NODE* tree_search_jc_policytree(
   {
      ub += data_y[best_actions[i]*num_rows+i];
   }
-  printf("A perfect tree has reward %g.\n", ub);
+  /* printf("A perfect tree has reward %g.\n", ub); */
   
   perfect = 0;
   find_best_split(tree, depth, initial_sorted_sets, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
