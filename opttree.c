@@ -111,7 +111,7 @@ double find_split_val(
   int breakpoint
   )
 {
-  return (sorted_set_bps->data_xx)[p][sorted_set_bps->sorted_universe[p][breakpoint]];
+  return (sorted_set_bps->data_xx)[p][sorted_set_bps->sorted_universe[p][breakpoint-1]];
 }
 
 /** insert elements into a sorted set, assuming they are not already there */

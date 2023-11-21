@@ -26,6 +26,144 @@ int getnfields(
 }
 
 
+/** prune tree: if a subtree has the same action for all leaves, replace with a
+ * single leaf with that action 
+*/
+static
+void prune_tree(
+   NODE*                 root                /**< root node */
+   )
+{
+   if( root->left_child != NULL )
+      prune_tree( root->left_child );
+
+   if( root->right_child != NULL )
+      prune_tree( root->right_child );
+
+   /* just delete dummy nodes */
+   if( root->left_child != NULL && root->left_child->index == -1
+      && root->left_child->action_id == -1 )
+   {
+      free(root->left_child);
+      root->left_child = NULL;
+   }
+
+   if( root->right_child != NULL && root->right_child->index == -1
+      && root->right_child->action_id == -1 )
+   {
+      free(root->right_child);
+      root->right_child = NULL;
+   }
+
+   if( root->left_child != NULL  && root->right_child != NULL 
+      && root->left_child->index == -1  && root->right_child->index == -1
+      && root->left_child->action_id == root->right_child->action_id )
+   {
+      root->index = -1;
+      root->reward = root->left_child->reward + root->right_child->reward;
+      root->action_id = root->left_child->action_id;
+      free(root->left_child);
+      free(root->right_child);
+      root->left_child = NULL;
+      root->right_child = NULL;
+   }
+   
+   
+   
+   
+}
+/** breadth-first index for a node, return -1 if not found */
+static
+int bfidx(
+   NODE*                 root,                /**< root node */
+   NODE*                 node,                /**< node to find bf index for */
+   int                   count                /**< how much to add to index */
+   )
+{
+
+   int idx;
+   
+   if( node == root )
+      return count;
+   else if( root->left_child != NULL )
+   {
+      idx = bfidx(root->left_child, node, count+1);
+      if( idx != -1)
+         return idx;
+   }
+   else if( root->right_child != NULL )
+   {
+      idx = bfidx(root->right_child, node, count+2);
+      if( idx != -1)
+         return idx;
+   }
+   else
+   {
+      return -1;
+   }
+}
+
+/** get number of nodes in a tree */
+static
+int nnodes(
+   NODE*                 tree                /**< policy tree to print */
+   )
+{
+   if( tree->index != -1)
+      return 1 + nnodes(tree->left_child) + nnodes(tree->right_child);
+   else
+      return 1;
+}
+
+/** prints a policy tree in policytree style to standard output */
+static
+void print_tree_policytree_rec(
+   NODE*                 tree,               /**< policy tree to print */
+   char**                covnames,           /**< covnames[j] is the name of covariate j */
+   int                   level               /**< level of the tree */
+  )
+{
+
+   /* indent */
+   int i;
+
+   for(i = 0; i < level; i++)
+      printf("  ");
+   
+   if( tree->index != -1)
+   {
+      printf("split_variable: %s  split_value: %g\n", covnames[tree->index], tree->value);
+      print_tree_policytree_rec(tree->left_child, covnames, level+1);
+      print_tree_policytree_rec(tree->right_child, covnames, level+1);
+   }
+   else
+   {
+      printf("* action: %d\n", tree->action_id + 1);
+   }
+}
+
+/** prints a policy tree in policytree style to standard output */
+static
+void print_tree_policytree(
+   NODE*                 tree,               /**< policy tree to print */
+   char**                covnames,           /**< covnames[j] is the name of covariate j */
+   int                   depth,              /**< depth of the tree */
+   int                   nactions,           /**< number of actions */
+   char**                actionnames         /**< covnames[j] is the name of action j */
+  )
+{
+   int i;
+   
+   printf("policy_tree object\n");
+   printf("Tree depth:   %d\n", depth);
+   printf("Actions: ");
+   for(i = 0; i < nactions; i++)
+      printf(" %d: %s", i+1, actionnames[i]);
+   printf("\nVariable splits:\n");
+
+   print_tree_policytree_rec(tree, covnames, 0);   
+}
+
 /** prints a policy tree to standard output */
 static
 void print_tree(
@@ -177,6 +315,14 @@ int main(
         printf("Error reading action name with index %d from %s.\n", i-num_cols_x, line);
       return 1;
     }
+
+    /* add an 'X' if name starts with a digit (to be like policytree) */
+    if( isdigit(*tmpstr) )
+    {
+       memmove(tmpstr+1,tmpstr,(strlen(tmpstr)+1));
+       tmpstr[0] = 'X';
+    }
+    
     if( i < num_cols_x )
     {
       covnames[i] = (char*) malloc((strlen(tmpstr)+1)*sizeof(char));
@@ -222,13 +368,16 @@ int main(
   else
      tree = tree_search_jc_discretedata(depth, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y);
 
-  printf("Actions: ");
-  for(i = 0; i < num_cols_y; i++)
-    printf("%d: %s ",i,actionnames[i]);
-  printf("\n");
+  /* printf("Actions: "); */
+  /* for(i = 0; i < num_cols_y; i++) */
+  /*   printf("%d: %s ",i,actionnames[i]); */
+  /* printf("\n"); */
   
-  print_tree(tree,covnames);
+  /* print_tree(tree,covnames); */
 
+  prune_tree(tree);
+  print_tree_policytree(tree, covnames, depth, num_cols_y, actionnames);
+  
   for(i = 0; i < num_cols_x; i++)
     free(covnames[i]);
   free(covnames);
