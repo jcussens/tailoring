@@ -148,6 +148,30 @@ void print_tree(
 }
 
 
+/** prints a policy tree to standard output */
+static
+void print_tree_raw(
+   NODE*                 tree               /**< policy tree to print */
+  )
+{
+   printf("<<<<<<<\n");
+   printf("node = %p\n", (void*) tree);
+   printf("index = %d\n", tree->index);
+   printf("value = %g\n", tree->value);
+   printf("reward = %g\n", tree->reward);
+   printf("action_id = %d\n", tree->action_id);
+   printf("left_child = %p\n", (void*) tree->left_child);
+   printf("right_child = %p\n", (void*) tree->right_child);
+   printf(">>>>>>>\n\n");
+   
+   if( tree->left_child != NULL )
+      print_tree_raw(tree->left_child);
+   
+   if( tree->right_child != NULL )
+      print_tree_raw(tree->right_child);
+}
+
+
 /** 
  * call like ./a.out filename nactions [depth]
  * file should have a single header line and then each subsequent line is covariates followed by nactions reward values.
@@ -329,7 +353,11 @@ int main(
   
   /* print_tree(tree,covnames); */
 
+  /* print_tree_raw(tree); */
+  
   print_tree_policytree(tree, covnames, depth, num_cols_y, actionnames);
+
+  printf("Reward: %g\n", tree->reward);
   
   for(i = 0; i < num_cols_x; i++)
     free(covnames[i]);

@@ -325,7 +325,7 @@ NODE* make_tree(
   node->index = -1; /* no splitting covariate so far, may never be one...*/
   node->value = 0;
   node->reward = 0;
-  node->action_id = 0;
+  node->action_id = -1;
   
   if( depth > 0 )
   {
