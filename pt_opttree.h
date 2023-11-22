@@ -24,10 +24,6 @@ NODE* tree_search(
   const int num_cols_y        /** number of rewards */
    );
 
-void tree_free(
-   NODE*
-   );
-
 #ifdef __cplusplus
 }
 #endif

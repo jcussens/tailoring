@@ -26,52 +26,6 @@ int getnfields(
 }
 
 
-/** prune tree: if a subtree has the same action for all leaves, replace with a
- * single leaf with that action 
-*/
-static
-void prune_tree(
-   NODE*                 root                /**< root node */
-   )
-{
-   if( root->left_child != NULL )
-      prune_tree( root->left_child );
-
-   if( root->right_child != NULL )
-      prune_tree( root->right_child );
-
-   /* just delete dummy nodes */
-   if( root->left_child != NULL && root->left_child->index == -1
-      && root->left_child->action_id == -1 )
-   {
-      free(root->left_child);
-      root->left_child = NULL;
-   }
-
-   if( root->right_child != NULL && root->right_child->index == -1
-      && root->right_child->action_id == -1 )
-   {
-      free(root->right_child);
-      root->right_child = NULL;
-   }
-
-   if( root->left_child != NULL  && root->right_child != NULL 
-      && root->left_child->index == -1  && root->right_child->index == -1
-      && root->left_child->action_id == root->right_child->action_id )
-   {
-      root->index = -1;
-      root->reward = root->left_child->reward + root->right_child->reward;
-      root->action_id = root->left_child->action_id;
-      free(root->left_child);
-      free(root->right_child);
-      root->left_child = NULL;
-      root->right_child = NULL;
-   }
-   
-   
-   
-   
-}
 /** breadth-first index for a node, return -1 if not found */
 static
 int bfidx(
@@ -375,7 +329,6 @@ int main(
   
   /* print_tree(tree,covnames); */
 
-  prune_tree(tree);
   print_tree_policytree(tree, covnames, depth, num_cols_y, actionnames);
   
   for(i = 0; i < num_cols_x; i++)

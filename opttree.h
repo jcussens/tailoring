@@ -50,6 +50,11 @@ void tree_free(
    NODE*
    );
 
+void prune_tree(
+   NODE*                 root                /**< root node */
+   );
+
+
 #ifdef __cplusplus
 }
 #endif

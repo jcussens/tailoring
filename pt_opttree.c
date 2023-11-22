@@ -1766,6 +1766,8 @@ NODE* tree_search_jc_policytree(
   }
   free(initial_sorted_sets);
 
+  prune_tree(tree);
+  
   return tree;
 }
 

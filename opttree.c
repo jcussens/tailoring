@@ -386,6 +386,48 @@ void tree_free(
   free(node);
 }
 
+/** prune tree: if a subtree has the same action for all leaves, replace with a
+ * single leaf with that action 
+*/
+void prune_tree(
+   NODE*                 root                /**< root node */
+   )
+{
+   if( root->left_child != NULL )
+      prune_tree( root->left_child );
+
+   if( root->right_child != NULL )
+      prune_tree( root->right_child );
+
+   /* just delete dummy nodes */
+   if( root->left_child != NULL && root->left_child->index == -1
+      && root->left_child->action_id == -1 )
+   {
+      free(root->left_child);
+      root->left_child = NULL;
+   }
+
+   if( root->right_child != NULL && root->right_child->index == -1
+      && root->right_child->action_id == -1 )
+   {
+      free(root->right_child);
+      root->right_child = NULL;
+   }
+
+   if( root->left_child != NULL  && root->right_child != NULL 
+      && root->left_child->index == -1  && root->right_child->index == -1
+      && root->left_child->action_id == root->right_child->action_id )
+   {
+      root->index = -1;
+      root->reward = root->left_child->reward + root->right_child->reward;
+      root->action_id = root->left_child->action_id;
+      free(root->left_child);
+      free(root->right_child);
+      root->left_child = NULL;
+      root->right_child = NULL;
+   }
+}
+
 
 static
 void find_best_reward(
@@ -951,6 +993,8 @@ NODE* tree_search_jc_discretedata(
   free(sorted_set_bps->present);
   free(sorted_set_bps);
 
+  prune_tree(tree);
+  
   return tree;
 }
 
