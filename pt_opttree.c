@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "opttree.h"
+#include "tree.h"
 
 #define INF DBL_MAX
 #define LEFT 0
@@ -27,95 +28,9 @@ struct sorted_set
 };
 typedef struct sorted_set SORTED_SET;
 
-/** print a policy tree (debugging only) 
- * if covariate names are not supplied then the indices for covariates are used
- */
-static
-void print_tree(
-   const NODE*           tree,               /**< root of tree to print */ 
-   const char**          covnames            /**< if covnames != NULL, then covnames[i] is the name of covariate i */
-  )
-{
-   assert(tree != NULL);
-   assert(tree->index == -1 || tree->left_child != NULL );
-   assert(tree->index == -1 || tree->right_child != NULL );
-
-   printf("node = %p\n", (void*) tree);
-   printf("reward = %g\n", tree->reward);
-   if( tree->index != -1)
-   {
-      if( covnames != NULL )
-         printf("covariate = %s\n", covnames[tree->index]);
-      else
-         printf("covariate = %d\n", tree->index);
-      printf("value = %g\n", tree->value);
-      printf("left_child = %p\n", (void*) tree->left_child);
-      printf("right_child = %p\n", (void*) tree->right_child);
-   }
-   else
-   {
-      printf("action_id = %d\n", tree->action_id);
-   }
-   printf("\n");
-   
-   if( tree->index != -1)
-   {
-      print_tree(tree->left_child,covnames);
-      print_tree(tree->right_child,covnames);
-   }
-}
-
-
-
-
-/** add a given reward to those nodes in a tree which a particular element visits */
-static
-void update_rewards(
-   NODE*                 tree,               /**< tree */
-   const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
-   int                   num_rows,           /**< number of units */
-   int                   elt,                /**< element */
-   double                reward              /**< reward */
-   )
-{
-   tree->reward += reward;
-
-   if( tree->index == -1 )
-      return;
-   
-   if( data_x[(tree->index)*num_rows+elt] <= tree->value )
-      update_rewards(tree->left_child, data_x, num_rows, elt, reward);
-   else
-      update_rewards(tree->right_child, data_x, num_rows, elt, reward);
-}
-
-/** find the action assigned to a unit by a tree 
- * @return the assigned action
- */
-static
-int assigned_action(
-   const NODE*           tree,               /**< tree */
-   const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
-   int                   num_rows,           /**< number of units */
-   int                   elt                 /**< element to find assigned action for */
-   )
-{
-   assert( tree != NULL );
-   assert( data_x != NULL );
-   /* if node not a leaf, then both children are present */
-   assert( tree->index == -1 || tree->left_child != NULL );
-   assert( tree->index == -1 || tree->right_child != NULL );
-   
-   if( tree->index == -1 )
-      return tree->action_id;
-   else if( data_x[(tree->index)*num_rows+elt] <= tree->value )
-      return assigned_action(tree->left_child, data_x, num_rows, elt);
-   else
-      return assigned_action(tree->right_child, data_x, num_rows, elt);
-}
 
 static
-int check_perfect(
+int check_perfect_pt(
    const NODE*           tree,               /**< allegedly perfect tree */
    const SORTED_SET*     sorted_set,         /**< data set for tree */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
@@ -123,23 +38,8 @@ int check_perfect(
    int                   num_rows            /**< number of units */
    )
 {
-   int i;
-
-   for(i = 0; i < sorted_set->n; i++)
-   {
-        int elt = sorted_set->elements[i];
-        int assigned = assigned_action(tree, data_x, num_rows, elt);
-        if( assigned != best_actions[elt] )
-        {
-           printf("Tree for %d elements is not, in fact, perfect!\n", sorted_set->n);
-           printf("elt %d is assigned %d but best action is %d in following tree.\n", elt, assigned, best_actions[elt]);
-           print_tree(tree, NULL);
-           return 0;
-        }
-   }
-   return 1;
+   return check_perfect(tree, sorted_set->n, sorted_set->elements, data_x, best_actions, num_rows);
 }
-
 
 /** Determine whether a sorted set is 'pure'.
  * A pure sorted set is one where each unit has the same best action
@@ -514,94 +414,6 @@ SORTED_SET* make_sorted_set(
   return sorted_set;
 }
 
-/**
- * Make a policy tree of required depth with dummy values,
- * which can later be overwritten
- * @return a policy tree of required depth
- * or NULL if there is insufficient memory
- */
-static
-NODE* make_tree(
-   int                   depth               /**< required depth of tree */
-  )
-{
-  NODE* node;
-
-  assert(depth >= 0); 
-  
-  node = (NODE*) malloc(sizeof(NODE));
-
-  if( node == NULL )
-  {
-    /* not enough memory! */
-    return NULL;
-  }
-
-  /* explicitly set default values for all members to keep valgrind happy */
-
-  node->index = -1; /* no splitting covariate so far, may never be one...*/
-  node->value = 0;
-  node->reward = 0;
-  node->action_id = -1;
-  
-  if( depth > 0 )
-  {
-    node->left_child = make_tree(depth-1);
-    node->right_child = make_tree(depth-1);
-    if( node->left_child == NULL || node->right_child == NULL )
-      /* not enough memory */
-      return NULL;
-  }
-  else
-  {
-    /* for leaf nodes set children explicitly to NULL */
-    node->left_child = NULL;
-    node->right_child = NULL;
-  }
-  return node;
-}
-
-
-/**
- * copy data from source to target tree
- * assumes both trees have same depth
- */
-static
-void tree_copy(
-   const NODE*           source,             /**< source tree */
-   NODE*                 target              /**< target tree */
-  )
-{
-
-  assert(source != NULL);
-  assert(target != NULL);
-  
-  target->index = source->index;
-  target->value = source->value;
-  target->reward = source->reward;
-  target->action_id = source->action_id;
-  if( source->left_child != NULL)
-    tree_copy(source->left_child,target->left_child);
-  if( source->right_child != NULL)
-    tree_copy(source->right_child,target->right_child);
-}
-
-/* /\* */
-/*  * delete a tree (free the memory it occupied) */
-/*  *\/ */
-/* void tree_free( */
-/*   NODE* node */
-/*   ) */
-/* { */
-/*   assert(node != NULL); */
-  
-/*   if( node->left_child != NULL ) */
-/*   { */
-/*     tree_free(node->left_child); */
-/*     tree_free(node->right_child); */
-/*   } */
-/*   free(node); */
-/* } */
 
 
 /** find best action and associated reward for a set of units 
@@ -781,8 +593,7 @@ void level_one_learning(
   SORTED_SET* sorted_set0 = sorted_sets[0];
 
   assert(node != NULL);
-  assert(node->left_child != NULL);
-  assert(node->right_child != NULL);
+  assert(has_bothchildren(node));
   assert(data_x != NULL);
   assert(data_y != NULL);
   assert(sorted_sets != NULL);
@@ -847,28 +658,18 @@ void level_one_learning(
              data_y, num_cols_y, num_rows, rewards, &best_right_reward, &best_right_action);
 
           /* set values for node */
-          node->index = p;
           /* split value is last covariate value(=vp) on left, so split is xp <= vp */
-          node->value = data_xp[sorted_setp->elements[perfect_idx]];
-          node->reward = best_left_reward + best_right_reward;
+          record_level_one_split(node, p, data_xp[sorted_setp->elements[perfect_idx]], best_left_reward + best_right_reward,
+             best_left_reward, best_left_action, best_right_reward, best_right_action);
 
-          /* set values for node->left */
-          node->left_child->index = -1;
-          node->left_child->reward = best_left_reward;
-          node->left_child->action_id = best_left_action;
-          
-          /* set values for node->right */
-          node->right_child->index = -1;
-          node->right_child->reward = best_right_reward;
-          node->right_child->action_id = best_right_action;
-
-          assert(check_perfect(node, sorted_setp, data_x, best_actions, num_rows));
+          assert(check_perfect_pt(node, sorted_setp, data_x, best_actions, num_rows));
           
           *perfect = 1;
 
           if( VERBOSE )
              printf("Found perfect split for depth-1 tree with %d=%d+%d datapoints, covariate=%d, split value=%g, reward=%g=%g+%g .\n",
-                sorted_setp->n, perfect_idx+1, (sorted_setp->n)-(perfect_idx+1),p,node->value,node->reward,best_left_reward,best_right_reward );
+                sorted_setp->n, perfect_idx+1, (sorted_setp->n)-(perfect_idx+1),p,data_xp[sorted_setp->elements[perfect_idx]],
+                best_left_reward+best_right_reward,best_left_reward,best_right_reward );
           
           return;
        }
@@ -992,21 +793,13 @@ void level_one_learning(
   if( best_left_action != -1 )
   {
     /* we found a split which is better than not doing a split */
-    node->index = best_split_var;
-    node->value = best_split_val;
-    node->reward = best_reward;
-    node->left_child->index = -1;
-    node->left_child->reward = best_left_reward;
-    node->left_child->action_id = best_left_action;
-    node->right_child->index = -1;
-    node->right_child->reward = best_right_reward;
-    node->right_child->action_id = best_right_action;
+     record_level_one_split(node, best_split_var, best_split_val, best_reward,
+        best_left_reward, best_left_action,
+        best_right_reward, best_right_action);
   }
   else
   {
-     node->index = -1;   /* dummy value*/
-     node->reward = best_reward;
-     node->action_id = best_action;
+     make_leaf(node, best_reward, best_action);
   }
 }
 
@@ -1098,11 +891,9 @@ void find_greedy_split(
           sorted_sets[0]->n,depth,best_action,best_reward);
 
     /* populate node */
-    node->index = -1;
-    node->reward = best_reward;
-    node->action_id = best_action;
+    make_leaf(node, best_reward, best_action);  
 
-    assert(!(*perfect) || check_perfect(node, sorted_sets[0], data_x, best_actions, num_rows) );
+    assert(!(*perfect) || check_perfect_pt(node, sorted_sets[0], data_x, best_actions, num_rows) );
     
     return;
   }
@@ -1114,7 +905,7 @@ void find_greedy_split(
      worst_actions, rewards, rewards2, perfect);
 
   /* deal with the case where there is no depth=1 tree is better than a depth=0 tree */
-  if( node->index == -1 )
+  if( is_leaf(node) )
   {
      /* if the leaf were pure this would have been discovered earlier */
      assert(!(*perfect));
@@ -1132,11 +923,11 @@ void find_greedy_split(
 
   /* put each datapoint on either the left or right */
 
-  assert(node->index > -1);
+  assert(!is_leaf(node));
   for( i = 0; i < sorted_sets[0]->n; i++ )
   {
      int elt = sorted_sets[0]->elements[i];
-     if( data_x[(node->index)*num_rows+elt] <= node->value )
+     if( data_x[get_index(node)*num_rows+elt] <= get_value(node) )
         for( pp = 0; pp < num_cols_x; pp++)
            insert_element(tmp_sorted_sets[depth][LEFT][pp],elt);
      else
@@ -1144,11 +935,13 @@ void find_greedy_split(
            insert_element(tmp_sorted_sets[depth][RIGHT][pp],elt);
   }
 
-  find_greedy_split(node->left_child, depth-1, tmp_sorted_sets[depth][LEFT], split_step, min_node_size,
+  get_children(node, &left_child, &right_child);
+  
+  find_greedy_split(left_child, depth-1, tmp_sorted_sets[depth][LEFT], split_step, min_node_size,
      data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
      tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect, 0);
 
-  find_greedy_split(node->right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
+  find_greedy_split(right_child, depth-1, tmp_sorted_sets[depth][RIGHT], split_step, min_node_size,
      data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
      tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect, 0);
 
@@ -1157,9 +950,9 @@ void find_greedy_split(
   /* at this point the reward recorded for node will be that for a single split since level_one_learning is used,
    * so now need to update with correct reward
    */
-  node->reward = node->left_child->reward + node->right_child->reward;
+  set_reward(node,get_reward(left_child)+get_reward(right_child));
 
-  assert(!(*perfect) || check_perfect(node, sorted_sets[0], data_x, best_actions, num_rows) );
+  assert(!(*perfect) || check_perfect_pt(node, sorted_sets[0], data_x, best_actions, num_rows) );
 }
 
 
@@ -1263,11 +1056,9 @@ void find_best_split(
           sorted_sets[0]->n,depth,best_action,best_reward);
 
     /* populate node */
-    node->index = -1;
-    node->reward = best_reward;
-    node->action_id = best_action;
+    make_leaf(node, best_reward, best_action);
 
-    assert(!(*perfect) || check_perfect(node, sorted_sets[0], data_x, best_actions, num_rows) );
+    assert(!(*perfect) || check_perfect_pt(node, sorted_sets[0], data_x, best_actions, num_rows) );
     
     return;
   }
@@ -1280,8 +1071,7 @@ void find_best_split(
   }
 
   /* all of these trees are unitialised at this point */
-  left_child = node->left_child;
-  right_child = node->right_child;
+  get_children(node, &left_child, &right_child);
   best_left_child = tmp_trees[depth-1][LEFT];
   best_right_child = tmp_trees[depth-1][RIGHT];
   
@@ -1289,16 +1079,18 @@ void find_best_split(
      data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
      tmp_trees, tmp_sorted_sets, rewards, rewards2, perfect, 0);
 
-  best_reward = node->reward;
-  best_split_var = node->index;
-  best_split_val = node->value;
+  /* this tree is best so far */
+  best_reward = get_reward(node);
+  best_split_var = get_index(node);
+  best_split_val = get_value(node);
+  best_action = get_action(node);
   tree_copy(left_child,best_left_child);
   tree_copy(right_child,best_right_child);
 
   
   if( DEBUG && root )
   {
-     printf("Greedily-found tree has reward %g\n", node->reward);
+     printf("Greedily-found tree has reward %g\n", get_reward(node));
   }
 
 
@@ -1315,7 +1107,7 @@ void find_best_split(
 
   if( DEBUG && root )
   {
-     printf("Dummy split has reward %g\n", f0->reward);
+     printf("Dummy split has reward %g\n", get_reward(f0));
   }
 
   
@@ -1370,11 +1162,11 @@ void find_best_split(
      tree_copy(f0,right_child);
 
      /* correct the reward for (empty) left set */
-     left_child->reward = 0.0;
+     set_reward(left_child, 0.0);
 
      /* rl,rr are rewards for most recently found left and right trees, resp. */
-     rl = left_child->reward;
-     rr = right_child->reward;
+     rl = get_reward(left_child);
+     rr = get_reward(right_child);
 
      have_previous_left_child = 1;
      have_previous_right_child = 1;
@@ -1444,7 +1236,7 @@ void find_best_split(
                  /* nothing 'pending' */
                  nml = 0;
                  /* this is now the reward for most recent left tree */
-                 rl = left_child->reward;
+                 set_reward(left_child,rl);
                  /* left child is optimal, so also an upper bound */
                  ul = rl;
               }
@@ -1535,7 +1327,7 @@ void find_best_split(
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &left_perfect, 0);
               have_previous_left_child = 1;
-              rl = left_child->reward;
+              rl = get_reward(left_child);
               nml = 0;
            }
 
@@ -1547,7 +1339,7 @@ void find_best_split(
                  data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions, worst_actions,
                  tmp_trees, tmp_sorted_sets, rewards, rewards2, &right_perfect, 0);
               have_previous_right_child = 1;
-              rr = right_child->reward;
+              rr = get_reward(right_child);
               nmr = 0;
            }
 
@@ -1557,9 +1349,9 @@ void find_best_split(
             */
            if( !continue_flag )
            {
-              reward = left_child->reward + right_child->reward;
+              reward = get_reward(left_child) + get_reward(right_child);
               if( DEBUG && root )
-                 printf("Reward is %g=%g+%g\n", reward, left_child->reward, right_child->reward);
+                 printf("Reward is %g=%g+%g\n", reward, get_reward(left_child), get_reward(right_child));
               
               *perfect = left_perfect && right_perfect;
            
@@ -1589,18 +1381,20 @@ void find_best_split(
   }  /* scope is a particular covariate */
 
   /* populate node */
-  node->index = best_split_var;
-  node->reward = best_reward;
-  if( best_split_var != -1 )
+  if( best_split_var == -1 )
   {
-     node->value = best_split_val;
-    /* retrieve saved best left and right trees */
-    /* tree_copy(source,target) */
-    tree_copy(best_left_child,left_child);
-    tree_copy(best_right_child,right_child);
+     make_leaf(node, best_reward, best_action);
+  }
+  else
+  {
+     record_split(node, best_split_var, best_split_val, best_reward);
+     /* retrieve saved best left and right trees */
+     /* tree_copy(source,target) */
+     tree_copy(best_left_child,left_child);
+     tree_copy(best_right_child,right_child);
   }
 
-  assert(!(*perfect) ||  check_perfect(node, sorted_sets[0], data_x, best_actions, num_rows) );
+  assert(!(*perfect) ||  check_perfect_pt(node, sorted_sets[0], data_x, best_actions, num_rows) );
 
   free(ml);
   free(mr);
@@ -1609,9 +1403,6 @@ void find_best_split(
   /* if(root) */
   /*    printf("\n%d recursive calls executed out of a possible %d recursive calls.\n\n", n_calls, n_potential_calls); */
 }
-
-
-
 
 /*
  * Notes: A tree of depth 0 is a single node (with no children) where only the reward and action_id members are meaningful.
@@ -1766,7 +1557,7 @@ NODE* tree_search_jc_policytree(
   }
   free(initial_sorted_sets);
 
-  prune_tree(tree);
+  fix_tree(tree);
   
   return tree;
 }

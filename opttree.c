@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "opttree.h"
+#include "tree.h"
 
 #define INF DBL_MAX
 #define LEFT 0
@@ -28,33 +29,6 @@ struct sorted_set_bps
   int* n_breakpoints;       /** number of breakpoints */
 };
 typedef struct sorted_set_bps SORTED_SET_BPS;
-
-
-
-/* debugging only */
-static
-void print_tree(
-  NODE* tree,
-  char** covnames
-  )
-{
-  printf("node = %p\n", (void*) tree);
-  if( tree-> index != -1)
-    printf("covariate = %s\n", covnames[tree->index]);
-  printf("value = %g\n", tree->value);
-  printf("reward = %g\n", tree->reward);
-  printf("action_id = %d\n", tree->action_id);
-  printf("left_child = %p\n", (void*) tree->left_child);
-  printf("right_child = %p\n", (void*) tree->right_child);
-  printf("\n");
-
-  if(tree->left_child != NULL)
-    print_tree(tree->left_child,covnames);
-
-  if(tree->right_child != NULL)
-    print_tree(tree->right_child,covnames);
-}
-
 
 /*
  * left run is indices[ileft:iright-1]
@@ -299,134 +273,11 @@ SORTED_SET_BPS* make_sorted_set_bps(
   return sorted_set_bps;
 }
 
-/*
- * Return a 'skeleton' policy tree of required depth
- * or NULL if there is insufficient memory
- */
-static
-NODE* make_tree(
-  int depth
-  )
-{
-  NODE* node;
-
-  assert(depth >= 0); 
-  
-  node = (NODE*) malloc(sizeof(NODE));
-
-  if( node == NULL )
-  {
-    /* not enough memory! */
-    return NULL;
-  }
-
-  /* explicitly set default values for all members to keep valgrind happy */
-
-  node->index = -1; /* no splitting covariate so far, may never be one...*/
-  node->value = 0;
-  node->reward = 0;
-  node->action_id = -1;
-  
-  if( depth > 0 )
-  {
-    node->left_child = make_tree(depth-1);
-    node->right_child = make_tree(depth-1);
-    if( node->left_child == NULL || node->right_child == NULL )
-      /* not enough memory */
-      return NULL;
-  }
-  else
-  {
-    /* for leaf nodes set children explicitly to NULL */
-    node->left_child = NULL;
-    node->right_child = NULL;
-  }
-  return node;
-}
 
 
-/**
- * copy data from source to target tree
- * assumes both trees have same depth
- */
-static
-void tree_copy(
-  NODE* source,
-  NODE* target
-  )
-{
 
-  assert(source != NULL);
-  assert(target != NULL);
-  
-  target->index = source->index;
-  target->value = source->value;
-  target->reward = source->reward;
-  target->action_id = source->action_id;
-  if( source->left_child != NULL)
-    tree_copy(source->left_child,target->left_child);
-  if( source->right_child != NULL)
-    tree_copy(source->right_child,target->right_child);
-}
 
-/*
- * delete a tree (free the memory it occupied)
- */
-void tree_free(
-  NODE* node
-  )
-{
-  assert(node != NULL);
-  
-  if( node->left_child != NULL )
-  {
-    tree_free(node->left_child);
-    tree_free(node->right_child);
-  }
-  free(node);
-}
 
-/** prune tree: if a subtree has the same action for all leaves, replace with a
- * single leaf with that action 
-*/
-void prune_tree(
-   NODE*                 root                /**< root node */
-   )
-{
-   if( root->left_child != NULL )
-      prune_tree( root->left_child );
-
-   if( root->right_child != NULL )
-      prune_tree( root->right_child );
-
-   /* just delete dummy nodes */
-   if( root->left_child != NULL && root->left_child->index == -1
-      && root->left_child->action_id == -1 )
-   {
-      free(root->left_child);
-      root->left_child = NULL;
-   }
-
-   if( root->right_child != NULL && root->right_child->index == -1
-      && root->right_child->action_id == -1 )
-   {
-      free(root->right_child);
-      root->right_child = NULL;
-   }
-
-   if( root->left_child != NULL  && root->right_child != NULL 
-      && root->left_child->index == -1  && root->right_child->index == -1
-      && root->left_child->action_id == root->right_child->action_id )
-   {
-      root->index = -1;
-      root->reward = root->left_child->reward + root->right_child->reward;
-      root->action_id = root->left_child->action_id;
-      free(root->left_child);
-      free(root->right_child);
-      root->left_child = NULL;
-      root->right_child = NULL;
-   }
-}
 
 
 static
@@ -521,8 +372,7 @@ void level_one_learning(
   int n_tmp_indices;
 
   assert(node != NULL);
-  assert(node->left_child != NULL);
-  assert(node->right_child != NULL);
+  assert(has_bothchildren(node));
   assert(data_x != NULL);
   assert(data_y != NULL);
   assert(sorted_set_bps != NULL);
@@ -630,20 +480,13 @@ void level_one_learning(
   if( best_left_action != -1 )
   {
     /* we found a split which is better than not doing a split */
-    node->index = best_split_var;
-    node->value = best_split_val;
-    node->reward = best_reward;
-    node->left_child->index = -1;
-    node->left_child->reward = best_left_reward;
-    node->left_child->action_id = best_left_action;
-    node->right_child->reward = best_right_reward;
-    node->right_child->action_id = best_right_action;
+     record_level_one_split(node, best_split_var, best_split_val, best_reward,
+        best_left_reward, best_left_action,
+        best_right_reward, best_right_action);
   }
   else
   {
-    node->index = -1;
-    node->reward = best_reward;
-    node->action_id = best_action;
+     make_leaf(node, best_reward, best_action);
   }
 }
 
@@ -750,9 +593,7 @@ void find_best_split(
     find_best_reward(sorted_set_bps,data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
 
     /* populate node */
-    node->index = -1;
-    node->reward = best_reward;
-    node->action_id = best_action;
+    make_leaf(node, best_reward, best_action);
     return;
   }
 
@@ -768,9 +609,7 @@ void find_best_split(
     assert(best_reward == best_reward_for_all);
     
     /* populate node */
-    node->index = -1;
-    node->reward = best_reward;
-    node->action_id = best_action;
+    make_leaf(node, best_reward, best_action);
     return;
   }
   
@@ -781,8 +620,7 @@ void find_best_split(
     return;
   }
 
-  left_child = node->left_child;
-  right_child = node->right_child;
+  get_children(node, &left_child, &right_child);
   best_left_child = tmp_trees[depth-1][LEFT];
   best_right_child = tmp_trees[depth-1][RIGHT];
   left_sorted_set_bps = tmp_sorted_set_bpss[depth][LEFT];
@@ -809,7 +647,7 @@ void find_best_split(
       find_best_split(right_child, depth-1, right_sorted_set_bps, split_step, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, best_actions,
          tmp_trees, tmp_indices, tmp_sorted_set_bpss, rewards, rewards2);
 
-      reward = left_child->reward + right_child->reward;
+      reward = get_reward(left_child) + get_reward(right_child);
         
       if( reward > best_reward )
       {
@@ -827,9 +665,7 @@ void find_best_split(
   }
 
   /* populate node */
-  node->index = best_split_var;
-  node->value = best_split_val;
-  node->reward = best_reward;
+  record_split(node, best_split_var, best_split_val, best_reward);
   if( best_split_var != -1 )
   {
     /* tree_copy(source,target) */
@@ -993,7 +829,7 @@ NODE* tree_search_jc_discretedata(
   free(sorted_set_bps->present);
   free(sorted_set_bps);
 
-  prune_tree(tree);
+  fix_tree(tree);
   
   return tree;
 }

@@ -50,7 +50,7 @@ void tree_free(
    NODE*
    );
 
-void prune_tree(
+void fix_tree(
    NODE*                 root                /**< root node */
    );
 
