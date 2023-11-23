@@ -489,11 +489,11 @@ void level_one_learning(
      make_leaf(node, best_reward, best_action);
   }
 }
-
+/** if all units in set have same best action, (so set is 'pure') return that action, otherwise -1 */
 static
 int pure(
-  SORTED_SET_BPS* sorted_set_bps,
-  int* best_actions
+   SORTED_SET_BPS*       sorted_set_bps,     /**< set of units */
+   int*                  best_actions        /**< best_actions[i] is the best action for ith unit in set */
   )
 {
   int i;
@@ -530,22 +530,22 @@ int pure(
  */
 static
 void find_best_split(
-  NODE* node,               /** skeleton tree to be populated */
-  int depth,                /** depth of tree */
-  SORTED_SET_BPS* sorted_set_bps,   /** sorted set */
-  int split_step,           /** consider splits every split_step'th possible split */
-  int min_node_size,        /** smallest terminal node size */
-  const double* data_x,           /** covariates, data_x[j] are values for covariate j */
-  const double* data_y,           /** gammas, y[i] are the rewards for unit i */
-  int num_rows,             /** number of units */
-  int num_cols_x,           /** number of covariates */
-  int num_cols_y,           /** number of rewards */
-  int* best_actions,        /** best_actions[i] is the best action for unit i */
-  NODE*** tmp_trees,                /** trees of various depths for temporary storage */
-  int* tmp_indices,                 /** stores indices moved from right branch to left branch */
-  SORTED_SET_BPS*** tmp_sorted_set_bpss,  /** e.g have tmp_sorted_set_bpss[depth][LEFT] preallocated space */
-  double* rewards,                   /** temporary storage for computing best rewards */
-  double* rewards2                   /** temporary storage for computing best rewards */
+  NODE*                  node,               /** skeleton tree to be populated */
+  int                    depth,              /** depth of tree */
+  SORTED_SET_BPS*        sorted_set_bps,     /** sorted set */
+  int                    split_step,         /** consider splits every split_step'th possible split */
+  int                    min_node_size,      /** smallest terminal node size */
+  const double*          data_x,             /** covariates, data_x[j] are values for covariate j */
+  const double*          data_y,             /** gammas, y[i] are the rewards for unit i */
+  int                    num_rows,           /** number of units */
+  int                    num_cols_x,         /** number of covariates */
+  int                    num_cols_y,         /** number of rewards */
+  int*                   best_actions,       /** best_actions[i] is the best action for unit i */
+  NODE***                tmp_trees,          /** trees of various depths for temporary storage */
+  int*                   tmp_indices,        /** stores indices moved from right branch to left branch */
+  SORTED_SET_BPS***      tmp_sorted_set_bpss,/** e.g have tmp_sorted_set_bpss[depth][LEFT] preallocated space */
+  double*                rewards,            /** temporary storage for computing best rewards */
+  double*                rewards2            /** temporary storage for computing best rewards */
   )
 {
 
@@ -573,7 +573,7 @@ void find_best_split(
   SORTED_SET_BPS* left_sorted_set_bps;
   SORTED_SET_BPS* right_sorted_set_bps;
 
-  int best_reward_for_all;
+  int best_action_for_all;
   
   assert(node != NULL);
   assert(tmp_trees != NULL);
@@ -585,7 +585,6 @@ void find_best_split(
   assert(num_cols_x > 0);
   assert(num_cols_y > 0);
   
-
   /* nothing further to do for a leaf or if too few datapoints for splitting */
   if( depth == 0 || sorted_set_bps->n <= min_node_size )
   {
@@ -597,16 +596,15 @@ void find_best_split(
     return;
   }
 
-  /* best_reward_for_all = -1; */
-  best_reward_for_all = pure(sorted_set_bps,best_actions);
-  if( best_reward_for_all != -1 )
+  best_action_for_all = pure(sorted_set_bps,best_actions);
+  if( best_action_for_all != -1 )
   {
-    /* printf("Index set of size %d is pure with all units having %d as best action\n", sorted_set_bps->n, best_reward_for_all); */
+    /* printf("Index set of size %d is pure with all units having %d as best action\n", sorted_set_bps->n, best_action_for_all); */
 
     /* find best reward with no split */
     find_best_reward(sorted_set_bps,data_y,num_cols_y,num_rows,rewards,&best_reward,&best_action);
 
-    assert(best_reward == best_reward_for_all);
+    assert(best_action == best_action_for_all);
     
     /* populate node */
     make_leaf(node, best_reward, best_action);

@@ -211,7 +211,7 @@ int main(
   
   print_tree_policytree(tree, covnames, depth, num_cols_y, actionnames);
 
-  printf("Reward: %g\n", tree->reward);
+  printf("Reward: %g\n", get_reward(tree));
   
   for(i = 0; i < num_cols_x; i++)
     free(covnames[i]);
