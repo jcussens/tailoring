@@ -1,3 +1,6 @@
+#ifndef __TREE_H__
+#define __TREE_H__
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -151,7 +154,15 @@ void print_tree_raw(
    NODE*                 tree               /**< policy tree to print */
    );
 
+/** fix tree, remove 'dummy' nodes and then merge leaves with the same action
+*/
+void fix_tree(
+   NODE*                 root                /**< root node */
+   );
+
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

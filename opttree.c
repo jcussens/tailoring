@@ -4,7 +4,6 @@
 #include <assert.h>
 #include <stdio.h>
 #include "opttree.h"
-#include "tree.h"
 
 #define INF DBL_MAX
 #define LEFT 0

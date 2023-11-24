@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
-#include "opttree.h"
-#include "tree.h"
+#include "pt_opttree.h"
 
 #define INF DBL_MAX
 #define LEFT 0
@@ -1265,7 +1264,7 @@ void find_best_split(
                     update_rewards(right_child, data_x, num_rows, elt, -data_y[worst_actions[elt]*num_rows+elt]);
                  }
                  nmr = 0;
-                 rr = right_child->reward;
+                 rr = get_reward(right_child);
                  ur = rr;
               }
            }

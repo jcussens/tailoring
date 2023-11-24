@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "opttree.h"
-#include "tree.h"
+#include "pt_opttree.h"
 #define MAX_LINE_LENGTH 2000
 #define MAX_COVARIATE_NAME_LENGTH 50
 
