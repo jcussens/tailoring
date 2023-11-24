@@ -449,16 +449,8 @@ void fix_tree(
    NODE*                 root                /**< root node */
    )
 {
-   printf("Original\n");
-   print_tree_raw(root);
-   
    prune_tree(root);
-   printf("Pruned\n");
-   print_tree_raw(root);
-
-   printf("Merged\n");
    merge_leaves(root);
-   print_tree_raw(root);
 }
 
 /** return whether a node has both children */
