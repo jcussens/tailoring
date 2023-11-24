@@ -3,7 +3,7 @@
 C and Python code for building policy trees. All code written by James Cussens
 
 For the C code to compile do the following (from Linux command line):
-    `gcc -DNDEBUG -O2 opttree.c pt_opttree.c main.c`
+    `gcc -DNDEBUG -O2 opttree.c pt_opttree.c main.c tree.c`
 which will produce an executable file `a.out`
 
 To run `a.out` using a "policytree-style" approach do:
