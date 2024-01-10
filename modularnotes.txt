@@ -1,0 +1,18 @@
+Wed 10 Jan 15:46:41 GMT 2024
+
+Idea here is to be modular and focus on readable code. Files are:
+
+simple_opttree.c
+code for tree building
+
+workspace.c
+provides working space (so as to avoid finding
+new space during tree building)
+
+tree.c
+code for manipulating nodes/trees
+
+sorted_set.c
+code for policytree-style sorted sets
+
+all other files are from other branches

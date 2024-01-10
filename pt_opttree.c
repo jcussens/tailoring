@@ -16,18 +16,6 @@
 #define USE_BOUNDS 1
 #define DEBUG 0
 
-/** 
- * sorted set, policy tree style
-*/
-struct sorted_set
-{
-  int*                   elements;           /**< the sorted set */
-  int                    n;                  /**< size of subset */
-  int*                   rank;               /**< if i < j then rank[elements[i]] < rank[elements[j]]  */
-};
-typedef struct sorted_set SORTED_SET;
-
-
 static
 int check_perfect_pt(
    const NODE*           tree,               /**< allegedly perfect tree */
@@ -37,31 +25,9 @@ int check_perfect_pt(
    int                   num_rows            /**< number of units */
    )
 {
-   return check_perfect(tree, sorted_set->n, sorted_set->elements, data_x, best_actions, num_rows);
+   return check_perfect(tree, get_size(sorted_set), get_elements(sorted_set), data_x, best_actions, num_rows);
 }
 
-/** Determine whether a sorted set is 'pure'.
- * A pure sorted set is one where each unit has the same best action
- * @return The best action if the set is pure, otherwise -1
- */
-static
-int pure(
-   const SORTED_SET*     sorted_set,         /**< sorted set */
-   const int*            best_actions        /**< best_actions[i] is the best action for unit i */
-  )
-{
-  int i;
-  int best_action = 0;
-
-  if( sorted_set->n > 0)
-     best_action = best_actions[sorted_set->elements[0]];
-  
-  for( i = 1; i < sorted_set->n; i++)
-     if( best_action != best_actions[sorted_set->elements[i]] )
-        return -1;
-
-  return best_action;
-}
 
 /**
  * For each unit find and record the best and worst actions for that unit
@@ -117,303 +83,6 @@ void store_best_worst_actions(
       assert(worst_reward <= best_reward);
    }
 }
-
-/** print out a sorted set (for debugging only, not currently used) */
-static
-void print_set(
-   const SORTED_SET*     sorted_set          /**< sorted set */
-   )
-{
-   int i;
-   int elt;
-   
-   for(i = 0; i < sorted_set->n; i++)
-   {
-      elt = sorted_set->elements[i];
-      printf("%d(%d), ",elt,sorted_set->rank[elt]);
-   }
-   printf("\n");
-}
-
-
-/** remove an element from a sorted set, assuming it is already there 
- * @return 1 if the element is a member of the set, else -1
- */
-static
-int remove_element(
-   SORTED_SET*           sorted_set,         /**< sorted set */
-   int                   elt                 /**< element to remove */
-  )
-{
-
-   int left;
-   int right;
-   int mid;
-   int midsave;
-   int midval;
-   int eltval;
-   const int* rank = sorted_set->rank;
-   int n;
-   int* set;  
-   int retval = -1;
-   
-   assert(sorted_set != NULL);
-   
-   n = sorted_set->n;
-   set = sorted_set->elements;  
-   eltval = rank[elt];
-
-   left = 0;
-   right = n-1;
-
-   while( left <= right )
-   {
-      mid = (left+right)/2;
-      midval = rank[set[mid]];
-      
-      if( midval < eltval )
-         left = mid+1;
-      else if ( midval > eltval )
-         right = mid - 1;
-      else
-      {
-         retval = 1;
-         break;
-      }
-   }
-
-   if( retval == 1 )
-   {
-      /* unless the last element, have to shift elements */
-      if( mid < n-1)
-         memmove(set+mid,set+mid+1,(n-mid-1)*sizeof(int));
-      sorted_set->n--;
-   }
-   
-   return retval;
-}
-
-/** insert an element into a sorted set, assuming it is not already there */
-static
-void insert_element(
-   SORTED_SET*           sorted_set,         /**< sorted set */
-   int                   elt                 /**< element to insert */ 
-  )
-{
-  unsigned int left;
-  unsigned int right;
-  int mid;
-  int eltval;
-  const int* rank = sorted_set->rank;
-  int n;
-  int* set;  
-  
-  assert(sorted_set != NULL);
-  assert(elt >= 0);
-  
-  n = sorted_set->n;
-  set = sorted_set->elements;  
-  eltval = rank[elt];
-
-  assert(rank != NULL);
-  assert(set != NULL);
-  assert(n >= 0);
-  
-  /* if set not empty look for an index 'mid' such that
-   * rank[set[mid]] < eltval < rank[set[mid+1]]
-   * can then insert elt by shifting set[mid+1], set[mid+2],,, and then
-   * doing set[mid+1] = elt
-   */
-
-  if( n == 0)
-  {
-     set[0] = elt;
-     sorted_set->n = 1;
-     return;
-  }
-  else if( eltval < rank[set[0]] )
-  {
-    /* insert at beginning */
-    mid = -1;
-  }
-  else if ( eltval > rank[set[n-1]] )
-  {
-    /* insert at end */
-    mid = n-1;
-  }
-  else
-  {
-     /* since set is ordered there will be a value mid such that
-      * rank[set[mid]] < eltval < rank[set[mid+1]]
-      * where -1 < mid < n-1 (i.e. mid+1 is the index of an existing element )
-      */
-
-     assert(n > 1);
-     left = 0;                /* smallest possible value for mid */
-     right = n - 2;           /* largest possible value for mid */
-
-     while( left <= right )
-     {
-        mid = (left + right)/2;  /* left <= mid <= right */
-        
-        if( rank[set[mid]] > eltval )
-        {
-           /* rank[set[mid]] too big, update biggest possible value for mid */
-           right = mid - 1;
-        }
-        else if ( rank[set[mid+1]] < eltval )
-        {
-           /* rank[set[mid+1]] too small, update smallest possible value for mid*/
-           left = mid + 1;
-        }
-        else
-           break;
-     }
-  }
-  
-  /* move, if necessary */
-  if( mid < n )
-    memmove(set+mid+2,set+mid+1,(n-mid-1)*sizeof(int));
-  
-  /* insert at mid+1 */
-  set[mid+1] = elt;
-  sorted_set->n++;
-}
-
-
-
-
-/** merge a pair of ordered subsequences to get a single ordered subsequence
- * left run is indices[ileft:iright-1]
- * right run is indices[iright:iend-1]
- */
-static
-void bottomupmerge(
-   const int*            indices,            /**< global array */
-   int                   ileft,              /**< index of first element of left subsequence */
-   int                   iright,             /**< index of first element of right subsequence */
-   int                   iend,               /**< iend-1 is index of last element of right subsequence */
-   int*                  tmp,                /**< on output tmp[ileft:iend-1] has the merged subsequence */
-   const double*         data_x_p            /**< data_x_p[i] is ordering key for i */
-  )
-{
-  int i = ileft;
-  int j = iright;
-  int k;
-
-  for( k = ileft; k < iend; k++ )
-  {
-    if( i < iright && (j >= iend || data_x_p[indices[i]] <= data_x_p[indices[j]]) )
-      tmp[k] = indices[i++];
-    else
-      tmp[k] = indices[j++];
-  }
-}
-
-/** sort an array by bottom up merge sort */
-static
-void bottomupmergesort(
-   int*                  indices,            /**< array to sort */
-   int*                  tmp,                /**< on output, sorted array */              
-   int                   n,                  /**< length of array */
-   const double*         data_x_p            /**< data_x_p[i] is ordering key for i */
-  )
-{
-  int width;
-  int i;
-  const size_t size = n*sizeof(int);
-  
-  for( width = 1; width < n; width *= 2)
-  {
-    for( i = 0; i < n; i += 2*width)
-      bottomupmerge(indices, i, MIN(i+width,n), MIN(i+2*width,n), tmp, data_x_p);
-
-    memcpy(indices,tmp,size);
-  }
-}
-
-/** make a sorted set the empty set */
-static
-void make_empty(
-   SORTED_SET*           sorted_set          /**< sorted set */
-  )
-{
-   sorted_set->n = 0;
-}
-
-/** copy a sorted set, overwriting an existing target set */
-static
-void copy_sorted_set(
-   const SORTED_SET*     source,             /**< source sorted set */
-   SORTED_SET*           target              /**< target sorted set */
-   )
-{
-   assert( source != NULL );
-   assert( target != NULL );
-   assert( source->elements != NULL );
-   assert( target->elements != NULL );
-   assert( source->rank != NULL );
-   assert( source->rank == target->rank );
-   
-   memcpy(target->elements,source->elements,source->n*sizeof(int));
-   target->n = source->n; 
-}
-
-/** create a new uninitialised subset from existing sorted subset */
-static
-void new_sorted_subset(
-   const SORTED_SET*     source,             /**< source sorted set */
-   SORTED_SET*           target              /**< target sorted set */
-  )
-{
-
-   assert( source != NULL );
-   assert( target != NULL );
-   assert( source->elements != NULL );
-   assert( source->rank != NULL );
-
-   /* ensure (typically more than) enough space */
-   target->elements = (int*) malloc((source->n)*sizeof(int));
-   target->rank = source->rank;
-   /* don't set target->n since size of target not determined yet */
-}
-
-
-/** make a sorted set from elements 0,...,num_indices-1 
- * this function allocates all the necessary memory for the sorted set
- * @return The sorted set
- */
-static
-SORTED_SET* make_sorted_set(
-   const int             num_indices,            /**< size of set */
-   const double*         data_xx,                /**< data_xx[i] is ordering key for element i */
-   int*                  tmp                     /**< temporary storage for ordering */
-  )
-{
-  SORTED_SET* sorted_set;
-  int i;
-  int* elements;
-  int* rank;
-
-  sorted_set = (SORTED_SET*) malloc(sizeof(SORTED_SET));
-  elements = (int *) malloc(num_indices*sizeof(int));
-  rank = (int *) malloc(num_indices*sizeof(int));
-  for( i = 0; i < num_indices; i++)
-    elements[i] = i;
-
-  bottomupmergesort(elements,tmp,num_indices,data_xx);
-
-  for( i = 0; i < num_indices; i++)
-    rank[elements[i]] = i;
-  
-  sorted_set->elements = elements;
-  sorted_set->n = num_indices;
-  sorted_set->rank = rank;
-  
-  return sorted_set;
-}
-
-
 
 /** find best action and associated reward for a set of units 
  * (i.e. a leaf)
@@ -485,57 +154,6 @@ void find_best_reward(
     }
 }
 
-/** if a "perfect split" of an assumed impure sorted_set is possible return the index of the last element on the left
- * of this perfect split. If no perfect split is possible return -1
- * @return The index of the last element on the left of a perfect split or -1
- */
-static
-int perfect_split(
-   const SORTED_SET*     sorted_set,         /**< sorted set for some covariate */
-   const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
-   const double*         data_xp             /**< covariate values for the given covariate */
-   )
-{
-   int left_best_action;
-   int right_best_action;
-
-   int lefti;
-   int righti;
-
-   /* a set of size < 2 cannot be split, so we should not be calling this */
-   assert(sorted_set->n > 1);
-
-   /* intialise */
-   lefti = 0;
-   righti = (sorted_set->n)-1;
-   left_best_action = best_actions[sorted_set->elements[lefti]];
-   right_best_action = best_actions[sorted_set->elements[righti]];
-
-   /* since set is assume impure, if left_best_action == right_best_action then no perfect split possible */
-   if( left_best_action == right_best_action )
-      return -1;
-   
-   /* loop invariant: all units up to and including lefti have left_best_action as best action
-    * all units from righti onwards have right_best_action as best action */
-   while( righti - lefti > 1 )
-   {
-      if( best_actions[sorted_set->elements[lefti+1]] == left_best_action )
-         lefti++;
-      else if( best_actions[sorted_set->elements[righti-1]] == right_best_action )
-         righti--;
-      else
-         return -1;
-   }
-   assert(righti - lefti == 1);
-   assert(best_actions[sorted_set->elements[lefti]] != best_actions[sorted_set->elements[righti]]); 
-   assert( data_xp[sorted_set->elements[lefti]] <= data_xp[sorted_set->elements[righti]] );
-   
-   /* need to check that this split can be acheived by splitting on the covariate value */
-   if( data_xp[sorted_set->elements[lefti]] == data_xp[sorted_set->elements[righti]] )
-      lefti = -1;
-   
-   return lefti;
-}
 
 /** Find an optimal depth=1 (ie at most one single split) tree for a set of units 
  * If no split is optimal, then that is returned, ie a leaf is returned
@@ -597,23 +215,7 @@ void level_one_learning(
   assert(data_y != NULL);
   assert(sorted_sets != NULL);
 
-  
-  /* find reward for each action if no split were done */
-  /* use set ordered on first covariate, would get same result
-   * if any other covariate were used
-   */
-  for( d = 0; d < num_cols_y; d++ )
-      nosplit_rewards[d] = 0.0;
-  for( i = 0; i < sorted_set0->n; i++ )
-  {
-     elt = sorted_set0->elements[i];
-     dyelt = data_y + elt;
-     for( d = 0; d < num_cols_y; d++ )
-     {
-        nosplit_rewards[d] += *dyelt;
-        dyelt += num_rows;
-     }
-  }
+  find_nosplit_rewards(sorted_set0, data_y, num_rows, nosplit_rewards);
   
   /* find best reward if no split were done */
   /* we do not check whether sorted_sets[0] is pure, since this should
@@ -630,49 +232,35 @@ void level_one_learning(
   }
   
   if( VERBOSE )
-     printf("No split best reward for %d datapoints is %g, best action is %d\n", sorted_set0->n, best_reward, best_action); 
+     printf("No split best reward for %d datapoints is %g, best action is %d\n", get_size(sorted_set0), best_reward, best_action); 
 
-  /* search for a perfect split */
-  for( p = 0; p < num_cols_x; p++)
+  if( USE_PERFECT )
   {
-    const SORTED_SET* sorted_setp = sorted_sets[p];
-    const double* data_xp = data_x+(p*num_rows);
-    int perfect_idx;
+     /* search for a perfect split */
+     for( p = 0; p < num_cols_x; p++)
+     {
+        const SORTED_SET* sorted_setp = sorted_sets[p];
+        const double* data_xp = data_x+(p*num_rows);
+        
+        if( perfect_split(sorted_setp, best_actions, data_xp, data_y, num_rows, &best_split_val,
+              &best_left_reward, &best_left_action, &best_right_reward, &best_right_action) );
+        {
+           /* we found a perfect split, set values for node */
+           record_level_one_split(node, p, best_split_val, best_left_reward + best_right_reward,
+              best_left_reward, best_left_action, best_right_reward, best_right_action);
 
-    if( USE_PERFECT )
-    {
-       perfect_idx = perfect_split(sorted_setp, best_actions, data_xp);
+           /* do a check, if debugging */
+           assert(check_perfect_pt(node, sorted_setp, data_x, best_actions, num_rows));
+           
+           if( VERBOSE )
+              printf("Found perfect split for depth-1 tree with %d datapoints, covariate=%d, split value=%g, reward=%g=%g+%g .\n",
+                 get_size(sorted_setp), p, best_split_val,
+                 best_left_reward+best_right_reward,best_left_reward,best_right_reward );
 
-       if( perfect_idx != -1 )
-       {
-          /* we found a perfect split */
-          
-          /* since split is perfect, best left action must be best action for leftmost unit */ 
-          best_left_action = best_actions[sorted_setp->elements[0]];
-          /* since split is perfect, best right action must be best action for rightmost unit */ 
-          best_right_action = best_actions[sorted_setp->elements[(sorted_setp->n)-1]];
-          find_best_reward(sorted_setp->elements, perfect_idx+1,
-             data_y, num_cols_y, num_rows, rewards, &best_left_reward, &best_left_action);
-          find_best_reward((sorted_setp->elements)+perfect_idx+1, (sorted_setp->n)-(perfect_idx+1),
-             data_y, num_cols_y, num_rows, rewards, &best_right_reward, &best_right_action);
-
-          /* set values for node */
-          /* split value is last covariate value(=vp) on left, so split is xp <= vp */
-          record_level_one_split(node, p, data_xp[sorted_setp->elements[perfect_idx]], best_left_reward + best_right_reward,
-             best_left_reward, best_left_action, best_right_reward, best_right_action);
-
-          assert(check_perfect_pt(node, sorted_setp, data_x, best_actions, num_rows));
-          
-          *perfect = 1;
-
-          if( VERBOSE )
-             printf("Found perfect split for depth-1 tree with %d=%d+%d datapoints, covariate=%d, split value=%g, reward=%g=%g+%g .\n",
-                sorted_setp->n, perfect_idx+1, (sorted_setp->n)-(perfect_idx+1),p,data_xp[sorted_setp->elements[perfect_idx]],
-                best_left_reward+best_right_reward,best_left_reward,best_right_reward );
-          
-          return;
-       }
-    }
+           *perfect = 1;
+           return;
+        }
+     }
   }  
 
   *perfect = 0;
@@ -1431,10 +1019,10 @@ NODE* tree_search_jc_policytree(
   double* rewards;
   double* rewards2;
 
-  SORTED_SET** initial_sorted_sets = (SORTED_SET**) malloc(num_cols_x*sizeof(SORTED_SET*));
+  SIMPLE_SORTED_SET** initial_sorted_sets = (SIMPLE_SORTED_SET**) malloc(num_cols_x*sizeof(SIMPLE_SORTED_SET*));
   
   /* have pre-allocated memory for each depth, each direction, each covariate */
-  SORTED_SET**** tmp_sorted_sets;
+  SIMPLE_SORTED_SET**** tmp_sorted_sets;
 
   int* best_actions;
   int* worst_actions;
@@ -1468,38 +1056,13 @@ NODE* tree_search_jc_policytree(
   }
 
   /* make temporary sorted sets */
-  tmp_sorted_sets = (SORTED_SET****) malloc((depth+1)*sizeof(SORTED_SET***));
-  tmp_sorted_sets[0] = NULL; /* nothing for depth 0 */
-  for(i = 1; i < depth+1; i++)
-  {
-    tmp_sorted_sets[i] = (SORTED_SET***) malloc(2*sizeof(SORTED_SET**));
-    tmp_sorted_sets[i][LEFT] = (SORTED_SET**) malloc(num_cols_x*sizeof(SORTED_SET*));
-    tmp_sorted_sets[i][RIGHT] = (SORTED_SET**) malloc(num_cols_x*sizeof(SORTED_SET*));
-
-    for( p = 0; p < num_cols_x; p++)
-    {
-      tmp_sorted_sets[i][LEFT][p] = (SORTED_SET*) malloc(sizeof(SORTED_SET));
-      new_sorted_subset(initial_sorted_sets[p],tmp_sorted_sets[i][LEFT][p]);
-      tmp_sorted_sets[i][RIGHT][p] = (SORTED_SET*) malloc(sizeof(SORTED_SET));
-      new_sorted_subset(initial_sorted_sets[p],tmp_sorted_sets[i][RIGHT][p]);
-    }
-  }
-
-  /* tmp_sets = (int***) malloc(depth*sizeof(int**)); */
-  /* for(i = 0; i < depth; i++) */
-  /* { */
-  /*   tmp_sets[i] = (int**) malloc(2*sizeof(int*)); */
-  /*   tmp_sets[i][LEFT] = (int*) malloc (num_rows * sizeof(int)); */
-  /*   tmp_sets[i][RIGHT] = (int*) malloc (num_rows * sizeof(int)); */
-  /* } */
+  tmp_sorted_sets = make_sorted_set_array(initial_sorted_sets, depth, num_cols_x);
   
   rewards = (double*) malloc(num_cols_y*sizeof(double));
   rewards2 = (double*) malloc(num_cols_y*sizeof(double));
 
   best_actions = (int*) malloc(num_rows*sizeof(int));
   worst_actions = (int*) malloc(num_rows*sizeof(int));
-
-  
   
   store_best_worst_actions(data_y, num_rows, num_cols_y, best_actions, worst_actions);
 
@@ -1521,21 +1084,7 @@ NODE* tree_search_jc_policytree(
   free(rewards2);
     
   /* remove temporary sorted sets */
-  for(i = 1; i < depth+1; i++)
-  {
-     for( p = 0; p < num_cols_x; p++)
-     {
-        /* don't need to free ->rank since these just shared the pointer */
-        free(tmp_sorted_sets[i][LEFT][p]->elements);
-        free(tmp_sorted_sets[i][LEFT][p]);
-        free(tmp_sorted_sets[i][RIGHT][p]->elements);
-        free(tmp_sorted_sets[i][RIGHT][p]);
-     }
-     free(tmp_sorted_sets[i][LEFT]);
-     free(tmp_sorted_sets[i][RIGHT]);
-     free(tmp_sorted_sets[i]);
-  }
-  free(tmp_sorted_sets);
+  free_sorted_set_array(tmp_sorted_sets, depth, num_cols_x);
     
   /* remove temporary trees */
   for(i = 0; i < depth; i++)
@@ -1548,12 +1097,7 @@ NODE* tree_search_jc_policytree(
 
   /* free sorted sets */
   for( p = 0; p < num_cols_x; p++)
-  {
-    free(initial_sorted_sets[p]->elements);
-    /* have to free rank */
-    free(initial_sorted_sets[p]->rank);
-    free(initial_sorted_sets[p]);
-  }
+     free_sorted_set(initial_sorted_sets[p]);
   free(initial_sorted_sets);
 
   fix_tree(tree);
