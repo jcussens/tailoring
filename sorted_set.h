@@ -56,6 +56,22 @@ void find_best_reward(
    int*                  best_action,        /**< (pointer to) best action */
    )
 
+/* make a 'shallow' copy of source sorted sets */
+SORTED_SET** shallow_copy_sorted_sets(
+   SORTED_SET**          sources,            /**< source sorted sets */
+   int                   nsets               /**< number of sources */
+   );
+
+void free_sorted_sets(
+   SORTED_SET**          sorted_sets,        /**< sorted sets */
+   int                   nsets               /**< number of sorted sets */
+   );
+
+void shallow_free_sorted_sets(
+   SORTED_SET**          sorted_sets,        /**< sorted sets */
+   int                   nsets               /**< number of sorted sets */
+   );
+
 
 #ifdef __cplusplus
 }

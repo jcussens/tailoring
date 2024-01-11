@@ -1,5 +1,6 @@
 #include "sorted_set.h"
 #include "assert.h"
+#include "string.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
@@ -424,10 +425,41 @@ int next_split(
 
    /* return set of moved units */
    *nelts = nmoved;
-   *elts = left_sorted_setp->elements[left_sorted_setp->n - nmoved];
+   *elts = left_sorted_setp->elements + left_sorted_setp->n - nmoved;
 
    return 1;
    
+}
+
+/* make a 'shallow' copy of source sorted sets */
+SORTED_SET** shallow_copy_sorted_sets(
+   SORTED_SET**          sources,            /**< source sorted sets */
+   int                   nsets              /**< number of sources */
+   )
+{
+   SORTED_SET** targets;
+
+   int p;
+
+   targets = (SORTED_SET**) malloc(nsets*sizeof(SORTED_SET*));
+
+   for( p = 0; p < nsets; p++ )
+   {
+      SORTED_SET* source = sources[p];
+      SORTED_SET* target;
+      
+      target = (SORTED_SET*) malloc(sizeof(SORTED_SET));
+      target->elements = (int*) malloc(source->n*sizeof(int));
+      target->n = source->n;
+      /* just copy pointer */
+      target->key = source->key;
+
+      memcpy(target->elements, source->elements, (source->n)*sizeof(int));
+
+      targets[p] = target;
+   }
+
+   return targets;
 }
 
 
@@ -521,5 +553,135 @@ SORTED_SET** make_initial_sorted_sets(
    free(tmp_indices);
 
    return initial_sorted_sets;
+}
+
+static
+void free_sorted_set(
+   SORTED_SET*           sorted_set          /**< sorted set */
+   )
+{
+   free(sorted_set->elements);
+   free(sorted_set->key);
+   free(sorted_set);
+}
+
+static
+void shallow_free_sorted_set(
+   SORTED_SET*           sorted_set          /**< sorted set */
+   )
+{
+   free(sorted_set->elements);
+   free(sorted_set);
+}
+
+
+void free_sorted_sets(
+   SORTED_SET**          sorted_sets,        /**< sorted sets */
+   int                   nsets               /**< number of sorted sets */
+   )
+{
+   int p;
+
+   for(p = 0; p < nsets; p++ )
+      free_sorted_set(sorted_sets[p]);
+   free(sorted_sets);
+}
+
+void shallow_free_sorted_sets(
+   SORTED_SET**          sorted_sets,        /**< sorted sets */
+   int                   nsets               /**< number of sorted sets */
+   )
+{
+   int p;
+
+   for(p = 0; p < nsets; p++ )
+      shallow_free_sorted_set(sorted_sets[p]);
+   free(sorted_sets);
+}
+
+SORTED_SET* light_empty_copy(
+   SORTED_SET*           sorted_set
+   )
+{
+   SORTED_SET* target = malloc(sizeof(SORTED_SET));
+   target->elements = sorted_set->elements;
+   target->key = sorted_set->key;
+   target->n = 0;
+   return target;
+}
+
+SORTED_SET* light_full_copy(
+   SORTED_SET*           sorted_set
+   )
+{
+   SORTED_SET* target = malloc(sizeof(SORTED_SET));
+   target->elements = sorted_set->elements;
+   target->key = sorted_set->key;
+   target->n = sorted_set->n;
+   return target;
+}
+
+int next_light_split(
+   SORTED_SET*           left_sorted_set,
+   SORTED_SET*           right_sorted_set,
+   const double*         data_xp,            /**< values for covariate to split on */
+   double*               splitval            /**< (pointer to) found value to split on */
+   int**                 elts,               /**< (pointer to) the elements moved */
+   int*                  nelts               /**< (pointer to) number of elements moved */
+   )
+{
+   /* nothing to move from right to left */
+   if( right_sorted_set->n == 0 )
+      return 0;
+
+   /* splitting value is just first covariate value on the right */
+   *splitval = data_xp[right_sorted_set->elements[0]]; 
+
+   /* if left is non-empty the last element on left must have a strictly lower pth covariate value
+      that first element on right */
+   assert(left_sorted_set->n == 0 || data_xp[left_sorted_set->elements[(left_sorted_set->n)-1]] < *splitval); 
+
+   /* find any additional units on right with *splitval as covariate value */
+   nmoved = 1;
+   while( nmoved < right_sorted_set->n && data_xp[right_sorted_set->elements[nmoved]] == *splitval )
+      nmoved++;
+
+   /* update left and right sets */
+   left_sorted_set->n += nmoved;
+   right_sorted_set->elements += nmoved;
+   right_sorted_set->n -= nmoved;
+
+   *nelts = nmoved;
+   *elts = left_sorted_set->elements + left_sorted_set->n - nmoved;
+   
+   return 1;
+}
+
+void find_nosplit_rewards(
+   const SORTED_SET**    sorted_sets,        /**< sorted sets */
+   const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+   int                   num_rows,           /**< number of rows in the data */
+   double*               nosplit_rewards     /**< space for computed no split rewards */
+   )
+{
+   int d;
+   int i;
+   double* dyelt;
+   int elt;
+   SORTED_SET* sorted_set = sorted_sets[0];
+   
+   /* find reward for each action if no split were done */
+   for( d = 0; d < num_cols_y; d++ )
+      nosplit_rewards[d] = 0.0;
+   for( i = 0; i < sorted_set->n; i++ )
+   {
+      elt = sorted_set->elements[i];
+      dyelt = data_y + elt;
+      for( d = 0; d < num_cols_y; d++ )
+      {
+         nosplit_rewards[d] += *dyelt;
+         dyelt += num_rows;
+      }
+   }
 }
 

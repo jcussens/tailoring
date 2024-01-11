@@ -18,7 +18,7 @@ WORKSPACE* make_workspace(
    );
 
 /** return array of doubles, one double for each reward */
-double* get_double_array(
+double* get_rewards(
    WORKSPACE*            workspace           /**< workspace */
    );
 

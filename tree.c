@@ -547,6 +547,7 @@ void record_split(
    node->index = split_var;
    node->value = split_val;
    node->reward = reward;
+   node->action_id = -1;
 }
 
 /** record a variable split at a node and make its children leaves */
@@ -577,4 +578,4 @@ void record_level_one_split(
    node->right_child->reward = right_reward;
    node->right_child->action_id = right_action;
 }
-   
+

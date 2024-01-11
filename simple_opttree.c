@@ -69,15 +69,71 @@ void level_one_learning(
    SORTED_SET**          sorted_sets,        /**< sorted sets for the units, one for each covariate */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
-   const int             num_rows,           /**< number of units in full dataset */
-   const int             num_cols_x,         /**< number of covariates */
-   const int             num_cols_y,         /**< number of rewards/actions */
+   int                   num_rows,           /**< number of units in full dataset */
+   int                   num_cols_x,         /**< number of covariates */
+   int                   num_cols_y,         /**< number of rewards/actions */
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
    const int*            worst_actions,      /**< worst_actions[i] is the worst action for unit i */
    WORKSPACE*            workspace,          /**< workspace */
    int*                  perfect             /**< *perfect=1 iff each unit assigned its best action, else *perfect=0 */
    )
 {
+   int p;
+   double best_reward;
+   int first_reward = 1;
+   double* nosplit_rewards = get_rewards(workspace);
+
+   /* get reward for each action if no split were done */
+   find_nosplit_rewards(sorted_sets, data_y, num_rows, nosplit_rewards);
+   
+   /* consider each covariate for splitting */
+   for( p = 0; !(*perfect) && p < num_cols_x; p++)
+   {
+      const double* data_xp = data_x+(p*num_rows);
+      const SORTED_SET* sorted_set = sorted_sets[p];
+      SORTED_SET* left_sorted_set = light_emtpy_copy(sorted_set);
+      SORTED_SET* right_sorted_set = light_full_copy(sorted_set);
+
+      double this_reward;
+
+      int left_perfect;
+      int right_perfect;
+      
+      int* elts;
+      int nelts;
+
+      /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
+      while( !(*perfect) && next_light_split(left_sorted_set, right_sorted_set, p, data_xp, &splitval, elts, &nelts) )
+      {
+         
+         /* find optimal tree for left data set */
+         find_best_split(left_child(node), depth-1, left_sorted_sets, min_node_size, data_x, data_y,
+            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &left_perfect); 
+
+         /* find optimal tree for right data set */
+         find_best_split(right_child(node), depth-1, right_sorted_sets, min_node_size, data_x, data_y,
+            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &right_perfect); 
+
+         /* tree is perfect if and only if both left and right tree are perfect */
+         *perfect = left_perfect && right_perfect;
+
+         /* get reward for this split */
+         this_reward = get_reward(left_child(node)) + get_reward(right_child(node));
+
+         /* if best so far, update */
+         if( first_reward || this_reward > best_reward ) 
+         {
+            best_reward = this_reward;
+            record_split(node, p, splitval, best_reward);
+            record_best_tree(workspace, node, depth);
+
+            first_reward = 0;
+         }
+      }
+   }
+
+   /* set node to best tree */
+   retrieve_best_tree(workspace, node, depth);
    
 }
 
@@ -87,14 +143,14 @@ void level_one_learning(
 static
 void find_best_split(
    NODE*                 node,               /**< uninitialised tree to be populated with optimal tree */
-   const int             depth,              /**< depth of tree */
+   int                   depth,              /**< depth of tree */
    const SORTED_SET**    sorted_sets,        /**< sorted sets for the units, one for each covariate */
-   const int             min_node_size,      /**< smallest terminal node size */
+   int                   min_node_size,      /**< smallest terminal node size */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
-   const int             num_rows,           /**< number of units in full dataset */
-   const int             num_cols_x,         /**< number of covariates */
-   const int             num_cols_y,         /**< number of rewards/actions */
+   int                   num_rows,           /**< number of units in full dataset */
+   nt                    num_cols_x,         /**< number of covariates */
+   int                   num_cols_y,         /**< number of rewards/actions */
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
    const int*            worst_actions,      /**< worst_actions[i] is the worst action for unit i */
    WORKSPACE*            workspace,          /**< working space */
@@ -105,19 +161,20 @@ void find_best_split(
    int p;
    int pure;
    double best_reward;
-   int best_action = -1;
    int first_reward = 1;
    
    /* determine whether the dataset is pure, i.e. whether each unit has same best action */
    pure = is_pure(sorted_sets, best_actions);
 
-   /* if this dataset is pure and we can make a perfect leaf */
+   /* if this dataset is pure we can make a perfect leaf */
    if( pure )
       *perfect = 1;
 
    /* nothing further to do if depth limit reached or if too few datapoints for splitting or if dataset is pure */
    if( depth == 0 || get_size(sorted_sets) <= min_node_size || pure )
    {
+      int best_action;
+
       /* find best action and its associated reward */
       find_best_reward(sorted_sets, data_y, num_rows, num_cols_y, workspace, &best_reward, &best_action);
 
@@ -137,21 +194,6 @@ void find_best_split(
       return;
    }
 
-
-   /* /\* find a tree using a greedy approach *\/ */
-   /* find_greedy_split(node, depth, sorted_sets, min_node_size, data_x, data_y, */
-   /*    num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, perfect); */
-
-   /* /\* if we got lucky and the greedy approach found a perfect tree, then all done *\/ */
-   /* if( *perfect ) */
-   /*    return; */
-
-   /* /\* save a copy of this tree; it's the best (since only!) tree found so far *\/ */
-   /* record_best(node, depth, workspace); */
-
-   /* /\* set best reward so far to be that of the greedy tree *\/ */
-   /* best_reward = get_reward(node); */
-   
    /* consider each covariate for splitting */
    for( p = 0; !(*perfect) && p < num_cols_x; p++)
    {
@@ -164,6 +206,9 @@ void find_best_split(
 
       int left_perfect;
       int right_perfect;
+
+      int* elts;
+      int nelts;
       
       /* initialise so that each left_sorted_set (for each covariate) is empty and each 
          right_sorted_set is a copy of the input sorted set (for that covariate) */
@@ -171,7 +216,7 @@ void find_best_split(
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
       while( !(*perfect) && next_split(left_sorted_sets, right_sorted_sets, p, data_xp, num_cols_x, workspace, 
-            &splitval, elts, &nelts) )
+            &splitval, &elts, &nelts) )
       {
          
          /* find optimal tree for left data set */
@@ -188,24 +233,20 @@ void find_best_split(
          /* get reward for this split */
          this_reward = get_reward(left_child(node)) + get_reward(right_child(node));
 
-         /* deal with special case of first tree */
-         if( first_reward )
-         {
-            best_reward = this_reward - 1;
-            first_reward = 0;
-         }
-         
          /* if best so far, update */
-         if( this_reward > best_reward ) 
+         if( first_reward || this_reward > best_reward ) 
          {
             best_reward = this_reward;
-            record_best(node, p, splitval, best_reward, depth, workspace);
+            record_split(node, p, splitval, best_reward);
+            record_best_tree(workspace, node, depth);
+
+            first_reward = 0;
          }
       }
    }
 
    /* set node to best tree */
-   retrieve_best(node, depth, workspace);
+   retrieve_best_tree(workspace, node, depth);
 }
 
 
@@ -252,8 +293,8 @@ NODE* tree_search_simple(
       num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &perfect); 
 
    /* free memory */
-   free_workspace(workspace, initial_sorted_sets, num_cols_x, num_rows, num_cols_y);
-   free_initial_sorted_sets(initial_sorted_sets, data_x, num_cols_x, num_rows);
+   free_workspace(workspace, depth, num_cols_x);
+   free_sorted_sets(initial_sorted_sets, num_cols_x);
 
    /* remove any nodes below leaves, and merge leaves with the same action */
    fix_tree(tree);
