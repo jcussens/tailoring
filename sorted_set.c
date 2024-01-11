@@ -610,6 +610,7 @@ void very_shallow_copy(
    target->n = sorted_set->n;
 }
 
+/** remove elements from the start of sorted set with the same covariate value */
 int next_shallow_split(
    SORTED_SET*           right_sorted_set,   /**< sorted set */ 
    const double*         data_xp,            /**< values for covariate to split on */
@@ -635,6 +636,8 @@ int next_shallow_split(
    *elts = right_sorted_set->elements;
 
    /* update set */
+   /* NB elements pointers is moved, so original value must be available 
+      somewhere to allow eventual freeing */
    right_sorted_set->elements += nmoved;
    right_sorted_set->n -= nmoved;
    

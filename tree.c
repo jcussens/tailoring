@@ -526,7 +526,6 @@ void make_leaf(
    )
 {
    assert(node != NULL); 
-   assert(action > -1);
    
    node->index = -1;
    node->reward = reward;

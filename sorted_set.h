@@ -76,15 +76,16 @@ void shallow_free_sorted_sets(
 void very_shallow_copy(
    SORTED_SET*           source,             /**< source sorted set */
    SORTED_SET*           target              /**< target sorted set */
-   )
+   );
 
+/** remove elements from the start of sorted set with the same covariate value */
 int next_shallow_split(
-   SORTED_SET*           right_sorted_set,
+   SORTED_SET*           right_sorted_set,   /**< sorted set */
    const double*         data_xp,            /**< values for covariate to split on */
-   double*               splitval            /**< (pointer to) found value to split on */
-   int**                 elts,               /**< (pointer to) the elements moved */
-   int*                  nelts               /**< (pointer to) number of elements moved */
-   )
+   double*               splitval,           /**< (pointer to) found value to split on */
+   int**                 elts,               /**< (pointer to) the elements removed */
+   int*                  nelts               /**< (pointer to) number of elements removed */
+   );
 
    
 #ifdef __cplusplus
