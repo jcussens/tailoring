@@ -599,33 +599,21 @@ void shallow_free_sorted_sets(
    free(sorted_sets);
 }
 
-SORTED_SET* light_empty_copy(
-   SORTED_SET*           sorted_set
+/** make a very shallow copy of a sorted set */
+void very_shallow_copy(
+   SORTED_SET*           source,             /**< source sorted set */
+   SORTED_SET*           target              /**< target sorted set */
    )
 {
-   SORTED_SET* target = malloc(sizeof(SORTED_SET));
-   target->elements = sorted_set->elements;
-   target->key = sorted_set->key;
-   target->n = 0;
-   return target;
-}
-
-SORTED_SET* light_full_copy(
-   SORTED_SET*           sorted_set
-   )
-{
-   SORTED_SET* target = malloc(sizeof(SORTED_SET));
    target->elements = sorted_set->elements;
    target->key = sorted_set->key;
    target->n = sorted_set->n;
-   return target;
 }
 
-int next_light_split(
-   SORTED_SET*           left_sorted_set,
-   SORTED_SET*           right_sorted_set,
+int next_shallow_split(
+   SORTED_SET*           right_sorted_set,   /**< sorted set */ 
    const double*         data_xp,            /**< values for covariate to split on */
-   double*               splitval            /**< (pointer to) found value to split on */
+   double*               splitval,           /**< (pointer to) found value to split on */
    int**                 elts,               /**< (pointer to) the elements moved */
    int*                  nelts               /**< (pointer to) number of elements moved */
    )
@@ -637,22 +625,18 @@ int next_light_split(
    /* splitting value is just first covariate value on the right */
    *splitval = data_xp[right_sorted_set->elements[0]]; 
 
-   /* if left is non-empty the last element on left must have a strictly lower pth covariate value
-      that first element on right */
-   assert(left_sorted_set->n == 0 || data_xp[left_sorted_set->elements[(left_sorted_set->n)-1]] < *splitval); 
-
    /* find any additional units on right with *splitval as covariate value */
    nmoved = 1;
    while( nmoved < right_sorted_set->n && data_xp[right_sorted_set->elements[nmoved]] == *splitval )
       nmoved++;
 
-   /* update left and right sets */
-   left_sorted_set->n += nmoved;
+   /* record what's removed */
+   *nelts = nmoved;
+   *elts = right_sorted_set->elements;
+
+   /* update set */
    right_sorted_set->elements += nmoved;
    right_sorted_set->n -= nmoved;
-
-   *nelts = nmoved;
-   *elts = left_sorted_set->elements + left_sorted_set->n - nmoved;
    
    return 1;
 }
@@ -685,3 +669,9 @@ void find_nosplit_rewards(
    }
 }
 
+SORTED_SET* make_uninitialised_sorted_set(
+   void
+   )
+{
+   return (SORTED_SET*) malloc(sizeof(SORTED_SET));
+}

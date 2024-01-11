@@ -1,6 +1,83 @@
 #include "simple_opttree.h"
 #include "sorted_set.h"
 
+static
+void update_left_rewards(
+   double*               left_rewards,
+   int*                  elts,
+   int                   nelts,
+   const double*         data_y,             /**< rewards (column major) */
+   int                   num_rows,           /**< number of units */
+   int                   num_cols_y,         /**< number of rewards/actions */
+   )
+{
+   for( i = 0; i < nelts; i++ )
+   {
+      int elt = elts[i];
+      int d;
+      
+      if( num_cols_y == 2 )
+      {
+        left_rewards[0] += data_y[elt];
+        left_rewards[1] += data_y[num_rows+elt];
+      }
+      else
+      {
+        for( d = 0; d < num_cols_y; d++ )
+          left_rewards[d] += data_y[d*num_rows+elt];
+      }
+   }
+}
+
+static
+void update_best_right_reward
+(
+   double*               left_rewards,
+   double*               nosplit_rewards,
+   int                   num_cols_y,         /**< number of rewards/actions */
+   double*               best_right_reward,
+   int*                  best_right_action
+   )
+{
+   int d;
+   
+   *best_right_reward = nosplit_rewards[0] - left_rewards[0];
+   *best_right_action = 0;
+      
+   for( d = 1; d < num_cols_y; d++ )
+   {
+      double right_reward = nosplit_rewards[d] - left_rewards[d];
+      if( right_reward > *best_right_reward )
+      {
+         *best_right_reward = right_reward;
+         *best_right_action = d;
+      }
+   }   
+}
+
+
+static
+void update_best_left_reward(
+   double*               left_rewards,
+   int                   num_cols_y,         /**< number of rewards/actions */
+   double*               best_left_reward,
+   int*                  best_left_action
+   )
+{
+   int d;
+
+   *best_left_reward = left_rewards[0];
+   *best_left_action = 0;
+      
+   for( d = 1; d < num_cols_y; d++ )
+   {
+      if( left_rewards[d] > *best_left_reward )
+      {
+         *best_left_reward = left_rewards[d];
+         *best_left_action = d;
+      }
+   }   
+}
 
 /**
  * For each unit find and record the best and worst actions for that unit
@@ -82,50 +159,51 @@ void level_one_learning(
    double best_reward;
    int first_reward = 1;
    double* nosplit_rewards = get_rewards(workspace);
+   SORTED_SET* right_sorted_set = get_sorted_set(workspace);
+   NODE* left_child;
+   NODE* right_child;
+   
+   int* elts;
+   int nelts;
+
+   double best_left_reward;
+   double best_right_reward;
+   int best_left_reward;
+   int best_right_reward;
 
    /* get reward for each action if no split were done */
    find_nosplit_rewards(sorted_sets, data_y, num_rows, nosplit_rewards);
+
+   get_children(node, &left_child, &right_child);
    
    /* consider each covariate for splitting */
    for( p = 0; !(*perfect) && p < num_cols_x; p++)
    {
       const double* data_xp = data_x+(p*num_rows);
-      const SORTED_SET* sorted_set = sorted_sets[p];
-      SORTED_SET* left_sorted_set = light_emtpy_copy(sorted_set);
-      SORTED_SET* right_sorted_set = light_full_copy(sorted_set);
 
-      double this_reward;
+      /* initialise all left rewards to 0 */
+      double* left_rewards = get_rewards2(workspace);
 
-      int left_perfect;
-      int right_perfect;
+      /* make very shallow copy of sorted set for covariate p */
+      very_shallow_copy(sorted_sets[p], right_sorted_set);
       
-      int* elts;
-      int nelts;
-
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
-      while( !(*perfect) && next_light_split(left_sorted_set, right_sorted_set, p, data_xp, &splitval, elts, &nelts) )
+      while( next_shallow_split(right_sorted_set, p, data_xp, &splitval, &elts, &nelts) )
       {
-         
-         /* find optimal tree for left data set */
-         find_best_split(left_child(node), depth-1, left_sorted_sets, min_node_size, data_x, data_y,
-            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &left_perfect); 
-
-         /* find optimal tree for right data set */
-         find_best_split(right_child(node), depth-1, right_sorted_sets, min_node_size, data_x, data_y,
-            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &right_perfect); 
-
-         /* tree is perfect if and only if both left and right tree are perfect */
-         *perfect = left_perfect && right_perfect;
+         update_left_rewards(left_rewards, elts, nelts);
+         update_best_left_reward(left_rewards, num_cols_y, &best_left_reward, &best_left_action);
+         update_best_right_reward(left_rewards, nosplit_rewards, num_cols_y, &best_right_reward, &best_right_action);
 
          /* get reward for this split */
-         this_reward = get_reward(left_child(node)) + get_reward(right_child(node));
+         this_reward = best_left_reward + best_right_reward;
 
          /* if best so far, update */
          if( first_reward || this_reward > best_reward ) 
          {
             best_reward = this_reward;
             record_split(node, p, splitval, best_reward);
-            record_best_tree(workspace, node, depth);
+            make_leaf(left_child, best_left_reward, best_left_action);
+            make_leaf(right_child, best_right_reward, best_right_action);
 
             first_reward = 0;
          }

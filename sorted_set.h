@@ -72,7 +72,21 @@ void shallow_free_sorted_sets(
    int                   nsets               /**< number of sorted sets */
    );
 
+/** make a very shallow copy of a sorted set */
+void very_shallow_copy(
+   SORTED_SET*           source,             /**< source sorted set */
+   SORTED_SET*           target              /**< target sorted set */
+   )
 
+int next_shallow_split(
+   SORTED_SET*           right_sorted_set,
+   const double*         data_xp,            /**< values for covariate to split on */
+   double*               splitval            /**< (pointer to) found value to split on */
+   int**                 elts,               /**< (pointer to) the elements moved */
+   int*                  nelts               /**< (pointer to) number of elements moved */
+   )
+
+   
 #ifdef __cplusplus
 }
 #endif
