@@ -42,7 +42,7 @@ int next_split(
    double*               splitval,           /**< (pointer to) found value to split on */
    int**                 elts,               /**< (pointer to) the elements moved */
    int*                  nelts               /**< (pointer to) number of elements moved */
-   )
+   );
 
 
 /* find best action and its associated reward for a set of units */
@@ -54,7 +54,7 @@ void find_best_reward(
    WORKSPACE*            workspace,          /**< workspace */
    double*               best_reward,        /**< (pointer to) best reward */
    int*                  best_action,        /**< (pointer to) best action */
-   )
+   );
 
 /* make a 'shallow' copy of source sorted sets */
 SORTED_SET** shallow_copy_sorted_sets(

@@ -1,6 +1,8 @@
 #ifndef __WORKSPACE_H__
 #define __WORKSPACE_H__
 
+#include "sorted_set.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

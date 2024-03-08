@@ -1,6 +1,7 @@
 #include "sorted_set.h"
-#include "assert.h"
-#include "string.h"
+#include <assert.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
