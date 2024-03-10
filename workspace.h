@@ -1,14 +1,11 @@
 #ifndef __WORKSPACE_H__
 #define __WORKSPACE_H__
 
-#include "sorted_set.h"
+#include "type_all.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct workspace;
-typedef struct workspace WORKSPACE;  /**< Work space structure */
 
 /** make workspace to provide pre-allocated space for various functions */
 WORKSPACE* make_workspace(

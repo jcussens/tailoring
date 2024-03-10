@@ -1,4 +1,5 @@
 #include "sorted_set.h"
+#include "workspace.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -69,7 +70,7 @@ void bottomupmergesort(
 /** insert an element into a simple sorted set, assuming it is not already there */
 static
 void insert_element(
-   SIMPLE_SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*    sorted_set,         /**< sorted set */
    int                   elt                 /**< element to insert */ 
   )
 {
@@ -158,7 +159,7 @@ void insert_element(
  */
 static
 int remove_element(
-   SIMPLE_SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*    sorted_set,         /**< sorted set */
    int                   elt                 /**< element to remove */
   )
 {
@@ -215,7 +216,7 @@ int remove_element(
 /** insert elements into a sorted set, assuming they are not already there */
 static
 void insert_elements(
-   SIMPLE_SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*    sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to insert */ 
    int*                  elts                /**< elements to insert */ 
   )
@@ -230,7 +231,7 @@ void insert_elements(
 /** add elements to the end of a sorted set, assuming they are not already there */
 static
 void add_elements_at_end(
-   SIMPLE_SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*    sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to insert */ 
    int*                  elts                /**< elements to insert */ 
   )
@@ -247,7 +248,7 @@ void add_elements_at_end(
 /** remove elements from a sorted set, assuming they are in the set */
 static
 void remove_elements(
-   SIMPLE_SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*    sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to remove */ 
    int*                  elts                /**< elements to insert */ 
   )
@@ -262,7 +263,7 @@ void remove_elements(
 /** remove elements at the start of a sorted set */
 static
 void remove_elements_at_start(
-   SIMPLE_SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*    sorted_set,         /**< sorted set */
    int                   nelts               /**< number of elements to remove from start */ 
   )
 {
@@ -314,7 +315,7 @@ int get_size(
 
 /* find best action and its associated reward for a set of units */
 void find_best_reward(
-   const SORTED_SETS**   sorted_sets,        /**< sorted sets, representing a common unsorted set */
+   const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_y,         /**< number of rewards/actions */

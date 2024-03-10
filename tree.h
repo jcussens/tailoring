@@ -1,12 +1,11 @@
 #ifndef __TREE_H__
 #define __TREE_H__
 
+#include "type_all.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct node;
-typedef struct node NODE;  /**< Policy tree structure */
 
 /**
  * Return a 'skeleton' policy tree of required depth

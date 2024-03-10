@@ -1,5 +1,7 @@
 #include "simple_opttree.h"
 #include "sorted_set.h"
+#include <assert.h>
+#include <stdlib.h>
 
 static
 void update_left_rewards(
@@ -8,7 +10,7 @@ void update_left_rewards(
    int                   nelts,
    const double*         data_y,             /**< rewards (column major) */
    int                   num_rows,           /**< number of units */
-   int                   num_cols_y,         /**< number of rewards/actions */
+   int                   num_cols_y          /**< number of rewards/actions */
    )
 {
    for( i = 0; i < nelts; i++ )

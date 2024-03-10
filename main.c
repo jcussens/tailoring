@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include "reading.h"
 #include "simple_opttree.h"
 #include "tree.h"
 
@@ -33,6 +34,42 @@ void freedata(
    free(data_y);
 }
 
+int process_commandline(
+   int                   argc,               /**< number of command line arguments */
+   char*                 argv[],             /**< command line arguments */
+   char**                filename,           /**< *filename will be the name of the file with the data */
+   int*                  num_cols_y,         /**< *num_cols_y will be number of actions */
+   int*                  depth               /**< *depth will be required depth of tree */
+   )
+{
+
+   if( argc < 2 )
+   {
+      printf("Need to supply at least a filename and the number of actions.\n");
+      return 1;
+   }
+
+   *filename = argv[1];
+   
+   *num_cols_y = atoi(argv[2]);
+
+   if( *num_cols_y == 0 )
+   {
+      printf("Number of actions either not a valid number of set to 0.\n");
+      return 1;
+   }
+   
+   if( argc > 3)
+      *depth = atoi(argv[3]);
+   else
+      *depth = DEFAULT_DEPTH;
+   
+   if( *depth == 0 )
+      printf("Warning: tree depth set to 0.\n");
+
+   return 0;
+}
+
 /** 
  * call like ./a.out filename nactions [depth]
  * file should have a single header line and then each subsequent line is covariates followed by nactions reward values.
@@ -44,44 +81,30 @@ int main(
   )
 {
 
-  int num_rows;
-  int num_cols_x;
-  int num_cols_y;
-  double* data_x;
-  double* data_y;
-  char** covnames;
-  char** actionnames;
+   char* filename;
+   int num_cols_y;
+   int depth;
+   int num_rows;
+   int num_cols_x;
+   double* data_x;
+   double* data_y;
+   char** covnames;
+   char** actionnames;
 
-  int status;
-  NODE* tree;
+   int status;
+   NODE* tree;
   
-  int depth = DEFAULT_DEPTH;            /** (maximum) depth of returned tree */
-  int min_node_size = DEFAULT_MIN_NODE_SIZE;
-  
-  if( argc < 2 )
-  {
-    printf("Need to supply at least a filename and the number of actions.\n");
-    return 1;
-  }
+   int min_node_size = DEFAULT_MIN_NODE_SIZE;
 
-  num_cols_y = atoi(argv[2]);
+   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth); 
 
-  if( num_cols_y == 0 )
-  {
-    printf("Number of actions either not a valid number of set to 0.\n");
-    return 1;
-  }
+   assert( status == 0 || status == 1);
+   if( status == 1 )
+      return 1;
 
-  if( argc > 3)
-    depth = atoi(argv[3]);
-
-  if( depth == 0 )
-    printf("Warning: tree depth set to 0.\n");
-
-  status = readfile(argv[1], num_cols_y, &data_x, &data_y, &num_rows, &num_cols_x, &covnames, &actionnames);
+  status = readfile(filename, num_cols_y, &data_x, &data_y, &num_rows, &num_cols_x, &covnames, &actionnames);
 
   assert( status == 0 || status == 1);
-
   if( status == 1 )
      return 1;
      

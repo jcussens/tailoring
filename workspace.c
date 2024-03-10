@@ -1,5 +1,5 @@
-#include "sorted_set.h"
-#include "tree.h"
+#include "workspace.h"
+#include <stdlib.h>
 
 #define LEFT 0
 #define RIGHT 1
@@ -64,6 +64,9 @@ void free_workspace(
    int                   num_cols_x          /**< number of covariates */
    )
 {
+   int i;
+   int d;
+   
    free(workspace->rewards);
    free(workspace->rewards2);
 

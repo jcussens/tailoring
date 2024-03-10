@@ -2,10 +2,7 @@
 extern "C" {
 #endif
 
-#include "workspace.h"
-
-struct sorted_set;
-typedef struct sorted_set SORTED_SET;  /**< Trie structure for storing scored parent sets */
+#include "type_all.h"
 
 SORTED_SET** make_initial_sorted_sets(
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
@@ -47,13 +44,13 @@ int next_split(
 
 /* find best action and its associated reward for a set of units */
 void find_best_reward(
-   const SORTED_SETS**   sorted_sets,        /**< sorted sets */
+   const SORTED_SET**    sorted_sets,        /**< sorted sets */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_y,         /**< number of rewards/actions */
    WORKSPACE*            workspace,          /**< workspace */
    double*               best_reward,        /**< (pointer to) best reward */
-   int*                  best_action,        /**< (pointer to) best action */
+   int*                  best_action         /**< (pointer to) best action */
    );
 
 /* make a 'shallow' copy of source sorted sets */
