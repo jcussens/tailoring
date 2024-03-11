@@ -45,14 +45,14 @@ void freedata(
 
 int process_commandline(
    int                   argc,               /**< number of command line arguments */
-   char*                 argv[],             /**< command line arguments */
+   char**                argv,               /**< command line arguments */
    char**                filename,           /**< *filename will be the name of the file with the data */
    int*                  num_cols_y,         /**< *num_cols_y will be number of actions */
    int*                  depth               /**< *depth will be required depth of tree */
    )
 {
 
-   if( argc < 2 )
+   if( argc < 3 )
    {
       printf("Need to supply at least a filename and the number of actions.\n");
       return 1;

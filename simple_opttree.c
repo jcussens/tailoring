@@ -294,7 +294,10 @@ void find_best_split(
    /* get left and right subtrees */
    get_children(node, &left_child, &right_child);
 
-   /* consider each covariate for splitting */
+   assert( left_child != NULL );
+   assert( right_child != NULL );
+   
+   /* consider each covariate for splitting (stopping if we find a perfect split) */
    for( p = 0; !(*perfect) && p < num_cols_x; p++)
    {
       const double* data_xp = data_x+(p*num_rows);
@@ -308,8 +311,6 @@ void find_best_split(
       int right_perfect;
 
       double splitval;
-      int* elts;
-      int nelts;
       
       /* initialise so that each left_sorted_set (for each covariate) is empty and each 
          right_sorted_set is a copy of the input sorted set (for that covariate) */
@@ -317,7 +318,7 @@ void find_best_split(
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
       while( !(*perfect) && next_split(left_sorted_sets, right_sorted_sets, p, data_xp, num_cols_x, workspace, 
-            &splitval, &elts, &nelts) )
+            &splitval, NULL, NULL) )
       {
 
          /* find optimal tree for left data set */
@@ -416,7 +417,7 @@ NODE* tree_search_simple(
    free_sorted_sets(initial_sorted_sets, num_cols_x);
 
    /* remove any nodes below leaves, and merge leaves with the same action */
-   fix_tree(tree);
+   /* fix_tree(tree); */
 
    /* return optimal tree */
    return tree;

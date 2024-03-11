@@ -22,50 +22,6 @@ struct node
 
 /* LOCAL FUNCTIONS */
 
-/** get number of nodes in a tree */
-static
-int nnodes(
-   NODE*                 tree                /**< policy tree to print */
-   )
-{
-   if( tree->index != -1)
-      return 1 + nnodes(tree->left_child) + nnodes(tree->right_child);
-   else
-      return 1;
-}
-
-/** breadth-first index for a node, return -1 if not found */
-static
-int bfidx(
-   NODE*                 root,                /**< root node */
-   NODE*                 node,                /**< node to find bf index for */
-   int                   count                /**< how much to add to index */
-   )
-{
-
-   int idx;
-   
-   if( node == root )
-      return count;
-   else if( root->left_child != NULL )
-   {
-      idx = bfidx(root->left_child, node, count+1);
-      if( idx != -1)
-         return idx;
-   }
-   else if( root->right_child != NULL )
-   {
-      idx = bfidx(root->right_child, node, count+2);
-      if( idx != -1)
-         return idx;
-   }
-   else
-   {
-      return -1;
-   }
-}
-
-
 /** prints a policy tree in policytree style to standard output */
 static
 void print_tree_policytree_rec(
@@ -103,21 +59,6 @@ int is_varsplit(
    
    return (node->index != -1);
 }
-
-
-/** is a node removable (i.e. not a variable splitting node 
-    nor a leaf node)?
-*/
-static
-int removable_node(
-   NODE*                 node                /**< node */
-   )
-{
-   assert(node != NULL);
-   
-   return !(is_leaf(node) || is_varsplit(node));
-}
-
 
 /** as soon as we hit a leaf, remove any subtrees underneath it
 */

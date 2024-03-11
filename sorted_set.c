@@ -71,7 +71,7 @@ void bottomupmergesort(
 /** insert an element into a simple sorted set, assuming it is not already there */
 static
 void insert_element(
-   SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*           sorted_set,         /**< sorted set */
    int                   elt                 /**< element to insert */ 
   )
 {
@@ -168,7 +168,6 @@ int remove_element(
    int left;
    int right;
    int mid;
-   int midsave;
    int midval;
    int eltval;
    const int* key = sorted_set->key;
@@ -217,9 +216,9 @@ int remove_element(
 /** insert elements into a sorted set, assuming they are not already there */
 static
 void insert_elements(
-   SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*           sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to insert */ 
-   int*                  elts                /**< elements to insert */ 
+   const int*            elts                /**< elements to insert */ 
   )
 {
    int i;
@@ -234,7 +233,7 @@ static
 void add_elements_at_end(
    SORTED_SET*           sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to insert */ 
-   int*                  elts                /**< elements to insert */ 
+   const int*            elts                /**< elements to insert */ 
   )
 {
    int i;
@@ -251,7 +250,7 @@ static
 void remove_elements(
    SORTED_SET*           sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to remove */ 
-   int*                  elts                /**< elements to insert */ 
+   const int*            elts                /**< elements to insert */ 
   )
 {
    int i;
@@ -370,34 +369,35 @@ int next_split(
    int                   num_cols_x,         /**< number of covariates */
    WORKSPACE*            workspace,          /**< workspace */
    double*               splitval,           /**< (pointer to) found value to split on */
-   int**                 elts,               /**< (pointer to) the elements moved */
-   int*                  nelts               /**< (pointer to) number of elements moved */
+   int**                 elts,               /**< (pointer to) the elements moved (or NULL if not required) */
+   int*                  nelts               /**< (pointer to) number of elements moved (or NULL if not required) */
    )
 {
    SORTED_SET* left_sorted_setp;
    SORTED_SET* right_sorted_setp;
    int nmoved;
    int pp;
-
+   const int* right_sorted_setp_elements;
+   
    assert(left_sorted_sets != NULL);
    assert(right_sorted_sets != NULL);
-   assert(p > 0 && p < num_cols_x);
+   assert(p >= 0 && p < num_cols_x);
    assert(data_xp != NULL);
    assert(num_cols_x > 0);
    assert(workspace != NULL);
    assert(splitval != NULL);
-   assert(elts != NULL);
-   assert(nelts != NULL);
+   assert((elts != NULL && nelts != NULL) || (elts == NULL && nelts == NULL));
    
    left_sorted_setp = left_sorted_sets[p];
    right_sorted_setp = right_sorted_sets[p];
-
+   right_sorted_setp_elements = right_sorted_setp->elements;
+   
    /* nothing to move from right to left */
    if( right_sorted_setp->n == 0 )
       return 0;
 
    /* splitting value is just first covariate value on the right */
-   *splitval = data_xp[right_sorted_setp->elements[0]]; 
+   *splitval = data_xp[right_sorted_setp_elements[0]]; 
 
    /* if left is non-empty the last element on left must have a strictly lower pth covariate value
       that first element on right */
@@ -405,7 +405,7 @@ int next_split(
 
    /* find any additional units on right with *splitval as covariate value */
    nmoved = 1;
-   while( nmoved < right_sorted_setp->n && data_xp[right_sorted_setp->elements[nmoved]] == *splitval )
+   while( nmoved < right_sorted_setp->n && data_xp[right_sorted_setp_elements[nmoved]] == *splitval )
       nmoved++;
 
    /* update left and right sorted sets of units for covariates other than splitting covariate */
@@ -413,19 +413,22 @@ int next_split(
    {
       if( pp != p )
       {
-         insert_elements(left_sorted_sets[pp], nmoved, right_sorted_setp->elements);
-         remove_elements(right_sorted_sets[pp], nmoved, right_sorted_setp->elements);
+         insert_elements(left_sorted_sets[pp], nmoved, right_sorted_setp_elements);
+         remove_elements(right_sorted_sets[pp], nmoved, right_sorted_setp_elements);
       }
    }
 
    /* update left and right sorted sets for splitting covariate */
-   add_elements_at_end(left_sorted_setp, nmoved, right_sorted_setp->elements);
+   add_elements_at_end(left_sorted_setp, nmoved, right_sorted_setp_elements);
    remove_elements_at_start(right_sorted_setp, nmoved);
 
-   /* return set of moved units */
-   *nelts = nmoved;
-   *elts = left_sorted_setp->elements + left_sorted_setp->n - nmoved;
-
+   if( elts != NULL )
+   {
+      /* return set of moved units */
+      *nelts = nmoved;
+      *elts = left_sorted_setp->elements + left_sorted_setp->n - nmoved;
+   }
+   
    return 1;
    
 }
@@ -433,7 +436,7 @@ int next_split(
 /* make a 'shallow' copy of source sorted sets */
 SORTED_SET** shallow_copy_sorted_sets(
    SORTED_SET**          sources,            /**< source sorted sets */
-   int                   nsets              /**< number of sources */
+   int                   nsets               /**< number of sources */
    )
 {
    SORTED_SET** targets;
@@ -513,14 +516,17 @@ void initialise_sorted_sets(
    )
 {
    int p;
-   SORTED_SET** lefts;
-   SORTED_SET** rights;
+   SORTED_SET** lefts = NULL;
+   SORTED_SET** rights = NULL;
    /* get common size of sorted sets */
    int n = (sorted_sets[0])->n;
    
    lefts = get_left_sorted_sets(workspace,depth);
    rights = get_right_sorted_sets(workspace,depth);
 
+   assert( lefts != NULL );
+   assert( rights != NULL );
+   
    /* do not need to set key, since this is fixed */
    for( p = 0; p < num_cols_x; p++ )
    {

@@ -1,6 +1,7 @@
 #include "workspace.h"
 #include "sorted_set.h"
 #include "tree.h"
+#include <assert.h>
 #include <stdlib.h>
 
 #define LEFT 0
@@ -29,7 +30,9 @@ WORKSPACE* make_workspace(
    WORKSPACE* workspace;
    int d;
    int i;
-
+   /* for tree of, say, depth=3, we have tree depths of 0,1,2 and 3 to consider */
+   int ndepths = depth+1;
+   
    workspace = (WORKSPACE*) malloc(sizeof(WORKSPACE));
 
    workspace->num_cols_y = num_cols_y;
@@ -40,16 +43,15 @@ WORKSPACE* make_workspace(
    workspace->sets = (SORTED_SET****) malloc(2*sizeof(SORTED_SET***));
    for( i = 0; i < 2; i++)
    {
-      workspace->sets[i] = (SORTED_SET***) malloc(depth*sizeof(SORTED_SET**));
-      for( d = 0; d < depth; d++)
+      workspace->sets[i] = (SORTED_SET***) malloc(ndepths*sizeof(SORTED_SET**));
+      for( d = 0; d < ndepths; d++)
       {
-         workspace->sets[i][d] = shallow_copy_sorted_sets(
-            initial_sorted_sets, num_cols_x);
+         workspace->sets[i][d] = shallow_copy_sorted_sets(initial_sorted_sets, num_cols_x);
       }
    }
 
-   workspace->trees = (NODE**) malloc(depth*sizeof(NODE*));
-   for(d = 0; d < depth; d++)
+   workspace->trees = (NODE**) malloc(ndepths*sizeof(NODE*));
+   for(d = 0; d < ndepths; d++)
    {
       workspace->trees[d] = make_tree(d);
    }
@@ -68,13 +70,15 @@ void free_workspace(
 {
    int i;
    int d;
+   /* for tree of, say, depth=3, we have tree depths of 0,1,2 and 3 to consider */
+   int ndepths = depth+1;
    
    free(workspace->rewards);
    free(workspace->rewards2);
 
    for( i = 0; i < 2; i++)
    {
-      for( d = 0; d < depth; d++)
+      for( d = 0; d < ndepths; d++)
       {
          shallow_free_sorted_sets(workspace->sets[i][d], num_cols_x);
       }
@@ -82,7 +86,7 @@ void free_workspace(
    }
    free(workspace->sets);
 
-   for( d = 0; d < depth; d++)
+   for( d = 0; d < ndepths; d++)
       tree_free(workspace->trees[d]);
    free(workspace->trees);
 
@@ -116,6 +120,12 @@ SORTED_SET** get_left_sorted_sets(
    int                   depth               /**< depth */
    )
 {
+   assert( workspace != NULL );
+   assert( depth >= 0 );
+   assert( workspace->sets != NULL );
+   assert( workspace->sets[LEFT] != NULL );
+   assert( workspace->sets[LEFT][depth] != NULL );
+   
    return workspace->sets[LEFT][depth];
 }
 
@@ -125,6 +135,9 @@ SORTED_SET** get_right_sorted_sets(
    int                   depth               /**< depth */
    )
 {
+   assert( workspace != NULL );
+   assert( depth >= 0 );
+
    return workspace->sets[RIGHT][depth];
 }
 
