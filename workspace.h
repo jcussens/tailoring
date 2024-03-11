@@ -24,12 +24,12 @@ void free_workspace(
    );
 
 /** return array of doubles, one double for each reward */
-double* get_rewards(
+double* get_rewards_space(
    WORKSPACE*            workspace           /**< workspace */
    );
 
 /** return array of zeroes, one zero for each reward */
-double* get_rewards2(
+double* get_rewards_space_zeroed(
    WORKSPACE*            workspace           /**< workspace */
    );
 
@@ -63,7 +63,7 @@ void retrieve_best_tree(
 
 
 /** return an uninitialised sorted set */
-SORTED_SET* get_sorted_set(
+SORTED_SET* get_unint_sorted_set(
    WORKSPACE*            workspace           /**< workspace */
    );
 

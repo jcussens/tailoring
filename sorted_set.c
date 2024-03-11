@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 /** 
  * sorted set, policy tree style
@@ -159,7 +160,7 @@ void insert_element(
  */
 static
 int remove_element(
-   SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*           sorted_set,         /**< sorted set */
    int                   elt                 /**< element to remove */
   )
 {
@@ -170,7 +171,7 @@ int remove_element(
    int midsave;
    int midval;
    int eltval;
-   const int* rank = sorted_set->rank;
+   const int* key = sorted_set->key;
    int n;
    int* set;  
    int retval = -1;
@@ -179,7 +180,7 @@ int remove_element(
    
    n = sorted_set->n;
    set = sorted_set->elements;  
-   eltval = rank[elt];
+   eltval = key[elt];
 
    left = 0;
    right = n-1;
@@ -188,7 +189,7 @@ int remove_element(
    while( left <= right )
    {
       mid = (left+right)/2;
-      midval = rank[set[mid]];
+      midval = key[set[mid]];
       
       if( midval < eltval )
          left = mid+1;
@@ -231,7 +232,7 @@ void insert_elements(
 /** add elements to the end of a sorted set, assuming they are not already there */
 static
 void add_elements_at_end(
-   SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*           sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to insert */ 
    int*                  elts                /**< elements to insert */ 
   )
@@ -248,7 +249,7 @@ void add_elements_at_end(
 /** remove elements from a sorted set, assuming they are in the set */
 static
 void remove_elements(
-   SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*           sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to remove */ 
    int*                  elts                /**< elements to insert */ 
   )
@@ -263,7 +264,7 @@ void remove_elements(
 /** remove elements at the start of a sorted set */
 static
 void remove_elements_at_start(
-   SORTED_SET*    sorted_set,         /**< sorted set */
+   SORTED_SET*           sorted_set,         /**< sorted set */
    int                   nelts               /**< number of elements to remove from start */ 
   )
 {
@@ -283,20 +284,16 @@ int is_pure(
 {
   int i;
   int best_action;
-  SORTED_SET* sorted_set;
   
-  assert(sorted_sets != NULL);
-  assert(sorted_sets[0] != NULL);
-  assert(best_actions != NULL);
+  assert( sorted_sets != NULL );
+  assert( sorted_sets[0] != NULL );
+  assert( best_actions != NULL );
   
-  /* arbitrarily use the first sorted set */
-  sorted_set = sorted_sets[0];
+  if( (sorted_sets[0])->n > 0)
+     best_action = best_actions[(sorted_sets[0])->elements[0]];
   
-  if( sorted_set->n > 0)
-     best_action = best_actions[sorted_set->elements[0]];
-  
-  for( i = 1; i < sorted_set->n; i++)
-     if( best_action != best_actions[sorted_set->elements[i]] )
+  for( i = 1; i < (sorted_sets[0])->n; i++)
+     if( best_action != best_actions[(sorted_sets[0])->elements[i]] )
         return 0;
 
   return 1;
@@ -304,7 +301,7 @@ int is_pure(
 
 /** get common size of sorted sets */
 int get_size(
-   SORTED_SET**          sorted_sets         /**< sorted sets */
+   const SORTED_SET**    sorted_sets         /**< sorted sets */
    )
 {
    assert(sorted_sets != NULL);
@@ -321,28 +318,28 @@ void find_best_reward(
    int                   num_cols_y,         /**< number of rewards/actions */
    WORKSPACE*            workspace,          /**< workspace */
    double*               best_reward,        /**< (pointer to) best reward */
-   int*                  best_action,        /**< (pointer to) best action */
+   int*                  best_action         /**< (pointer to) best action */
    )
 {
    double* rewards;
    int d;
-   SORTED_SET sorted_set;
+   const SORTED_SET* sorted_set;
    int i;
   
-   assert(sorted_sets != NULL);
-   assert(sorted_sets[0] != NULL);
-   assert(data_y != NULL);
-   assert(workspace != NULL);
-   assert(best_reward != NULL);
-   assert(best_action != NULL);
+   assert( sorted_sets != NULL );
+   assert( sorted_sets[0] != NULL );
+   assert( data_y != NULL );
+   assert( workspace != NULL );
+   assert( best_reward != NULL );
+   assert( best_action != NULL );
    
-   rewards = get_double_array(workspace);
+   rewards = get_rewards_space(workspace);
    
    /* get reward for each action */
    sorted_set = sorted_sets[0];
    for( d = 0; d < num_cols_y; d++ )
    {
-      double* dyelt = data_y + d*num_rows;
+      const double* dyelt = data_y + d*num_rows;
       
       rewards[d] = 0.0;
       for( i = 0; i < sorted_set->n; i++)
@@ -416,13 +413,13 @@ int next_split(
    {
       if( pp != p )
       {
-         insert_elements(left_sorted_sets[pp], nmoved, right_sorted_setp);
-         remove_elements(right_sorted_sets[pp], nmoved, right_sorted_setp);
+         insert_elements(left_sorted_sets[pp], nmoved, right_sorted_setp->elements);
+         remove_elements(right_sorted_sets[pp], nmoved, right_sorted_setp->elements);
       }
    }
 
    /* update left and right sorted sets for splitting covariate */
-   add_elements_at_end(left_sorted_setp, nmoved, right_sorted_setp);
+   add_elements_at_end(left_sorted_setp, nmoved, right_sorted_setp->elements);
    remove_elements_at_start(right_sorted_setp, nmoved);
 
    /* return set of moved units */
@@ -487,9 +484,12 @@ SORTED_SET* make_sorted_set(
   for( i = 0; i < num_indices; i++)
     elements[i] = i;
 
-  /* sort the elements using data_xx values as key */
-  bottomupmergesort(elements, tmp, num_indices, data_xx);
-
+  if( data_xx != NULL )
+  {
+     /* sort the elements using data_xx values as key */
+     bottomupmergesort(elements, tmp, num_indices, data_xx);
+  }
+  
   for( i = 0; i < num_indices; i++)
     key[elements[i]] = i;
   
@@ -533,6 +533,7 @@ void initialise_sorted_sets(
    *right_sorted_sets = rights;
 }
 
+/** make initial sorted sets one for each covariate, if there are no covariates create a single 'dummy' sorted set */
 SORTED_SET** make_initial_sorted_sets(
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
@@ -540,15 +541,19 @@ SORTED_SET** make_initial_sorted_sets(
    )
 {
 
-   SORTED_SET** initial_sorted_set;
+   SORTED_SET** initial_sorted_sets;
    int* tmp_indices;
    int p;
    
-   initial_sorted_sets = (SORTED_SET**) malloc(num_cols_x*sizeof(SORTED_SET*));
+   initial_sorted_sets = (SORTED_SET**) malloc(MAX(1,num_cols_x)*sizeof(SORTED_SET*));
 
    tmp_indices = (int*) malloc(num_rows*sizeof(int));
 
-   /* make initial sorted sets */
+   /* if no covariates, create a single dummy sorted set .. */
+   if( num_cols_x == 0 )
+      initial_sorted_sets[0] = make_sorted_set(num_rows,NULL,tmp_indices);
+   
+   /* .. or make normal initial sorted sets */
    for( p = 0; p < num_cols_x; p++)
       initial_sorted_sets[p] = make_sorted_set(num_rows,data_x+p*num_rows,tmp_indices);
    
@@ -607,9 +612,9 @@ void very_shallow_copy(
    SORTED_SET*           target              /**< target sorted set */
    )
 {
-   target->elements = sorted_set->elements;
-   target->key = sorted_set->key;
-   target->n = sorted_set->n;
+   target->elements = source->elements;
+   target->key = source->key;
+   target->n = source->n;
 }
 
 /** remove elements from the start of sorted set with the same covariate value */
@@ -621,6 +626,8 @@ int next_shallow_split(
    int*                  nelts               /**< (pointer to) number of elements moved */
    )
 {
+   int nmoved;
+   
    /* nothing to move from right to left */
    if( right_sorted_set->n == 0 )
       return 0;
@@ -648,6 +655,7 @@ int next_shallow_split(
 
 void find_nosplit_rewards(
    const SORTED_SET**    sorted_sets,        /**< sorted sets */
+   int                   num_cols_y,         /**< number of actions */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of rows in the data */
    double*               nosplit_rewards     /**< space for computed no split rewards */
@@ -655,17 +663,21 @@ void find_nosplit_rewards(
 {
    int d;
    int i;
-   double* dyelt;
-   int elt;
-   SORTED_SET* sorted_set = sorted_sets[0];
+   const double* dyelt;
+   const SORTED_SET* sorted_set;
+
+   assert( sorted_sets != NULL );
+   assert( sorted_sets[0] != NULL );
+   assert( nosplit_rewards != NULL );
+
+   sorted_set = sorted_sets[0];
    
    /* find reward for each action if no split were done */
    for( d = 0; d < num_cols_y; d++ )
       nosplit_rewards[d] = 0.0;
    for( i = 0; i < sorted_set->n; i++ )
    {
-      elt = sorted_set->elements[i];
-      dyelt = data_y + elt;
+      dyelt = data_y + sorted_set->elements[i];
       for( d = 0; d < num_cols_y; d++ )
       {
          nosplit_rewards[d] += *dyelt;

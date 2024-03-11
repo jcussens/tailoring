@@ -1,5 +1,6 @@
 #include "simple_opttree.h"
 #include "sorted_set.h"
+#include "workspace.h"
 #include <assert.h>
 #include <stdlib.h>
 
@@ -13,6 +14,8 @@ void update_left_rewards(
    int                   num_cols_y          /**< number of rewards/actions */
    )
 {
+   int i;
+   
    for( i = 0; i < nelts; i++ )
    {
       int elt = elts[i];
@@ -160,8 +163,9 @@ void level_one_learning(
    int p;
    double best_reward;
    int first_reward = 1;
-   double* nosplit_rewards = get_rewards(workspace);
-   SORTED_SET* right_sorted_set = get_sorted_set(workspace);
+   /* next 2 lines just get pointers to pre-allocated space */
+   double* nosplit_rewards = get_rewards_space(workspace);
+   SORTED_SET* right_sorted_set = get_unint_sorted_set(workspace);
    NODE* left_child;
    NODE* right_child;
    
@@ -170,11 +174,11 @@ void level_one_learning(
 
    double best_left_reward;
    double best_right_reward;
-   int best_left_reward;
-   int best_right_reward;
+   int best_left_action;
+   int best_right_action;
 
    /* get reward for each action if no split were done */
-   find_nosplit_rewards(sorted_sets, data_y, num_rows, nosplit_rewards);
+   find_nosplit_rewards((const SORTED_SET**) sorted_sets, num_cols_y, data_y, num_rows, nosplit_rewards);
 
    get_children(node, &left_child, &right_child);
    
@@ -182,15 +186,16 @@ void level_one_learning(
    for( p = 0; !(*perfect) && p < num_cols_x; p++)
    {
       const double* data_xp = data_x+(p*num_rows);
-
+      double splitval;
+      
       /* initialise all left rewards to 0 */
-      double* left_rewards = get_rewards2(workspace);
+      double* left_rewards = get_rewards_space_zeroed(workspace);
 
       /* make very shallow copy of sorted set for covariate p */
       very_shallow_copy(sorted_sets[p], right_sorted_set);
       
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
-      while( next_shallow_split(right_sorted_set, p, data_xp, &splitval, &elts, &nelts) )
+      while( next_shallow_split(right_sorted_set, data_xp, &splitval, &elts, &nelts) )
       {
          update_left_rewards(left_rewards, elts, nelts);
          update_best_left_reward(left_rewards, num_cols_y, &best_left_reward, &best_left_action);
@@ -229,7 +234,7 @@ void find_best_split(
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */
-   nt                    num_cols_x,         /**< number of covariates */
+   int                   num_cols_x,         /**< number of covariates */
    int                   num_cols_y,         /**< number of rewards/actions */
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
    const int*            worst_actions,      /**< worst_actions[i] is the worst action for unit i */
@@ -242,6 +247,18 @@ void find_best_split(
    int pure;
    double best_reward;
    int first_reward = 1;
+
+   assert( node != NULL );
+   assert( depth >= 0 );
+   assert( sorted_sets != NULL);
+   assert( sorted_sets[0] != NULL);
+   assert( min_node_size >= 1 );
+   assert( num_rows >= 1 );
+   assert( num_cols_x >= 0 );
+   assert( num_cols_y >= 1 );
+   assert( num_cols_x == 0 || data_x != NULL );
+   assert( data_y != NULL );
+
    
    /* determine whether the dataset is pure, i.e. whether each unit has same best action */
    pure = is_pure(sorted_sets, best_actions);
@@ -331,7 +348,7 @@ void find_best_split(
 
 
 
-/** Find an optimal policy tree of given maximal depth 
+/** Find an optimal policy tree of given maximal depth from a non-empty dataset 
  * @return An optimal policy tree
  */
 NODE* tree_search_simple(
@@ -344,17 +361,32 @@ NODE* tree_search_simple(
   int                    num_cols_y          /**< number of rewards/actions */
   )
 {
-   NODE* tree;
-   SORTED_SET** initial_sorted_sets;
-   WORKSPACE* workspace;
-   int* best_actions;
-   int* worst_actions;
+   NODE* tree = NULL;
+   SORTED_SET** initial_sorted_sets = NULL;
+   WORKSPACE* workspace = NULL;
+   int* best_actions = NULL;
+   int* worst_actions = NULL;
    int perfect;
+
+   /* Permitted: depth 0 trees, no covariates */
+   /* Not permitted: no data, min_node_size < 1, number of actions < 1 */ 
+   
+   assert( depth >= 0 );
+   assert( min_node_size >= 1 );
+   assert( num_rows >= 1 );
+   assert( num_cols_x >= 0 );
+   assert( num_cols_y >= 1 );
+   assert( num_cols_x == 0 || data_x != NULL );
+   assert( data_y != NULL );
+
+   /* if no covariates are supplied then no splits are possible, so fix depth of tree to 0 */
+   if( num_cols_x == 0 )
+      depth = 0;
    
    /* make tree of right depth, values for its nodes will be overwritten with those defining an optimal tree */
    tree = make_tree(depth);
 
-   /* for each of the num_cols_x covariates, use the values of that covariate to sort the
+   /* for each of the num_cols_x covariates (if any), use the values of that covariate to sort the
     * (indices of the) datapoints and store the result   
     */
    initial_sorted_sets = make_initial_sorted_sets(data_x, num_rows, num_cols_x);
@@ -365,6 +397,9 @@ NODE* tree_search_simple(
    /* compute and store best and worst actions for each unit */
    store_best_worst_actions(data_y, num_rows, num_cols_y, &best_actions, &worst_actions);
 
+   assert( best_actions != NULL );
+   assert( worst_actions != NULL );
+   
    /* record that we have yet to find a 'perfect' tree for this data */
    perfect = 0;
 

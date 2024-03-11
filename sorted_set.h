@@ -41,6 +41,13 @@ int next_split(
    int*                  nelts               /**< (pointer to) number of elements moved */
    );
 
+void find_nosplit_rewards(
+   const SORTED_SET**    sorted_sets,        /**< sorted sets */
+   int                   num_cols_y,         /**< number of actions */
+   const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+   int                   num_rows,           /**< number of rows in the data */
+   double*               nosplit_rewards     /**< space for computed no split rewards */
+   );
 
 /* find best action and its associated reward for a set of units */
 void find_best_reward(
@@ -51,6 +58,10 @@ void find_best_reward(
    WORKSPACE*            workspace,          /**< workspace */
    double*               best_reward,        /**< (pointer to) best reward */
    int*                  best_action         /**< (pointer to) best action */
+   );
+
+SORTED_SET* make_uninitialised_sorted_set(
+   void
    );
 
 /* make a 'shallow' copy of source sorted sets */

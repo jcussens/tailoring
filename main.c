@@ -19,19 +19,28 @@ void freedata(
    )
 {
    int i;
+
+   assert(num_cols_x == 0 || covnames != NULL );
+   assert(num_cols_y == 0 || actionnames != NULL );
    
    for(i = 0; i < num_cols_x; i++)
       free(covnames[i]);
-   free(covnames);
+   if( covnames != NULL )
+      free(covnames);
 
    for(i = 0; i < num_cols_y; i++)
       free(actionnames[i]);
-   free(actionnames);
+   if( actionnames != NULL )
+      free(actionnames);
 
-   tree_free(tree);
-   
-   free(data_x);
-   free(data_y);
+   if( tree != NULL )
+      tree_free(tree);
+
+   if( data_x != NULL )
+      free(data_x);
+
+   if( data_y != NULL )
+      free(data_y);
 }
 
 int process_commandline(
@@ -58,6 +67,10 @@ int process_commandline(
       printf("Number of actions either not a valid number of set to 0.\n");
       return 1;
    }
+   else if( *num_cols_y == 1 )
+   {
+      printf("Warning: number of actions set to 1.\n");
+   }
    
    if( argc > 3)
       *depth = atoi(argv[3]);
@@ -81,18 +94,18 @@ int main(
   )
 {
 
-   char* filename;
-   int num_cols_y;
-   int depth;
-   int num_rows;
-   int num_cols_x;
-   double* data_x;
-   double* data_y;
-   char** covnames;
-   char** actionnames;
+   char* filename = NULL;
+   int num_cols_y = -1;
+   int depth = -1;
+   int num_rows = -1;
+   int num_cols_x = -1;
+   double* data_x = NULL;
+   double* data_y = NULL;
+   char** covnames = NULL;
+   char** actionnames = NULL;
 
    int status;
-   NODE* tree;
+   NODE* tree = NULL;
   
    int min_node_size = DEFAULT_MIN_NODE_SIZE;
 
@@ -102,19 +115,48 @@ int main(
    if( status == 1 )
       return 1;
 
-  status = readfile(filename, num_cols_y, &data_x, &data_y, &num_rows, &num_cols_x, &covnames, &actionnames);
+   assert(filename != NULL);
+   assert(num_cols_y >= 1);
+   assert(depth >= 0);
+   assert(min_node_size >= 1);
+   
+   status = readfile(filename, num_cols_y, &data_x, &data_y, &num_rows, &num_cols_x, &covnames, &actionnames);
 
-  assert( status == 0 || status == 1);
-  if( status == 1 )
-     return 1;
-     
-  tree = tree_search_simple(depth, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y);
-     
-  print_tree_policytree(tree, covnames, depth, num_cols_y, actionnames);
+   assert( status == 0 || status == 1);
+   if( status == 1 )
+      return 1;
 
-  printf("Reward: %g\n", get_reward(tree));
+   assert( num_rows >= 0 );
+   assert( num_rows == 0 || data_x != NULL );
+   assert( num_rows == 0 || data_y != NULL );
+   assert( num_cols_x >= 0 );
+   assert( actionnames != NULL );
+   assert( num_cols_x == 0 || covnames != NULL );
+   
+   if( num_cols_x == 0 )
+   {
+      printf("Warning: No covariates supplied.\n");     
+   }
 
-  freedata(num_cols_x, num_cols_y, covnames, actionnames, data_x, data_y, tree);
-
-  return 0;
+   if( num_rows == 0 )
+   {
+      printf("Warning: No data supplied.\n");     
+   }
+   
+   if( num_rows > 0 )
+   {
+      tree = tree_search_simple(depth, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y);
+      
+      print_tree_policytree(tree, covnames, depth, num_cols_y, actionnames);
+      
+      printf("Reward: %g\n", get_reward(tree));
+   }
+   else
+   {
+      printf("Did not build tree since no data supplied.\n");
+   }
+   
+   freedata(num_cols_x, num_cols_y, covnames, actionnames, data_x, data_y, tree);
+   
+   return 0;
 }

@@ -1,4 +1,6 @@
 #include "workspace.h"
+#include "sorted_set.h"
+#include "tree.h"
 #include <stdlib.h>
 
 #define LEFT 0
@@ -89,7 +91,7 @@ void free_workspace(
 }
 
 /** return array of doubles, one double for each action */
-double* get_rewards(
+double* get_rewards_space(
    WORKSPACE*            workspace           /**< workspace */
    )
 {
@@ -97,7 +99,7 @@ double* get_rewards(
 }
 
 /** return array of zeroes, one zero for each reward */
-double* get_rewards2(
+double* get_rewards_space_zeroed(
    WORKSPACE*            workspace           /**< workspace */
    )
 {
@@ -147,7 +149,7 @@ void retrieve_best_tree(
 }
 
 /** return an uninitialised sorted set */
-SORTED_SET* get_sorted_set(
+SORTED_SET* get_unint_sorted_set(
    WORKSPACE*            workspace           /**< workspace */
    )
 {

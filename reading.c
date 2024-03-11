@@ -110,6 +110,12 @@ int readfile(
 
    *num_cols_x = nfields - num_cols_y;
 
+   if( *num_cols_x < 0 )
+   {
+      printf("Header line has %d fields but %d actions expected.\n", nfields, num_cols_y);
+      return 1;
+   }
+   
   /* read in covariate and action names */
   
    *covnames = (char**) malloc(*num_cols_x*sizeof(char*));

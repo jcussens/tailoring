@@ -14,10 +14,10 @@ NODE* tree_search_simple(
   int                    depth,              /**< (maximum) depth of returned tree */
   int                    min_node_size,      /**< smallest terminal node size */
   const double*          data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
-  const double*          data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+  const double*          data_y,             /**< 'gammas', data_y+(d*num_rows) points to values for reward d */
   int                    num_rows,           /**< number of units in full dataset */
   int                    num_cols_x,         /**< number of covariates */
-  int                    num_cols_y          /**< number of rewards/actions */
+  int                    num_cols_y          /**< number of actions */
    );
 
 #ifdef __cplusplus
