@@ -60,6 +60,18 @@ void find_best_reward(
    int*                  best_action         /**< (pointer to) best action */
    );
 
+/** initialise so that each left_sorted_set (for each covariate) is empty and each 
+ *  right_sorted_set is a copy of the sorted set (for that covariate) 
+*/
+void initialise_sorted_sets(
+   const SORTED_SET**    sorted_sets,        /**< input sorted sets */
+   int                   depth,              /**< depth of associated node */
+   int                   num_cols_x,         /**< number of covariates */
+   WORKSPACE*            workspace,          /**< workspace */
+   SORTED_SET***         left_sorted_sets,   /**< pointer to output left sets */
+   SORTED_SET***         right_sorted_sets   /**< pointer to output right sets */
+   );
+
 SORTED_SET* make_uninitialised_sorted_set(
    void
    );
@@ -82,7 +94,7 @@ void shallow_free_sorted_sets(
 
 /** make a very shallow copy of a sorted set */
 void very_shallow_copy(
-   SORTED_SET*           source,             /**< source sorted set */
+   const SORTED_SET*     source,             /**< source sorted set */
    SORTED_SET*           target              /**< target sorted set */
    );
 
