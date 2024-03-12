@@ -4,6 +4,17 @@
 #include <assert.h>
 #include <stdlib.h>
 
+/* #define VERYVERBOSE */
+
+#ifdef VERYVERBOSE
+#define VERBOSE
+#endif
+
+#ifdef VERBOSE
+#include <stdio.h>
+#endif
+
+
 static
 void update_left_rewards(
    double*               left_rewards,
@@ -177,6 +188,12 @@ void level_one_learning(
    int best_left_action;
    int best_right_action;
 
+#ifdef VERYVERBOSE
+   double bestsplitval;
+   int bestp;
+#endif
+
+   
    /* get reward for each action if no split were done */
    find_nosplit_rewards((const SORTED_SET**) sorted_sets, num_cols_y, data_y, num_rows, nosplit_rewards);
 
@@ -213,11 +230,18 @@ void level_one_learning(
             record_split(node, p, splitval, best_reward);
             make_leaf(left_child, best_left_reward, best_left_action);
             make_leaf(right_child, best_right_reward, best_right_action);
-
+#ifdef VERYVERBOSE
+            bestsplitval = splitval;
+            bestp = p;
+#endif
             first_reward = 0;
          }
       }
    }
+#ifdef VERYVERBOSE
+   printf("Best split for depth=1 tree is split value %g for covariate %d with reward %g.\n",
+      bestsplitval, bestp, best_reward);
+#endif
 }
 
 /** on return, `node` will be the root of an optimal tree of depth `depth` for the data
@@ -248,6 +272,9 @@ void find_best_split(
    NODE* left_child;
    NODE* right_child;
 
+   SORTED_SET** left_sorted_sets;
+   SORTED_SET** right_sorted_sets;
+
    assert( node != NULL );
    assert( depth >= 0 );
    assert( sorted_sets != NULL);
@@ -259,6 +286,12 @@ void find_best_split(
    assert( num_cols_x == 0 || data_x != NULL );
    assert( data_y != NULL );
 
+#ifdef VERBOSE
+   printf("Looking for a depth=%d tree for a dataset of size %d.\n", depth, get_size(sorted_sets));
+#endif
+   
+   for( p = 0; p < num_cols_x; p++)
+      assert(check_sorted(sorted_sets[p], data_x+(p*num_rows)));
    
    /* determine whether the dataset is pure, i.e. whether each unit has same best action */
    pure = is_pure(sorted_sets, best_actions);
@@ -296,14 +329,11 @@ void find_best_split(
 
    assert( left_child != NULL );
    assert( right_child != NULL );
-   
+
    /* consider each covariate for splitting (stopping if we find a perfect split) */
    for( p = 0; !(*perfect) && p < num_cols_x; p++)
    {
       const double* data_xp = data_x+(p*num_rows);
-
-      SORTED_SET** left_sorted_sets;
-      SORTED_SET** right_sorted_sets;
 
       double this_reward;
 
@@ -311,16 +341,28 @@ void find_best_split(
       int right_perfect;
 
       double splitval;
-      
+
+      int pp;
+
       /* initialise so that each left_sorted_set (for each covariate) is empty and each 
          right_sorted_set is a copy of the input sorted set (for that covariate) */
       initialise_sorted_sets(sorted_sets, depth, num_cols_x, workspace, &left_sorted_sets, &right_sorted_sets);
+
+      for( pp = 0; pp < num_cols_x; pp++)
+      {
+         assert(check_sorted(left_sorted_sets[pp], data_x+(pp*num_rows)));
+         assert(check_sorted(right_sorted_sets[pp], data_x+(pp*num_rows)));
+      }
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
       while( !(*perfect) && next_split(left_sorted_sets, right_sorted_sets, p, data_xp, num_cols_x, workspace, 
             &splitval, NULL, NULL) )
       {
 
+#ifdef VERYVERBOSE
+         printf("Working on split value %g for covariate %d.\n", splitval, p);
+#endif
+         
          /* find optimal tree for left data set */
          find_best_split(left_child, depth-1, (const SORTED_SET**) left_sorted_sets, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &left_perfect); 

@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h> /* only for debugging */
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -267,11 +268,29 @@ void remove_elements_at_start(
    int                   nelts               /**< number of elements to remove from start */ 
   )
 {
-   memmove(sorted_set->elements,sorted_set->elements+nelts,(sorted_set->n) - nelts);
+   memmove(sorted_set->elements,sorted_set->elements+nelts,nelts*sizeof(int));
    sorted_set->n -= nelts;
 }
 
+/** for debugging only: check that a sorted set really is sorted */
+int check_sorted(
+   const SORTED_SET*     sorted_set,         /**< sorted sets, representing a common unsorted set */
+   const double*         data_xp             /**< covariate values associated with sorted set */
+   )
+{
+   int i;
 
+   if( sorted_set->n < 2 )
+      return 1;
+   
+   for(i = 0; i < (sorted_set->n)-1; i++)
+      if( data_xp[sorted_set->elements[i]] > data_xp[sorted_set->elements[i+1]] )
+         return 0;
+
+   return 1;
+   
+}
+   
 /** Determine whether a set is 'pure'.
  * A pure set is one where each unit has the same best action
  * @return 1 if the set is pure, else 0
@@ -378,6 +397,7 @@ int next_split(
    int nmoved;
    int pp;
    const int* right_sorted_setp_elements;
+   /* int i; */
    
    assert(left_sorted_sets != NULL);
    assert(right_sorted_sets != NULL);
@@ -391,7 +411,17 @@ int next_split(
    left_sorted_setp = left_sorted_sets[p];
    right_sorted_setp = right_sorted_sets[p];
    right_sorted_setp_elements = right_sorted_setp->elements;
-   
+
+   /* printf("first left %d: ", p); */
+   /* for( i = 0; i < left_sorted_setp->n; i++ ) */
+   /*    printf("%g,",data_xp[left_sorted_setp->elements[i]]); */
+   /* printf("\n"); */
+
+   /* printf("first right %d: ", p); */
+   /* for( i = 0; i < right_sorted_setp->n; i++ ) */
+   /*    printf("%g,",data_xp[right_sorted_setp->elements[i]]); */
+   /* printf("\n"); */
+
    /* nothing to move from right to left */
    if( right_sorted_setp->n == 0 )
       return 0;
@@ -399,6 +429,8 @@ int next_split(
    /* splitting value is just first covariate value on the right */
    *splitval = data_xp[right_sorted_setp_elements[0]]; 
 
+   /* printf("leftn=%d, firstleft=%g, lastleft=%g, splitval=%g.\n", left_sorted_setp->n, data_xp[left_sorted_setp->elements[0]], data_xp[left_sorted_setp->elements[(left_sorted_setp->n)-1]], *splitval); */
+   
    /* if left is non-empty the last element on left must have a strictly lower pth covariate value
       that first element on right */
    assert(left_sorted_setp->n == 0 || data_xp[left_sorted_setp->elements[(left_sorted_setp->n)-1]] < *splitval); 
@@ -422,6 +454,17 @@ int next_split(
    add_elements_at_end(left_sorted_setp, nmoved, right_sorted_setp_elements);
    remove_elements_at_start(right_sorted_setp, nmoved);
 
+   /* printf("second left %d: ", p); */
+   /* for( i = 0; i < left_sorted_setp->n; i++ ) */
+   /*    printf("%g,",data_xp[left_sorted_setp->elements[i]]); */
+   /* printf("\n"); */
+
+   /* printf("second right %d: ", p); */
+   /* for( i = 0; i < right_sorted_setp->n; i++ ) */
+   /*    printf("%g,",data_xp[right_sorted_setp->elements[i]]); */
+   /* printf("\n"); */
+
+   
    if( elts != NULL )
    {
       /* return set of moved units */
@@ -537,6 +580,7 @@ void initialise_sorted_sets(
 
    *left_sorted_sets = lefts;
    *right_sorted_sets = rights;
+   
 }
 
 /** make initial sorted sets one for each covariate, if there are no covariates create a single 'dummy' sorted set */

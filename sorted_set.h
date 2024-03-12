@@ -4,6 +4,12 @@ extern "C" {
 
 #include "type_all.h"
 
+/** for debugging only: check that a sorted set really is sorted */
+int check_sorted(
+   const SORTED_SET*     sorted_set,         /**< sorted sets, representing a common unsorted set */
+   const double*         data_xp             /**< covariate values associated with sorted set */
+   );
+
 SORTED_SET** make_initial_sorted_sets(
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
