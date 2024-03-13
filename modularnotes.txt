@@ -16,3 +16,58 @@ sorted_set.c
 code for policytree-style sorted sets
 
 all other files are from other branches
+
+Wed 13 Mar 14:37:07 GMT 2024
+
+have now added reading.c/h and type_all.h
+
+with commit:
+cdf2f7030cfc210ae50190bbfc8dbadd5348ee62
+
+get:
+(base) uw20605@IT079795:~/repos/tailoring$ time ./a.out untracked/IFLS.txt 2 2
+policy_tree object
+Tree depth:   2
+Actions:  1: "scores.DML" 2: "scores.DR"
+Variable splits:
+split_variable: "agecat.f2"  split_value: 0
+  split_variable: "poorcard_imp"  split_value: 0
+    * action: 2
+    * action: 1
+  * action: 1
+Reward: 39.529
+
+real	0m14.995s
+user	0m14.986s
+sys	0m0.008s
+
+whereas should get a tree of reward of 69 with past_ind_mis at root.
+However, depth=1 tree
+base) uw20605@IT079795:~/repos/tailoring$ time ./a.out untracked/IFLS.txt 2 1
+policy_tree object
+Tree depth:   1
+Actions:  1: "scores.DML" 2: "scores.DR"
+Variable splits:
+split_variable: "poorcard_imp"  split_value: 0
+  * action: 2
+  * action: 1
+Reward: 32.0346
+
+real	0m0.169s
+user	0m0.153s
+sys	0m0.016s
+(base) uw20605@IT079795:~/repos/tailoring$ untracked/pt.R untracked/IFLS.txt 2 1
+Warning in policy_tree(x, gammas, depth, TRUE) :
+  The number of covariates exceeds 50. Consider reducing the dimensionality before running policy_tree, by for example using only the Xj's with the highest variable importance (`grf::variable_importance` - the runtime of exact tree search scales with ncol(X)^depth, see the documentation for details).
+policy_tree object 
+Tree depth:  1 
+Actions:  1: scores.DML 2: scores.DR 
+Variable splits: 
+(1) split_variable: poorcard_imp  split_value: 0 
+  (2) * action: 2 
+  (3) * action: 1 
+
+seems correct.
+
+Found bug, not initialising left_perfect and right_perfect - now
+getting the right tree!

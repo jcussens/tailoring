@@ -335,8 +335,8 @@ void find_best_split(
 
       double this_reward;
 
-      int left_perfect;
-      int right_perfect;
+      int left_perfect = 0;
+      int right_perfect = 0;
 
       double splitval;
 
