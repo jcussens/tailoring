@@ -49,6 +49,7 @@ void print_tree_policytree_rec(
    }
 }
 
+#ifndef NDEBUG
 /* does a node split data using some value of some variable? */
 static
 int is_varsplit(
@@ -59,6 +60,7 @@ int is_varsplit(
    
    return (node->index != -1);
 }
+#endif
 
 /** as soon as we hit a leaf, remove any subtrees underneath it
 */
