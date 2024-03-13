@@ -87,18 +87,18 @@ UNITS shallow_copy_sorted_sets(
    );
 
 void free_sorted_sets(
-   SORTED_SET**          sorted_sets,        /**< sorted sets */
+   UNITS                 sorted_sets,        /**< sorted sets */
    int                   nsets               /**< number of sorted sets */
    );
 
 void shallow_free_sorted_sets(
-   SORTED_SET**          sorted_sets,        /**< sorted sets */
+   UNITS                 sorted_sets,        /**< sorted sets */
    int                   nsets               /**< number of sorted sets */
    );
 
 /** find units with same covariate value starting from a given index */
 int next_shallow_split(
-   const SORTED_SET**    right_sorted_sets,  /**< sorted set */
+   CONST_UNITS           right_sorted_sets,  /**< sorted set */
    int                   p,                  /**< covariate to split on */
    int                   start,              /**< starting index */
    const double*         data_xp,            /**< values for covariate to split on */
