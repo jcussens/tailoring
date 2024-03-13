@@ -502,6 +502,10 @@ int next_split(
    while( nmoved < right_sorted_setp->n && data_xp[right_sorted_setp_elements[nmoved]] == *splitval )
       nmoved++;
 
+   /* if all moved from right to left this is not a split */
+   if( nmoved == right_sorted_setp->n )
+      return 0;
+   
    /* update left and right sorted sets of units for covariates other than splitting covariate */
    for( pp = 0; pp < num_cols_x; pp++)
    {
@@ -744,6 +748,10 @@ int next_shallow_split(
    idx = start + 1;
    while( idx < right_sorted_setp->n && data_xp[right_sorted_setp->elements[idx]] == *splitval )
       idx++;
+
+   /* if all moved from right to left this is not a split */
+   if( idx == right_sorted_setp->n )
+      return 0;
 
    /* record what's removed */
    *nelts = idx - start;
