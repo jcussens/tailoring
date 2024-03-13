@@ -14,15 +14,15 @@
 #include <stdio.h>
 #endif
 
-
+/**< update the total reward for each action for a set of 'left' units due to new units being moved into this 'left' set */
 static
 void update_left_rewards(
-   double*               left_rewards,
-   int*                  elts,
-   int                   nelts,
-   const double*         data_y,             /**< rewards (column major) */
-   int                   num_rows,           /**< number of units */
-   int                   num_cols_y          /**< number of rewards/actions */
+   double*               left_rewards,       /**< rewards for each action for a 'left' set of units */
+   int*                  elts,               /**< units just moved into 'left' set of units */
+   int                   nelts,              /**< number of units just moved into 'left' set of units */
+   const double*         data_y,             /**< data_y[d*num_rows+elt] is the reward for action d for unit elt */
+   int                   num_rows,           /**< number of units in full dataset */
+   int                   num_cols_y          /**< number of actions */
    )
 {
    int i;
@@ -45,14 +45,15 @@ void update_left_rewards(
    }
 }
 
+/** find the best action and associated reward for a set of 'right' units */ 
 static
-void update_best_right_reward
+void find_best_right_action
 (
-   double*               left_rewards,
-   double*               nosplit_rewards,
-   int                   num_cols_y,         /**< number of rewards/actions */
-   double*               best_right_reward,
-   int*                  best_right_action
+   const double*         left_rewards,       /**< rewards for each action for a 'left' set of units */
+   const double*         nosplit_rewards,    /**< rewards for each action for the set of 'left' and 'right' units combined */
+   int                   num_cols_y,         /**< number of actions */
+   double*               best_right_reward,  /**< *best_right_reward will be the reward associated with the best action */
+   int*                  best_right_action   /**< *best_right_action will be the best action */
    )
 {
    int d;
@@ -71,13 +72,13 @@ void update_best_right_reward
    }   
 }
 
-
+/** find the best action and associated reward for a set of 'left' units */ 
 static
-void update_best_left_reward(
-   double*               left_rewards,
-   int                   num_cols_y,         /**< number of rewards/actions */
-   double*               best_left_reward,
-   int*                  best_left_action
+void find_best_left_action(
+   const double*         left_rewards,       /**< rewards for each action for a 'left' set of units */
+   int                   num_cols_y,         /**< number of actions */
+   double*               best_left_reward,   /**< *best_left_reward will be the reward associated with the best action */
+   int*                  best_left_action    /**< *best_left_action will be the best action */
    )
 {
    int d;
@@ -95,9 +96,7 @@ void update_best_left_reward(
    }   
 }
 
-/**
- * For each unit find and record the best and worst actions for that unit
- */
+/** For each unit find and record the best and worst actions for that unit */
 static
 void store_best_worst_actions(
    const double*         data_y,             /**< rewards (column major) */
@@ -164,7 +163,7 @@ void level_one_learning(
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x,         /**< number of covariates */
-   int                   num_cols_y,         /**< number of rewards/actions */
+   int                   num_cols_y,         /**< number of actions */
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
    const int*            worst_actions,      /**< worst_actions[i] is the worst action for unit i */
    WORKSPACE*            workspace,          /**< workspace */
@@ -174,7 +173,6 @@ void level_one_learning(
    int p;
    double best_reward;
    int first_reward = 1;
-   /* next 2 lines just get pointers to pre-allocated space */
    double* nosplit_rewards = get_rewards_space(workspace);
    NODE* left_child;
    NODE* right_child;
@@ -207,16 +205,18 @@ void level_one_learning(
       /* initialise all left rewards to 0 */
       double* left_rewards = get_rewards_space_zeroed(workspace);
 
+      /* initialise the index which will specify the current split */
       int idx = 0;
       
-      /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
+      /* consider each split (x[p] <= splitval, x[p] > splitval) of the data 
+         elts[0] ... elts[nelts-1] are the units moved from right to left */
       while( next_shallow_split(units, p, idx, data_xp, &splitval, &elts, &nelts) )
       {
          double this_reward;
          
          update_left_rewards(left_rewards, elts, nelts, data_y, num_rows, num_cols_y);
-         update_best_left_reward(left_rewards, num_cols_y, &best_left_reward, &best_left_action);
-         update_best_right_reward(left_rewards, nosplit_rewards, num_cols_y, &best_right_reward, &best_right_action);
+         find_best_left_action(left_rewards, num_cols_y, &best_left_reward, &best_left_action);
+         find_best_right_action(left_rewards, nosplit_rewards, num_cols_y, &best_right_reward, &best_right_action);
 
          /* get reward for this split */
          this_reward = best_left_reward + best_right_reward;
@@ -258,7 +258,7 @@ void find_best_split(
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x,         /**< number of covariates */
-   int                   num_cols_y,         /**< number of rewards/actions */
+   int                   num_cols_y,         /**< number of actions */
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
    const int*            worst_actions,      /**< worst_actions[i] is the worst action for unit i */
    WORKSPACE*            workspace,          /**< working space */
@@ -285,7 +285,7 @@ void find_best_split(
    assert( num_cols_y >= 1 );
    assert( num_cols_x == 0 || data_x != NULL );
    assert( data_y != NULL );
-   assert( are_sorted_sets(units, data_x, num_rows, num_cols_x) );
+   assert( units_ok(units, data_x, num_rows, num_cols_x) );
 
 #ifdef VERBOSE
    printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(units));
@@ -304,7 +304,7 @@ void find_best_split(
       int best_action;
 
       /* find best action and its associated reward */
-      find_best_reward(units, data_y, num_rows, num_cols_y, workspace, &best_reward, &best_action);
+      find_best_action(units, data_y, num_rows, num_cols_y, workspace, &best_reward, &best_action);
 
       /* make node a leaf with found best action and associated reward */
       make_leaf(node, best_reward, best_action);
@@ -343,16 +343,16 @@ void find_best_split(
       /* initialise so that left_units is empty and right_units is a copy of units */
       initialise_sorted_sets(units, depth, num_cols_x, workspace, &left_units, &right_units);
 
-      assert( are_sorted_sets((CONST_UNITS) left_units, data_x, num_rows, num_cols_x) );
-      assert( are_sorted_sets((CONST_UNITS) right_units, data_x, num_rows, num_cols_x) );
+      assert( units_ok((CONST_UNITS) left_units, data_x, num_rows, num_cols_x) );
+      assert( units_ok((CONST_UNITS) right_units, data_x, num_rows, num_cols_x) );
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
       while( !(*perfect) && next_split(left_units, right_units, p, data_xp, num_cols_x, workspace, 
             &splitval, NULL, NULL) )
       {
          
-         assert( are_sorted_sets((CONST_UNITS) left_units, data_x, num_rows, num_cols_x) );
-         assert( are_sorted_sets((CONST_UNITS) right_units, data_x, num_rows, num_cols_x) );
+         assert( units_ok((CONST_UNITS) left_units, data_x, num_rows, num_cols_x) );
+         assert( units_ok((CONST_UNITS) right_units, data_x, num_rows, num_cols_x) );
 
 #ifdef VERYVERBOSE
          printf("Working on split value %g for covariate %d.\n", splitval, p);
@@ -406,7 +406,7 @@ NODE* tree_search_simple(
   const double*          data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
   int                    num_rows,           /**< number of units in full dataset */
   int                    num_cols_x,         /**< number of covariates */
-  int                    num_cols_y          /**< number of rewards/actions */
+  int                    num_cols_y          /**< number of actions */
   )
 {
    NODE* tree = NULL;
@@ -436,7 +436,7 @@ NODE* tree_search_simple(
 
    /* make initial set of units from covariate data */
    units = make_initial_sorted_sets(data_x, num_rows, num_cols_x);
-   assert( are_sorted_sets( (CONST_UNITS) units, data_x, num_rows, num_cols_x) );
+   assert( units_ok( (CONST_UNITS) units, data_x, num_rows, num_cols_x) );
    
    /* create working spaces of various sorts (trees, units, arrays of rewards, etc) */
    workspace = make_workspace(depth, (CONST_UNITS) units, num_rows, num_cols_x, num_cols_y);

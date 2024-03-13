@@ -284,7 +284,7 @@ void remove_elements_at_start(
 }
 
 /** for debugging only: check that a non-empty collection of sorted sets represent the same underlying set and that each is appropriately sorted */
-int are_sorted_sets(
+int units_ok(
    const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
@@ -391,7 +391,7 @@ int get_size(
 }
 
 /* find best action and its associated reward for a set of units */
-void find_best_reward(
+void find_best_action(
    const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */
