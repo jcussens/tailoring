@@ -718,50 +718,37 @@ void shallow_free_sorted_sets(
    free(sorted_sets);
 }
 
-/** make a very shallow copy of a sorted set */
-void very_shallow_copy(
-   const SORTED_SET*     source,             /**< source sorted set */
-   SORTED_SET*           target              /**< target sorted set */
-   )
-{
-   target->elements = source->elements;
-   target->key = source->key;
-   target->n = source->n;
-}
 
-/** remove elements from the start of sorted set with the same covariate value */
+/** find units with same covariate value starting from a given index */
 int next_shallow_split(
-   SORTED_SET*           right_sorted_set,   /**< sorted set */ 
+   const SORTED_SET**    right_sorted_sets,  /**< sorted set */
+   int                   p,                  /**< covariate to split on */
+   int                   start,              /**< starting index */
    const double*         data_xp,            /**< values for covariate to split on */
    double*               splitval,           /**< (pointer to) found value to split on */
    int**                 elts,               /**< (pointer to) the elements moved */
    int*                  nelts               /**< (pointer to) number of elements moved */
    )
 {
-   int nmoved;
+   const SORTED_SET* right_sorted_setp = right_sorted_sets[p];
+   int idx;
    
    /* nothing to move from right to left */
-   if( right_sorted_set->n == 0 )
+   if( !(start < right_sorted_setp->n) )
       return 0;
 
-   /* splitting value is just first covariate value on the right */
-   *splitval = data_xp[right_sorted_set->elements[0]]; 
+   /* splitting value is just starting covariate value on the right */
+   *splitval = data_xp[right_sorted_sets[p]->elements[start]]; 
 
    /* find any additional units on right with *splitval as covariate value */
-   nmoved = 1;
-   while( nmoved < right_sorted_set->n && data_xp[right_sorted_set->elements[nmoved]] == *splitval )
-      nmoved++;
+   idx = start + 1;
+   while( idx < right_sorted_setp->n && data_xp[right_sorted_setp->elements[idx]] == *splitval )
+      idx++;
 
    /* record what's removed */
-   *nelts = nmoved;
-   *elts = right_sorted_set->elements;
+   *nelts = idx - start;
+   *elts = (right_sorted_setp->elements) + start;
 
-   /* update set */
-   /* NB elements pointers is moved, so original value must be available 
-      somewhere to allow eventual freeing */
-   right_sorted_set->elements += nmoved;
-   right_sorted_set->n -= nmoved;
-   
    return 1;
 }
 
@@ -798,9 +785,3 @@ void find_nosplit_rewards(
    }
 }
 
-SORTED_SET* make_uninitialised_sorted_set(
-   void
-   )
-{
-   return (SORTED_SET*) malloc(sizeof(SORTED_SET));
-}

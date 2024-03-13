@@ -61,13 +61,6 @@ void retrieve_best_tree(
    int                   depth               /**< depth of tree */
    );
 
-
-/** return an uninitialised sorted set */
-SORTED_SET* get_unint_sorted_set(
-   WORKSPACE*            workspace           /**< workspace */
-   );
-
-
 #ifdef __cplusplus
 }
 #endif

@@ -176,7 +176,6 @@ void level_one_learning(
    int first_reward = 1;
    /* next 2 lines just get pointers to pre-allocated space */
    double* nosplit_rewards = get_rewards_space(workspace);
-   SORTED_SET* right_sorted_set = get_unint_sorted_set(workspace);
    NODE* left_child;
    NODE* right_child;
    
@@ -208,11 +207,10 @@ void level_one_learning(
       /* initialise all left rewards to 0 */
       double* left_rewards = get_rewards_space_zeroed(workspace);
 
-      /* make very shallow copy of sorted set for covariate p */
-      very_shallow_copy(sorted_sets[p], right_sorted_set);
+      int idx = 0;
       
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
-      while( next_shallow_split(right_sorted_set, data_xp, &splitval, &elts, &nelts) )
+      while( next_shallow_split(sorted_sets, p, idx, data_xp, &splitval, &elts, &nelts) )
       {
          double this_reward;
          
@@ -236,6 +234,9 @@ void level_one_learning(
 #endif
             first_reward = 0;
          }
+
+         /* update index to move split along */
+         idx += nelts;
       }
    }
 #ifdef VERYVERBOSE

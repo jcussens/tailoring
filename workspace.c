@@ -15,7 +15,6 @@ struct workspace
    SORTED_SET****        sets;               /**< a sorted set for LEFT and RIGHT and each depth and each covariate, 
                                                 each with space = number of units */
    NODE**                trees;              /**< a tree for each possible depth */
-   SORTED_SET*           sorted_set;         /**< an uninitialised sorted set */
 };
 
 /** make workspace to provide pre-allocated space for various functions */
@@ -56,8 +55,6 @@ WORKSPACE* make_workspace(
       workspace->trees[d] = make_tree(d);
    }
 
-   workspace->sorted_set = make_uninitialised_sorted_set();
-   
    return workspace;
 }
 
@@ -89,8 +86,6 @@ void free_workspace(
    for( d = 0; d < ndepths; d++)
       tree_free(workspace->trees[d]);
    free(workspace->trees);
-
-   free(workspace->sorted_set);
    
 }
 
@@ -161,11 +156,4 @@ void retrieve_best_tree(
    tree_copy(workspace->trees[depth], tree);
 }
 
-/** return an uninitialised sorted set */
-SORTED_SET* get_unint_sorted_set(
-   WORKSPACE*            workspace           /**< workspace */
-   )
-{
-   return workspace->sorted_set;
-}
 

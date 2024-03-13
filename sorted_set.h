@@ -80,10 +80,6 @@ void initialise_sorted_sets(
    SORTED_SET***         right_sorted_sets   /**< pointer to output right sets */
    );
 
-SORTED_SET* make_uninitialised_sorted_set(
-   void
-   );
-
 /* make a 'shallow' copy of source sorted sets */
 SORTED_SET** shallow_copy_sorted_sets(
    SORTED_SET**          sources,            /**< source sorted sets */
@@ -100,22 +96,17 @@ void shallow_free_sorted_sets(
    int                   nsets               /**< number of sorted sets */
    );
 
-/** make a very shallow copy of a sorted set */
-void very_shallow_copy(
-   const SORTED_SET*     source,             /**< source sorted set */
-   SORTED_SET*           target              /**< target sorted set */
-   );
-
-/** remove elements from the start of sorted set with the same covariate value */
+/** find units with same covariate value starting from a given index */
 int next_shallow_split(
-   SORTED_SET*           right_sorted_set,   /**< sorted set */
+   const SORTED_SET**    right_sorted_sets,  /**< sorted set */
+   int                   p,                  /**< covariate to split on */
+   int                   start,              /**< starting index */
    const double*         data_xp,            /**< values for covariate to split on */
    double*               splitval,           /**< (pointer to) found value to split on */
-   int**                 elts,               /**< (pointer to) the elements removed */
-   int*                  nelts               /**< (pointer to) number of elements removed */
+   int**                 elts,               /**< (pointer to) the elements moved */
+   int*                  nelts               /**< (pointer to) number of elements moved */
    );
 
-   
 #ifdef __cplusplus
 }
 #endif
