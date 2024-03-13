@@ -18,6 +18,17 @@ struct sorted_set
   int*                   key;                /**< sorting key: if i < j then key[elements[i]] < key[elements[j]]  */
 };
 
+/** comparison function for sorting integers in ascending order */
+static
+int cmpfunc (
+   const void* a,
+   const void* b
+   )
+{
+   return ( *(int*)a - *(int*)b );
+}
+
+
 /** merge a pair of ordered subsequences to get a single ordered subsequence
  * left run is indices[ileft:iright-1]
  * right run is indices[iright:iend-1]
@@ -268,27 +279,78 @@ void remove_elements_at_start(
    int                   nelts               /**< number of elements to remove from start */ 
   )
 {
-   memmove(sorted_set->elements,sorted_set->elements+nelts,nelts*sizeof(int));
+   memmove(sorted_set->elements,sorted_set->elements+nelts,(sorted_set->n-nelts)*sizeof(int));
    sorted_set->n -= nelts;
 }
 
-/** for debugging only: check that a sorted set really is sorted */
-int check_sorted(
-   const SORTED_SET*     sorted_set,         /**< sorted sets, representing a common unsorted set */
-   const double*         data_xp             /**< covariate values associated with sorted set */
+/** for debugging only: check that a non-empty collection of sorted sets represent the same underlying set and that each is appropriately sorted */
+int are_sorted_sets(
+   const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
+   const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+   int                   num_rows,           /**< number of units in full dataset */
+   int                   num_cols_x          /**< number of covariates */
    )
 {
-   int i;
 
-   if( sorted_set->n < 2 )
-      return 1;
+   int p;
+   int n;
+   int i;
+   int* elements0;
+   int* elements;
+   int ok;
    
-   for(i = 0; i < (sorted_set->n)-1; i++)
-      if( data_xp[sorted_set->elements[i]] > data_xp[sorted_set->elements[i+1]] )
+   assert( sorted_sets != NULL );
+   assert( sorted_sets[0] != NULL );
+   assert( num_rows >= 1 );
+   assert( num_cols_x >= 0 );
+
+   /* check that each sorted set is of the same size */
+   n = sorted_sets[0]->n;
+   for( p = 1; p < num_cols_x; p++ )
+      if( sorted_sets[p]->n != n )
          return 0;
 
-   return 1;
+   elements0 = (int*) malloc(n*sizeof(int));
+   for(i = 0; i < n; i++)
+      elements0[i] = sorted_sets[0]->elements[i];
+   qsort(elements0, n, sizeof(int), cmpfunc);
+   elements = (int*) malloc(n*sizeof(int));
+
+   ok = 1;
    
+   for( p = 0; ok && p < num_cols_x; p++ )
+   {
+      const double* data_xp = data_x+(p*num_rows);
+      const SORTED_SET* sorted_setp = sorted_sets[p];
+
+      /* check that set is sorted */
+      if( n > 1 )
+         for(i = 0; i < n-1; i++)
+            if( data_xp[sorted_setp->elements[i]] > data_xp[sorted_setp->elements[i+1]] )
+            {
+               ok = 0;
+               break;
+            }
+
+      /* check that each sorted set has same elements as the first */
+      if( p > 0 )
+      {
+         for(i = 0; i < n; i++)
+            elements[i] = sorted_setp->elements[i];
+         qsort(elements, n, sizeof(int), cmpfunc);
+         for(i = 0; i < n; i++)
+            if( elements[i] != elements0[i] )
+            {
+               ok = 0;
+               break;
+            }
+      }
+   }
+
+   free(elements);
+   free(elements0);
+
+   return ok;
 }
    
 /** Determine whether a set is 'pure'.
