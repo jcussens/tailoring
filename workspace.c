@@ -12,7 +12,7 @@ struct workspace
    int                   num_cols_y;         /**< number of rewards */
    double*               rewards;            /**< size is number of actions */
    double*               rewards2;           /**< size is number of actions */
-   SORTED_SET****        sets;               /**< a sorted set for LEFT and RIGHT and each depth and each covariate, 
+   UNITS**               sets;               /**< a sorted set for LEFT and RIGHT and each depth and each covariate, 
                                                 each with space = number of units */
    NODE**                trees;              /**< a tree for each possible depth */
 };
@@ -20,7 +20,7 @@ struct workspace
 /** make workspace to provide pre-allocated space for various functions */
 WORKSPACE* make_workspace(
    int                   depth,              /**< (maximum) depth of returned tree */
-   SORTED_SET**          initial_sorted_sets, /**< initial sorted sets */
+   CONST_UNITS           initial_sorted_sets, /**< initial sorted sets */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x,         /**< number of covariates */
    int                   num_cols_y          /**< number of rewards/actions */
@@ -39,10 +39,10 @@ WORKSPACE* make_workspace(
    workspace->rewards = (double*) malloc(num_cols_y*sizeof(double));
    workspace->rewards2 = (double*) malloc(num_cols_y*sizeof(double));
 
-   workspace->sets = (SORTED_SET****) malloc(2*sizeof(SORTED_SET***));
+   workspace->sets = (UNITS**) malloc(2*sizeof(UNITS*));
    for( i = 0; i < 2; i++)
    {
-      workspace->sets[i] = (SORTED_SET***) malloc(ndepths*sizeof(SORTED_SET**));
+      workspace->sets[i] = (UNITS*) malloc(ndepths*sizeof(UNITS));
       for( d = 0; d < ndepths; d++)
       {
          workspace->sets[i][d] = shallow_copy_sorted_sets(initial_sorted_sets, num_cols_x);
@@ -86,12 +86,14 @@ void free_workspace(
    for( d = 0; d < ndepths; d++)
       tree_free(workspace->trees[d]);
    free(workspace->trees);
+
+   free(workspace);
    
 }
 
 /** return array of doubles, one double for each action */
 double* get_rewards_space(
-   WORKSPACE*            workspace           /**< workspace */
+   const WORKSPACE*      workspace           /**< workspace */
    )
 {
    return workspace->rewards;
@@ -110,8 +112,8 @@ double* get_rewards_space_zeroed(
 
 
 /** get left sorted sets associated with a given depth */
-SORTED_SET** get_left_sorted_sets(
-   WORKSPACE*            workspace,          /**< workspace */
+UNITS get_left_sorted_sets(
+   const WORKSPACE*      workspace,          /**< workspace */
    int                   depth               /**< depth */
    )
 {
@@ -125,8 +127,8 @@ SORTED_SET** get_left_sorted_sets(
 }
 
 /** get right sorted sets associated with a given depth */
-SORTED_SET** get_right_sorted_sets(
-   WORKSPACE*            workspace,          /**< workspace */
+UNITS get_right_sorted_sets(
+   const WORKSPACE*      workspace,          /**< workspace */
    int                   depth               /**< depth */
    )
 {
@@ -148,7 +150,7 @@ void record_best_tree(
 
 /** retrieve the best tree of given depth from workspace */
 void retrieve_best_tree(
-   WORKSPACE*            workspace,          /**< workspace */
+   const WORKSPACE*      workspace,          /**< workspace */
    NODE*                 tree,               /**< tree */
    int                   depth               /**< depth of tree */
    )

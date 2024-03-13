@@ -10,7 +10,7 @@ extern "C" {
 /** make workspace to provide pre-allocated space for various functions */
 WORKSPACE* make_workspace(
    int                   depth,              /**< (maximum) depth of returned tree */
-   SORTED_SET**          initial_sorted_sets, /**< initial sorted sets */
+   CONST_UNITS           initial_sorted_sets, /**< initial sorted sets */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x,         /**< number of covariates */
    int                   num_cols_y          /**< number of rewards/actions */
@@ -25,7 +25,7 @@ void free_workspace(
 
 /** return array of doubles, one double for each reward */
 double* get_rewards_space(
-   WORKSPACE*            workspace           /**< workspace */
+   const WORKSPACE*      workspace           /**< workspace */
    );
 
 /** return array of zeroes, one zero for each reward */
@@ -35,14 +35,14 @@ double* get_rewards_space_zeroed(
 
 
 /** get left sorted sets associated with a given depth */
-SORTED_SET** get_left_sorted_sets(
-   WORKSPACE*            workspace,          /**< workspace */
+UNITS get_left_sorted_sets(
+   const WORKSPACE*      workspace,          /**< workspace */
    int                   depth               /**< depth */
    );
 
 /** get right sorted sets associated with a given depth */
-SORTED_SET** get_right_sorted_sets(
-   WORKSPACE*            workspace,          /**< workspace */
+UNITS get_right_sorted_sets(
+   const WORKSPACE*      workspace,          /**< workspace */
    int                   depth               /**< depth */
    );
 
@@ -56,7 +56,7 @@ void record_best_tree(
 
 /** retrieve the best tree of given depth from workspace */
 void retrieve_best_tree(
-   WORKSPACE*            workspace,          /**< workspace */
+   const WORKSPACE*      workspace,          /**< workspace */
    NODE*                 tree,               /**< tree */
    int                   depth               /**< depth of tree */
    );

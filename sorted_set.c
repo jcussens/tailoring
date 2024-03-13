@@ -540,7 +540,7 @@ int next_split(
 
 /* make a 'shallow' copy of source sorted sets */
 SORTED_SET** shallow_copy_sorted_sets(
-   SORTED_SET**          sources,            /**< source sorted sets */
+   const SORTED_SET**    sources,            /**< source sorted sets */
    int                   nsets               /**< number of sources */
    )
 {
@@ -552,7 +552,7 @@ SORTED_SET** shallow_copy_sorted_sets(
 
    for( p = 0; p < nsets; p++ )
    {
-      SORTED_SET* source = sources[p];
+      const SORTED_SET* source = sources[p];
       SORTED_SET* target;
       
       target = (SORTED_SET*) malloc(sizeof(SORTED_SET));

@@ -71,3 +71,7 @@ seems correct.
 
 Found bug, not initialising left_perfect and right_perfect - now
 getting the right tree!
+
+Wed 13 Mar 17:07:18 GMT 2024
+
+version about to be committed has been tested (and passed) with valgrind
