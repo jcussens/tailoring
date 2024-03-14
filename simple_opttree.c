@@ -341,14 +341,13 @@ void find_best_split(
       double splitval;
 
       /* initialise so that left_units is empty and right_units is a copy of units */
-      initialise_sorted_sets(units, depth, num_cols_x, workspace, &left_units, &right_units);
+      initialise_units(units, p, depth, num_cols_x, workspace, &left_units, &right_units);
 
       assert( units_ok((CONST_UNITS) left_units, data_x, num_rows, num_cols_x) );
       assert( units_ok((CONST_UNITS) right_units, data_x, num_rows, num_cols_x) );
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
-      while( !(*perfect) && next_split(left_units, right_units, p, data_xp, num_cols_x, workspace, 
-            &splitval, NULL, NULL) )
+      while( !(*perfect) && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval) )
       {
          
          assert( units_ok((CONST_UNITS) left_units, data_x, num_rows, num_cols_x) );
@@ -435,7 +434,7 @@ NODE* tree_search_simple(
    tree = make_tree(depth);
 
    /* make initial set of units from covariate data */
-   units = make_initial_sorted_sets(data_x, num_rows, num_cols_x);
+   units = make_units(data_x, num_rows, num_cols_x);
    assert( units_ok( (CONST_UNITS) units, data_x, num_rows, num_cols_x) );
    
    /* create working spaces of various sorts (trees, units, arrays of rewards, etc) */
@@ -456,7 +455,7 @@ NODE* tree_search_simple(
 
    /* free memory */
    free_workspace(workspace, depth, num_cols_x);
-   free_sorted_sets(units, num_cols_x);
+   free_units(units, num_cols_x);
 
    /* remove any nodes below leaves, and merge leaves with the same action */
    /* fix_tree(tree); */

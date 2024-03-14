@@ -18,6 +18,13 @@ struct sorted_set
   int*                   key;                /**< sorting key: if i < j then key[elements[i]] < key[elements[j]]  */
 };
 
+struct unitset
+{
+   struct sorted_set**   sorted_sets;        /**< sorted sets */
+   int                   num;                /**< number of sorted sets */
+};
+
+
 /** comparison function for sorting integers in ascending order */
 static
 int cmpfunc (
@@ -448,10 +455,7 @@ int next_split(
    int                   p,                  /**< covariate to split on */
    const double*         data_xp,            /**< values for covariate to split on */
    int                   num_cols_x,         /**< number of covariates */
-   WORKSPACE*            workspace,          /**< workspace */
-   double*               splitval,           /**< (pointer to) found value to split on */
-   int**                 elts,               /**< (pointer to) the elements moved (or NULL if not required) */
-   int*                  nelts               /**< (pointer to) number of elements moved (or NULL if not required) */
+   double*               splitval            /**< (pointer to) found value to split on */
    )
 {
    SORTED_SET* left_sorted_setp;
@@ -466,23 +470,12 @@ int next_split(
    assert(p >= 0 && p < num_cols_x);
    assert(data_xp != NULL);
    assert(num_cols_x > 0);
-   assert(workspace != NULL);
    assert(splitval != NULL);
    assert((elts != NULL && nelts != NULL) || (elts == NULL && nelts == NULL));
    
    left_sorted_setp = left_sorted_sets[p];
    right_sorted_setp = right_sorted_sets[p];
    right_sorted_setp_elements = right_sorted_setp->elements;
-
-   /* printf("first left %d: ", p); */
-   /* for( i = 0; i < left_sorted_setp->n; i++ ) */
-   /*    printf("%g,",data_xp[left_sorted_setp->elements[i]]); */
-   /* printf("\n"); */
-
-   /* printf("first right %d: ", p); */
-   /* for( i = 0; i < right_sorted_setp->n; i++ ) */
-   /*    printf("%g,",data_xp[right_sorted_setp->elements[i]]); */
-   /* printf("\n"); */
 
    /* nothing to move from right to left */
    if( right_sorted_setp->n == 0 )
@@ -491,8 +484,6 @@ int next_split(
    /* splitting value is just first covariate value on the right */
    *splitval = data_xp[right_sorted_setp_elements[0]]; 
 
-   /* printf("leftn=%d, firstleft=%g, lastleft=%g, splitval=%g.\n", left_sorted_setp->n, data_xp[left_sorted_setp->elements[0]], data_xp[left_sorted_setp->elements[(left_sorted_setp->n)-1]], *splitval); */
-   
    /* if left is non-empty the last element on left must have a strictly lower pth covariate value
       that first element on right */
    assert(left_sorted_setp->n == 0 || data_xp[left_sorted_setp->elements[(left_sorted_setp->n)-1]] < *splitval); 
@@ -519,31 +510,13 @@ int next_split(
    /* update left and right sorted sets for splitting covariate */
    add_elements_at_end(left_sorted_setp, nmoved, right_sorted_setp_elements);
    remove_elements_at_start(right_sorted_setp, nmoved);
-
-   /* printf("second left %d: ", p); */
-   /* for( i = 0; i < left_sorted_setp->n; i++ ) */
-   /*    printf("%g,",data_xp[left_sorted_setp->elements[i]]); */
-   /* printf("\n"); */
-
-   /* printf("second right %d: ", p); */
-   /* for( i = 0; i < right_sorted_setp->n; i++ ) */
-   /*    printf("%g,",data_xp[right_sorted_setp->elements[i]]); */
-   /* printf("\n"); */
-
-   
-   if( elts != NULL )
-   {
-      /* return set of moved units */
-      *nelts = nmoved;
-      *elts = left_sorted_setp->elements + left_sorted_setp->n - nmoved;
-   }
    
    return 1;
    
 }
 
 /* make a 'shallow' copy of source sorted sets */
-SORTED_SET** shallow_copy_sorted_sets(
+SORTED_SET** shallow_copy_units(
    const SORTED_SET**    sources,            /**< source sorted sets */
    int                   nsets               /**< number of sources */
    )
@@ -615,8 +588,9 @@ SORTED_SET* make_sorted_set(
 /** initialise so that each left_sorted_set (for each covariate) is empty and each 
  *  right_sorted_set is a copy of the sorted set (for that covariate) 
 */
-void initialise_sorted_sets(
+void initialise_units(
    const SORTED_SET**    sorted_sets,        /**< input sorted sets */
+   int                   p,                  /**< splitting covariate */
    int                   depth,              /**< depth of associated node */
    int                   num_cols_x,         /**< number of covariates */
    WORKSPACE*            workspace,          /**< workspace */
@@ -624,7 +598,7 @@ void initialise_sorted_sets(
    SORTED_SET***         right_sorted_sets   /**< pointer to output right sets */
    )
 {
-   int p;
+   int pp;
    SORTED_SET** lefts = NULL;
    SORTED_SET** rights = NULL;
    /* get common size of sorted sets */
@@ -637,11 +611,11 @@ void initialise_sorted_sets(
    assert( rights != NULL );
    
    /* do not need to set key, since this is fixed */
-   for( p = 0; p < num_cols_x; p++ )
+   for( pp = 0; pp < num_cols_x; pp++ )
    {
-      (lefts[p])->n = 0;
-      memcpy((rights[p])->elements, (sorted_sets[p])->elements, n*sizeof(int));
-      (rights[p])->n = n;
+      (lefts[pp])->n = 0;
+      memcpy((rights[pp])->elements, (sorted_sets[pp])->elements, n*sizeof(int));
+      (rights[pp])->n = n;
    }
 
    *left_sorted_sets = lefts;
@@ -650,7 +624,7 @@ void initialise_sorted_sets(
 }
 
 /** make initial sorted sets one for each covariate, if there are no covariates create a single 'dummy' sorted set */
-SORTED_SET** make_initial_sorted_sets(
+SORTED_SET** make_units(
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x          /**< number of covariates */
@@ -698,7 +672,7 @@ void shallow_free_sorted_set(
 }
 
 
-void free_sorted_sets(
+void free_units(
    SORTED_SET**          sorted_sets,        /**< sorted sets */
    int                   nsets               /**< number of sorted sets */
    )
@@ -710,7 +684,7 @@ void free_sorted_sets(
    free(sorted_sets);
 }
 
-void shallow_free_sorted_sets(
+void shallow_free_units(
    SORTED_SET**          sorted_sets,        /**< sorted sets */
    int                   nsets               /**< number of sorted sets */
    )
@@ -760,6 +734,7 @@ int next_shallow_split(
    return 1;
 }
 
+/** for each action find (total) reward if that action applied to each unit in a set of units */
 void find_nosplit_rewards(
    const SORTED_SET**    sorted_sets,        /**< sorted sets */
    int                   num_cols_y,         /**< number of actions */

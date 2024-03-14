@@ -45,7 +45,7 @@ WORKSPACE* make_workspace(
       workspace->sets[i] = (UNITS*) malloc(ndepths*sizeof(UNITS));
       for( d = 0; d < ndepths; d++)
       {
-         workspace->sets[i][d] = shallow_copy_sorted_sets(initial_sorted_sets, num_cols_x);
+         workspace->sets[i][d] = shallow_copy_units(initial_sorted_sets, num_cols_x);
       }
    }
 
@@ -77,7 +77,7 @@ void free_workspace(
    {
       for( d = 0; d < ndepths; d++)
       {
-         shallow_free_sorted_sets(workspace->sets[i][d], num_cols_x);
+         shallow_free_units(workspace->sets[i][d], num_cols_x);
       }
       free(workspace->sets[i]);
    }
