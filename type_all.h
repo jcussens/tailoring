@@ -5,13 +5,17 @@
 extern "C" {
 #endif
 
+#define USE_SORTED_SET
+
 struct workspace;
 typedef struct workspace WORKSPACE;  /**< Work space structure */
 
+#ifdef USE_SORTED_SET
 struct sorted_set;
-typedef struct sorted_set SORTED_SET;  /**< Trie structure for storing scored parent sets */
+typedef struct sorted_set SORTED_SET;  
 typedef SORTED_SET** UNITS;
 typedef const SORTED_SET** CONST_UNITS;
+#endif
 
 struct node;
 typedef struct node NODE;  /**< Policy tree structure */

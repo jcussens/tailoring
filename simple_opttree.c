@@ -1,5 +1,5 @@
 #include "simple_opttree.h"
-#include "sorted_set.h"
+#include "units.h"
 #include "workspace.h"
 #include <assert.h>
 #include <stdlib.h>
