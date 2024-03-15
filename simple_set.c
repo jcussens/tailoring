@@ -62,6 +62,33 @@ void bottomupmerge(
   }
 }
 
+/** merge a pair of ordered subsequences to get a single ordered subsequence
+ * left run is indices[ileft:iright-1]
+ * right run is indices[iright:iend-1]
+ */
+static
+void bottomupmergeint(
+   const int*            indices,            /**< global array */
+   int                   ileft,              /**< index of first element of left subsequence */
+   int                   iright,             /**< index of first element of right subsequence */
+   int                   iend,               /**< iend-1 is index of last element of right subsequence */
+   int*                  tmp,                /**< on output tmp[ileft:iend-1] has the merged subsequence */
+   const int*            key                 /**< key[i] is ordering key for i */
+  )
+{
+  int i = ileft;
+  int j = iright;
+  int k;
+
+  for( k = ileft; k < iend; k++ )
+  {
+    if( i < iright && (j >= iend || key[indices[i]] <= key[indices[j]]) )
+      tmp[k] = indices[i++];
+    else
+      tmp[k] = indices[j++];
+  }
+}
+
 
 /** sort an array by bottom up merge sort */
 static
@@ -83,6 +110,30 @@ void bottomupmergesort(
 
     memcpy(indices,tmp,size);
   }
+}
+
+/** sort an array by bottom up merge sort */
+static
+void bottomupmergesortint(
+   int*                  indices,            /**< array to sort */
+   int                   n,                  /**< length of array */
+   const key*            key                 /**< key[i] is ordering key for i */
+  )
+{
+  int width;
+  int i;
+  const size_t size = n*sizeof(int);
+  /* TODO: preallocate this (or use a different sorting algorithm) */
+  int* tmp = (int*) malloc(size);
+  
+  for( width = 1; width < n; width *= 2)
+  {
+    for( i = 0; i < n; i += 2*width)
+      bottomupmergeint(indices, i, MIN(i+width,n), MIN(i+2*width,n), tmp, key);
+
+    memcpy(indices,tmp,size);
+  }
+  free(tmp);
 }
 
 
@@ -425,71 +476,52 @@ void find_best_action(
    }
 }
 
-/** find next splitting value ('splitval') for covariate p (if any) and move units from right sorted set for p to left so
- * that x[p] <= splitval for all units on left and x[p] > splitval on right. 
- * Return 1 if a split found, else 0
+/** given that left_set and right_set are sorted according to covariate p, find next split and associated split value
+ * @return 1 if there is a next split, otherwise 0
  */
 int next_split(
-   SORTED_SET**          left_sorted_sets,   /**< left sorted sets, one for each covariate */
-   SORTED_SET**          right_sorted_sets,  /**< right sorted sets, one for each covariate */ 
+   SIMPLE_SET*           left_set,           /**< left set sorted on covariate p */
+   SIMPLE_SET*           right_set,          /**< right set sorted on covariate p */ 
    int                   p,                  /**< covariate to split on */
    const double*         data_xp,            /**< values for covariate to split on */
    int                   num_cols_x,         /**< number of covariates */
    double*               splitval            /**< (pointer to) found value to split on */
    )
 {
-   SORTED_SET* left_sorted_setp;
-   SORTED_SET* right_sorted_setp;
-   int nmoved;
-   int pp;
-   const int* right_sorted_setp_elements;
-   /* int i; */
-   
-   assert(left_sorted_sets != NULL);
-   assert(right_sorted_sets != NULL);
+   int leftend;
+
+   assert(left_set != NULL);
+   assert(right_set != NULL);
    assert(p >= 0 && p < num_cols_x);
    assert(data_xp != NULL);
    assert(num_cols_x > 0);
    assert(splitval != NULL);
-   assert((elts != NULL && nelts != NULL) || (elts == NULL && nelts == NULL));
-   
-   left_sorted_setp = left_sorted_sets[p];
-   right_sorted_setp = right_sorted_sets[p];
-   right_sorted_setp_elements = right_sorted_setp->elements;
 
    /* nothing to move from right to left */
-   if( right_sorted_setp->n == 0 )
+   if( right_set->n == 0 )
       return 0;
 
    /* splitting value is just first covariate value on the right */
-   *splitval = data_xp[right_sorted_setp_elements[0]]; 
+   *splitval = data_xp[right_set->elements[right_set->start]]; 
 
+   /* leftend is the position just beyond any elements of left */
+   leftend = left_set->start + left_set->n;
+   
    /* if left is non-empty the last element on left must have a strictly lower pth covariate value
       that first element on right */
-   assert(left_sorted_setp->n == 0 || data_xp[left_sorted_setp->elements[(left_sorted_setp->n)-1]] < *splitval); 
+   assert(left_set->n == 0 || data_xp[left_set->elements[leftend-1]] < *splitval); 
 
-   /* find any additional units on right with *splitval as covariate value */
-   nmoved = 1;
-   while( nmoved < right_sorted_setp->n && data_xp[right_sorted_setp_elements[nmoved]] == *splitval )
-      nmoved++;
-
-   /* if all moved from right to left this is not a split */
-   if( nmoved == right_sorted_setp->n )
-      return 0;
-   
-   /* update left and right sorted sets of units for covariates other than splitting covariate */
-   for( pp = 0; pp < num_cols_x; pp++)
+   /* move all units on right with *splitval as covariate value to left */
+   while( right_set->n > 0 && data_xp[right_set->_elements[right_set->start]] == *splitval )
    {
-      if( pp != p )
-      {
-         insert_elements(left_sorted_sets[pp], nmoved, right_sorted_setp_elements);
-         remove_elements(right_sorted_sets[pp], nmoved, right_sorted_setp_elements);
-      }
+      left->elements[leftend++] = right_set->elements[right_set->start++];
+      left->n++;
+      right->n--;
    }
 
-   /* update left and right sorted sets for splitting covariate */
-   add_elements_at_end(left_sorted_setp, nmoved, right_sorted_setp_elements);
-   remove_elements_at_start(right_sorted_setp, nmoved);
+   /* if all moved from right to left this is not a split */
+   if( right_set->n == 0 )
+      return 0;
    
    return 1;
    
@@ -625,7 +657,7 @@ void initialise_units(
    right->n = simple_set->n;
    right->start = 0;
    memcpy(right->elements, simple_set->elements + simple_set->start, simple_set->n*sizeof(int));
-   sort_elements(right->elements, right->n, right->keys[p], right->nkeyvals[p]); 
+   bottomupmergesortint(right->elements, right->n, right->keys[p]); 
    
    *left_simple_set = left;
    *right_simple_set = right;
@@ -715,7 +747,7 @@ void shallow_free_units(
 
 /** find units with same covariate value starting from a given index */
 int next_shallow_split(
-   const SORTED_SET**    right_sorted_sets,  /**< sorted set */
+   const SIMPLE_SET*     right_set,          /**< set */
    int                   p,                  /**< covariate to split on */
    int                   start,              /**< starting index */
    const double*         data_xp,            /**< values for covariate to split on */
@@ -724,28 +756,28 @@ int next_shallow_split(
    int*                  nelts               /**< (pointer to) number of elements moved */
    )
 {
-   const SORTED_SET* right_sorted_setp = right_sorted_sets[p];
-   int idx;
+
+   const int this_start = right_set->start + start;
+   int idx = this_start;
    
    /* nothing to move from right to left */
-   if( !(start < right_sorted_setp->n) )
+   if( !(start < right_set->n) )
       return 0;
 
    /* splitting value is just starting covariate value on the right */
-   *splitval = data_xp[right_sorted_sets[p]->elements[start]]; 
+   *splitval = data_xp[right_set->elements[this_start]]; 
 
    /* find any additional units on right with *splitval as covariate value */
-   idx = start + 1;
-   while( idx < right_sorted_setp->n && data_xp[right_sorted_setp->elements[idx]] == *splitval )
-      idx++;
+   while( idx < right_set->n - right_start && data_xp[right_set->elements[idx]] == *splitval )
+      idx++
 
    /* if all moved from right to left this is not a split */
-   if( idx == right_sorted_setp->n )
+   if( idx == right_set->n - right_start )
       return 0;
 
    /* record what's removed */
-   *nelts = idx - start;
-   *elts = (right_sorted_setp->elements) + start;
+   *nelts = idx - this_start;
+   *elts = right_set->elements + this_start;
 
    return 1;
 }
