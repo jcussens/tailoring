@@ -9,14 +9,20 @@
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
 /** 
- * sorted set, policy tree style
+ * simple set
 */
-struct sorted_set
+struct simple_set
 {
-  int*                   elements;           /**< the sorted set */
-  int                    n;                  /**< size of subset */
-  int*                   key;                /**< sorting key: if i < j then key[elements[i]] < key[elements[j]]  */
+   int*                  elements;           /**< pointer to space for the set */
+   int                   size;               /**< size of space for set */
+   int                   start;              /**< elements[start] is the first element of the set */ 
+   int                   n;                  /**< number of elements in set */
+   int**                 keys;               /**< let data_xp be covariate values for covariate p then 
+                                              * (1) if data_xp[i] < data_xp[j] then keys[p][i] < keys[p][j] and
+                                              * (2) if data_xp[i] == data_xp[j] then keys[p][i] == keys[p][j] */
+   int*                  nkeyvals;           /** nkeyvals[p] is the number of distinct data_xp values */
 };
+
 
 /** comparison function for sorting integers in ascending order */
 static
@@ -283,74 +289,60 @@ void remove_elements_at_start(
    sorted_set->n -= nelts;
 }
 
-/** for debugging only: check that a non-empty collection of sorted sets represent the same underlying set and that each is appropriately sorted */
 int units_ok(
-   const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
+   const SIMPLE_SET*     simple_set,         /**< set */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x          /**< number of covariates */
    )
 {
 
-   int p;
-   int n;
-   int i;
-   int* elements0;
-   int* elements;
-   int ok;
-   
-   assert( sorted_sets != NULL );
-   assert( sorted_sets[0] != NULL );
+   assert( simple_set != NULL );
    assert( num_rows >= 1 );
    assert( num_cols_x >= 0 );
 
-   /* check that each sorted set is of the same size */
-   n = sorted_sets[0]->n;
-   for( p = 1; p < num_cols_x; p++ )
-      if( sorted_sets[p]->n != n )
+   if( simple_set->start < 0 )
+      return 0;
+
+   if( simple_set->n < 0 )
+      return 0;
+
+   if( simple_set->size < 0 )
+      return 0;
+
+   if( simple_set->size < simple_set->n )
+      return 0;
+
+   if( !(simple_set->start < simple_set->size) )
+      return 0;
+
+   if( num_cols_x > 0 )
+   {
+      int p;
+      
+      if( simple_set->keys == NULL )
+         return 0;
+      if( simple_set->nkeyvals == NULL )
          return 0;
 
-   elements0 = (int*) malloc(n*sizeof(int));
-   for(i = 0; i < n; i++)
-      elements0[i] = sorted_sets[0]->elements[i];
-   qsort(elements0, n, sizeof(int), cmpfunc);
-   elements = (int*) malloc(n*sizeof(int));
-
-   ok = 1;
-   
-   for( p = 0; ok && p < num_cols_x; p++ )
-   {
-      const double* data_xp = data_x+(p*num_rows);
-      const SORTED_SET* sorted_setp = sorted_sets[p];
-
-      /* check that set is sorted */
-      if( n > 1 )
-         for(i = 0; i < n-1; i++)
-            if( data_xp[sorted_setp->elements[i]] > data_xp[sorted_setp->elements[i+1]] )
-            {
-               ok = 0;
-               break;
-            }
-
-      /* check that each sorted set has same elements as the first */
-      if( p > 0 )
+      for( p = 0; p < num_cols_x; p++ )
       {
-         for(i = 0; i < n; i++)
-            elements[i] = sorted_setp->elements[i];
-         qsort(elements, n, sizeof(int), cmpfunc);
-         for(i = 0; i < n; i++)
-            if( elements[i] != elements0[i] )
-            {
-               ok = 0;
-               break;
-            }
+         int i;
+         
+         if(simple_set->keys[p] == NULL )
+            return 0;
+         if(simple_set->nkeyvals[p] < 1 )
+            return 0;
+
+         for( i = 0; i < num_rows; i++ )
+         {
+            if( !(simple_set->keys[p][i] < simple_set->nkeyvals[p]) )
+               return 0;
+         }
       }
    }
-
-   free(elements);
-   free(elements0);
-
-   return ok;
+   
+   return 1;
 }
    
 /** Determine whether a set is 'pure'.
@@ -358,22 +350,21 @@ int units_ok(
  * @return 1 if the set is pure, else 0
  */
 int is_pure(
-   const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
+   const SIMPLE_SET*     simple_set,         /**< set */
    const int*            best_actions        /**< best_actions[i] is the best action for unit i */
   )
 {
   int i;
   int best_action;
   
-  assert( sorted_sets != NULL );
-  assert( sorted_sets[0] != NULL );
+  assert( simple_set != NULL );
   assert( best_actions != NULL );
   
-  if( (sorted_sets[0])->n > 0)
-     best_action = best_actions[(sorted_sets[0])->elements[0]];
+  if( simple_set->n > 0)
+     best_action = best_actions[simple_set->elements[simple_set->start]];
   
-  for( i = 1; i < (sorted_sets[0])->n; i++)
-     if( best_action != best_actions[(sorted_sets[0])->elements[i]] )
+  for( i = simple_set->start+1; i < simple_set->start+simple_set->n; i++)
+     if( best_action != best_actions[simple_set->elements[i]] )
         return 0;
 
   return 1;
@@ -381,18 +372,17 @@ int is_pure(
 
 /** get common size of sorted sets */
 int get_size(
-   const SORTED_SET**    sorted_sets         /**< sorted sets */
+   const SIMPLE_SET*     simple_set          /**< set */
    )
 {
-   assert(sorted_sets != NULL);
-   assert(sorted_sets[0] != NULL);
+   assert(simple_set != NULL);
    
-   return (sorted_sets[0])->n;
+   return simple_set->n;
 }
 
 /* find best action and its associated reward for a set of units */
 void find_best_action(
-   const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
+   const SIMPLE_SET*     simple_set,         /**< simple set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_y,         /**< number of rewards/actions */
@@ -403,11 +393,9 @@ void find_best_action(
 {
    double* rewards;
    int d;
-   const SORTED_SET* sorted_set;
    int i;
   
-   assert( sorted_sets != NULL );
-   assert( sorted_sets[0] != NULL );
+   assert( simple_set != NULL );
    assert( data_y != NULL );
    assert( workspace != NULL );
    assert( best_reward != NULL );
@@ -416,14 +404,13 @@ void find_best_action(
    rewards = get_rewards_space(workspace);
    
    /* get reward for each action */
-   sorted_set = sorted_sets[0];
    for( d = 0; d < num_cols_y; d++ )
    {
       const double* dyelt = data_y + d*num_rows;
       
       rewards[d] = 0.0;
-      for( i = 0; i < sorted_set->n; i++)
-         rewards[d] += dyelt[sorted_set->elements[i]];
+      for( i = simple_set->start; i < simple_set->start + simple_set->n; i++)
+         rewards[d] += dyelt[simple_set->elements[i]];
    }
    
    *best_reward = rewards[0];
@@ -509,35 +496,64 @@ int next_split(
 }
 
 /* make a 'shallow' copy of source sorted sets */
-SORTED_SET** shallow_copy_units(
-   const SORTED_SET**    sources,            /**< source sorted sets */
-   int                   nsets               /**< number of sources */
+SIMPLE_SET* shallow_copy_units(
+   const SIMPLE_SET*     source,            /**< source  */
+   int                   num_cols_x         /**< number of covariates */
    )
 {
-   SORTED_SET** targets;
+   SIMPLE_SET* target;
+   int i;
 
-   int p;
+   target = (SIMPLE_SET*) malloc(sizeof(SIMPLE_SET));
+   target->elements = (int*) malloc(source->size * sizeof(int));
+   memcpy(target->elements, source->elements, (source->size)*sizeof(int));
+   target->size = source->size;
+   target->start = source->start;
+   target->n = source->n;
+   target->keys = source->keys;
+   target->nkeyvsals = source->nkeyvals;
 
-   targets = (SORTED_SET**) malloc(nsets*sizeof(SORTED_SET*));
-
-   for( p = 0; p < nsets; p++ )
-   {
-      const SORTED_SET* source = sources[p];
-      SORTED_SET* target;
-      
-      target = (SORTED_SET*) malloc(sizeof(SORTED_SET));
-      target->elements = (int*) malloc(source->n*sizeof(int));
-      target->n = source->n;
-      /* just copy pointer */
-      target->key = source->key;
-
-      memcpy(target->elements, source->elements, (source->n)*sizeof(int));
-
-      targets[p] = target;
-   }
-
-   return targets;
+   return target;
 }
+
+
+static
+int* get_key(
+   int*                  elements,           /**< elements (unordered) */
+   const double*         data_xp,            /**< covariate values for some covariate */
+   int                   num_rows,           /**< number of units in full dataset */
+   int*                  tmp,                /**< temporary working space */
+   int*                  nkeyvals            /**< number of distinct data_xp values */
+   )
+{
+   int i;
+   int* keysp;
+   int keyval;
+   
+   /* sort the elements using data_xp values as key */
+   bottomupmergesort(elements, tmp, num_rows, data_xp);
+
+   keysp = (int*) malloc(num_rows * sizeof(int));
+
+   keyval = 0;
+   keysp[0] = keyval;
+   *nkeyvals = 1;
+
+   for(i = 1; i < num_rows; i++ )
+   {
+      if( data_xp[elements[i]] == data_xp[elements[i-1]] )
+      {
+         keysp[i] = keyval;
+      }
+      else
+      {
+         keysp[i] = ++keyval;
+         (*nkeyvals)++;
+      }
+   }
+   return keysp;
+}
+
 
 
 /** make a sorted set from elements 0,...,num_indices-1 
@@ -582,67 +598,70 @@ SORTED_SET* make_sorted_set(
  *  right_sorted_set is a copy of the sorted set (for that covariate) 
 */
 void initialise_units(
-   const SORTED_SET**    sorted_sets,        /**< input sorted sets */
+   const SIMPLE_SET*     simple_set,         /**< input set */
    int                   p,                  /**< splitting covariate */
    int                   depth,              /**< depth of associated node */
    int                   num_cols_x,         /**< number of covariates */
    WORKSPACE*            workspace,          /**< workspace */
-   SORTED_SET***         left_sorted_sets,   /**< pointer to output left sets */
-   SORTED_SET***         right_sorted_sets   /**< pointer to output right sets */
+   SIMPLE_SET**          left_simple_set,    /**< pointer to output left set */
+   SIMPLE_SET**          right_simple_set    /**< pointer to output right set */
    )
 {
    int pp;
-   SORTED_SET** lefts = NULL;
-   SORTED_SET** rights = NULL;
-   /* get common size of sorted sets */
-   int n = (sorted_sets[0])->n;
+   SIMPLE_SET* left = NULL;
+   SIMPLE_SET* right = NULL;
    
-   lefts = get_left_sorted_sets(workspace,depth);
-   rights = get_right_sorted_sets(workspace,depth);
+   left = get_left_sorted_sets(workspace,depth);
+   right = get_right_sorted_sets(workspace,depth);
 
-   assert( lefts != NULL );
-   assert( rights != NULL );
-   
-   /* do not need to set key, since this is fixed */
-   for( pp = 0; pp < num_cols_x; pp++ )
-   {
-      (lefts[pp])->n = 0;
-      memcpy((rights[pp])->elements, (sorted_sets[pp])->elements, n*sizeof(int));
-      (rights[pp])->n = n;
-   }
+   assert( left != NULL );
+   assert( right != NULL );
 
-   *left_sorted_sets = lefts;
-   *right_sorted_sets = rights;
+   /* make left empty and ensure any additions added at start */
+   left->n = 0;
+   left->start = 0;
+
+   /* make right a copy of input, but with elements ordered according to covariate p */
+   right->n = simple_set->n;
+   right->start = 0;
+   memcpy(right->elements, simple_set->elements + simple_set->start, simple_set->n*sizeof(int));
+   sort_elements(right->elements, right->n, right->keys[p], right->nkeyvals[p]); 
    
+   *left_simple_set = left;
+   *right_simple_set = right;
 }
 
-/** make initial sorted sets one for each covariate, if there are no covariates create a single 'dummy' sorted set */
-SORTED_SET** make_units(
+SIMPLE_SET* make_units(
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x          /**< number of covariates */
    )
 {
 
-   SORTED_SET** initial_sorted_sets;
    int* tmp_indices;
    int p;
+   SIMPLE_SET* initial_simple_set; 
    
-   initial_sorted_sets = (SORTED_SET**) malloc(MAX(1,num_cols_x)*sizeof(SORTED_SET*));
-
    tmp_indices = (int*) malloc(num_rows*sizeof(int));
-
-   /* if no covariates, create a single dummy sorted set .. */
-   if( num_cols_x == 0 )
-      initial_sorted_sets[0] = make_sorted_set(num_rows,NULL,tmp_indices);
    
-   /* .. or make normal initial sorted sets */
+   initial_simple_set = (SIMPLE_SET*) malloc(sizeof(SIMPLE_SET));
+   initial_simple_set->elements = (int*) malloc(num_rows * sizeof(int));
+   for( i = 0; i < num_rows: i++ )
+      initial_simple_set->elements[i] = i;
+   initial_simple_set->size = num_rows;
+   initial_simple_set->start = 0;
+   initial_simple_set->n = num_rows;
+   initial_simple_set->keys = (int**) malloc(num_cols_x * sizeof(int*));
+   initial_simple_set->nkeyvals = (int*) malloc(num_cols_x * sizeof(int));
    for( p = 0; p < num_cols_x; p++)
-      initial_sorted_sets[p] = make_sorted_set(num_rows,data_x+p*num_rows,tmp_indices);
+   {
+      initial_simple_set->keys[p] = get_key(initial_simple_set->elements, data_x+p*num_rows, num_rows, tmp_indices, &nkeyvals);
+      initial_simple_set->nkeyvals[p] = nkeyvals;
+   }
    
    free(tmp_indices);
 
-   return initial_sorted_sets;
+   return initial_simple_set;
 }
 
 static
@@ -666,27 +685,31 @@ void shallow_free_sorted_set(
 
 
 void free_units(
-   SORTED_SET**          sorted_sets,        /**< sorted sets */
-   int                   nsets               /**< number of sorted sets */
+   SIMPLE_SET*           simple_set,         /**< set */
+   int                   num_cols_x          /**< number of covariates */
    )
 {
    int p;
 
-   for(p = 0; p < nsets; p++ )
-      free_sorted_set(sorted_sets[p]);
-   free(sorted_sets);
+   for( p = 0; p < num_cols_x; p++)
+   {
+      free(simple_set->keys[p]);
+      free(simple_set->nkeyvals[p]);
+   }
+   free(simple_set->keys);
+   free(simple_set->nkeyvals);
+   free(simple_set->elements);
+   free(simple_set);
 }
 
 void shallow_free_units(
-   SORTED_SET**          sorted_sets,        /**< sorted sets */
-   int                   nsets               /**< number of sorted sets */
+   SIMPLE_SET*           simple_set,         /**< set */
+   int                   num_cols_x          /**< number of covariates */
    )
 {
-   int p;
 
-   for(p = 0; p < nsets; p++ )
-      shallow_free_sorted_set(sorted_sets[p]);
-   free(sorted_sets);
+   free(simple_set->elements);
+   free(simple_set);
 }
 
 
@@ -729,7 +752,7 @@ int next_shallow_split(
 
 /** for each action find (total) reward if that action applied to each unit in a set of units */
 void find_nosplit_rewards(
-   const SORTED_SET**    sorted_sets,        /**< sorted sets */
+   const SIMPLE_SET*     simple_set,         /**< sorted sets */
    int                   num_cols_y,         /**< number of actions */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of rows in the data */
@@ -739,20 +762,16 @@ void find_nosplit_rewards(
    int d;
    int i;
    const double* dyelt;
-   const SORTED_SET* sorted_set;
 
-   assert( sorted_sets != NULL );
-   assert( sorted_sets[0] != NULL );
+   assert( simple_set != NULL );
    assert( nosplit_rewards != NULL );
 
-   sorted_set = sorted_sets[0];
-   
    /* find reward for each action if no split were done */
    for( d = 0; d < num_cols_y; d++ )
       nosplit_rewards[d] = 0.0;
-   for( i = 0; i < sorted_set->n; i++ )
+   for( i = simple_set->start; i < simple_set->start + simple_set->n; i++ )
    {
-      dyelt = data_y + sorted_set->elements[i];
+      dyelt = data_y + simple_set->elements[i];
       for( d = 0; d < num_cols_y; d++ )
       {
          nosplit_rewards[d] += *dyelt;
