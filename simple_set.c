@@ -8,6 +8,8 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+#define MAXKEYVALS 30
+
 /** 
  * simple set
 */
@@ -23,6 +25,106 @@ struct simple_set
    int*                  nkeyvals;           /** nkeyvals[p] is the number of distinct data_xp values */
 };
 
+static
+void counting_sort(
+   const int*            a,                  /**< input array to sort */
+   int                   n,                  /**< length of input array */
+   int*                  b,                  /**< will contain sorted array */
+   int                   k,                  /**< number of distinct key values */
+   const int*            key,                /**< key[elem] is the key value for elem */
+   )
+{
+   int i;
+   int count[MAXKEYVALS] = {0};
+
+   assert( a != NULL );
+   assert( n >= 0 );
+   assert( b != NULL );
+   assert( k >= 0 && k <= MAXKEYVALS );
+   assert( key != NULL );
+   
+   /* get count for each key value */
+   for(i = 0; i < n; i++ )
+      count[key[a[i]]]++;
+
+   /* alter so that c[i] is number of key vals <= i */ 
+   for(i = 1; i < k; i++ )
+      count[i] += count[i-1];
+
+   /* put each element of a into correct place in b */
+   for(i = n-1; i >=0; i--)
+      b[(count[key[a[i]]]--)-1] = a[i];
+}
+
+
+static
+void counting_sort_radix(
+   const int*            a,                  /**< input array to sort */
+   int                   n,                  /**< length of input array */
+   int*                  b,                  /**< will contain sorted array */
+   const int*            key,                /**< key[elem] is the key value for elem */
+   int                   exp                 /**< = 1, 10, 100, .. indicates which digit to sort on */
+   )
+{
+   int i;
+   int count[10] = {0};
+
+   assert( a != NULL );
+   assert( n >= 0 );
+   assert( b != NULL );
+   assert( key != NULL );
+   
+   /* get count for each key value */
+   for(i = 0; i < n; i++ )
+      count[(key[a[i]]/exp)%10]++;
+
+   /* alter so that c[i] is number of key vals <= i */ 
+   for(i = 1; i < 10; i++ )
+      count[i] += count[i-1];
+
+   /* put each element of a into correct place in b */
+   for(i = n-1; i >=0; i--)
+      b[(count[(key[a[i]]/exp)%10]--)-1] = a[i];
+}
+
+static
+void radix_sort(
+   const int*            a,                  /**< input array to sort */
+   int                   n,                  /**< length of input array */
+   int*                  b,                  /**< will contain sorted array */
+   int*                  tmp,                /**< tmp array, at least as long as b */
+   const int*            key,                /**< key[elem] is the key value for elem */
+   int                   maxkey              /**< maximal value of key[elem] */
+   )
+{
+   int exp;
+
+   /* sort a on least significant digit and put result in b */
+   counting_sort_radix(a, n, b, key, 1);
+   
+   for( exp = 10; exp / maxkey > 0; exp *= 10 )
+   {
+      counting_sort_radix((const int*) b, n, tmp, key, exp);
+      b = tmp;
+   }
+}
+
+/** sort an array of integers according to key values */
+static
+void sort_units(
+   const int*            a,                  /**< array to be sorted */
+   int                   n,                  /**< length of array to be sorted */
+   const int*            key,                /**< key[elem] is key value for elem */
+   int                   nkeyvals,           /**< key values are 0,...,nkeyvals-1 */
+   int*                  tmp,                /**< temporary array of length at least n */
+   int*                  b                   /**< output array of length at least n */
+   )
+{
+   if( nkeyvals <= MAXKEYVALS )
+      counting_sort(a, n, b, nkeyvals, key);
+   else
+      radix_sort(a, n, b, tmp, key, nkeyvals-1);
+}
 
 /** comparison function for sorting integers in ascending order */
 static
@@ -137,208 +239,6 @@ void bottomupmergesortint(
 }
 
 
-/** insert an element into a simple sorted set, assuming it is not already there */
-static
-void insert_element(
-   SORTED_SET*           sorted_set,         /**< sorted set */
-   int                   elt                 /**< element to insert */ 
-  )
-{
-  unsigned int left;
-  unsigned int right;
-  int mid;
-  int eltval;
-  const int* key = sorted_set->key;
-  int n;
-  int* set;  
-  
-  assert(sorted_set != NULL);
-  assert(elt >= 0);
-  
-  n = sorted_set->n;
-  set = sorted_set->elements;  
-  eltval = key[elt];
-
-  assert(key != NULL);
-  assert(set != NULL);
-  assert(n >= 0);
-  
-  /* if set not empty look for an index 'mid' such that
-   * key[set[mid]] < eltval < key[set[mid+1]]
-   * can then insert elt by shifting set[mid+1], set[mid+2],,, and then
-   * doing set[mid+1] = elt
-   */
-  
-  if( n == 0)
-  {
-     set[0] = elt;
-     sorted_set->n = 1;
-     return;
-  }
-  else if( eltval < key[set[0]] )
-  {
-    /* insert at beginning */
-    mid = -1;
-  }
-  else if ( eltval > key[set[n-1]] )
-  {
-    /* insert at end */
-    mid = n-1;
-  }
-  else
-  {
-     /* since set is ordered there will be a value mid such that
-      * key[set[mid]] < eltval < key[set[mid+1]]
-      * where -1 < mid < n-1 (i.e. mid+1 is the index of an existing element )
-      */
-
-     assert(n > 1);
-     left = 0;                /* smallest possible value for mid */
-     right = n - 2;           /* largest possible value for mid */
-
-     while( left <= right )
-     {
-        mid = (left + right)/2;  /* left <= mid <= right */
-        
-        if( key[set[mid]] > eltval )
-        {
-           /* key[set[mid]] too big, update biggest possible value for mid */
-           right = mid - 1;
-        }
-        else if ( key[set[mid+1]] < eltval )
-        {
-           /* key[set[mid+1]] too small, update smallest possible value for mid*/
-           left = mid + 1;
-        }
-        else
-           break;
-     }
-  }
-  
-  /* move, if necessary */
-  if( mid < n )
-    memmove(set+mid+2,set+mid+1,(n-mid-1)*sizeof(int));
-  
-  /* insert at mid+1 */
-  set[mid+1] = elt;
-  sorted_set->n++;
-}
-
-/** remove an element from a simple sorted set, assuming it is already there 
- * @return 1 if the element is a member of the set, else -1
- */
-static
-int remove_element(
-   SORTED_SET*           sorted_set,         /**< sorted set */
-   int                   elt                 /**< element to remove */
-  )
-{
-
-   int left;
-   int right;
-   int mid;
-   int midval;
-   int eltval;
-   const int* key = sorted_set->key;
-   int n;
-   int* set;  
-   int retval = -1;
-   
-   assert(sorted_set != NULL);
-   
-   n = sorted_set->n;
-   set = sorted_set->elements;  
-   eltval = key[elt];
-
-   left = 0;
-   right = n-1;
-
-   /* binary search for element */
-   while( left <= right )
-   {
-      mid = (left+right)/2;
-      midval = key[set[mid]];
-      
-      if( midval < eltval )
-         left = mid+1;
-      else if ( midval > eltval )
-         right = mid - 1;
-      else
-      {
-         retval = 1;
-         break;
-      }
-   }
-
-   if( retval == 1 )
-   {
-      /* unless the last element, have to shift elements */
-      if( mid < n-1)
-         memmove(set+mid,set+mid+1,(n-mid-1)*sizeof(int));
-      sorted_set->n--;
-   }
-   
-   return retval;
-}
-
-
-/** insert elements into a sorted set, assuming they are not already there */
-static
-void insert_elements(
-   SORTED_SET*           sorted_set,         /**< sorted set */
-   int                   nelts,              /**< number of elements to insert */ 
-   const int*            elts                /**< elements to insert */ 
-  )
-{
-   int i;
-
-   /* just insert one at a time */
-   for(i = 0; i < nelts; i++)
-      insert_element(sorted_set, elts[i]);
-}
-
-/** add elements to the end of a sorted set, assuming they are not already there */
-static
-void add_elements_at_end(
-   SORTED_SET*           sorted_set,         /**< sorted set */
-   int                   nelts,              /**< number of elements to insert */ 
-   const int*            elts                /**< elements to insert */ 
-  )
-{
-   int i;
-
-   for(i = 0; i < nelts; i++)
-      sorted_set->elements[sorted_set->n+i] = elts[i];
-
-   sorted_set->n += nelts;
-}
-
-
-/** remove elements from a sorted set, assuming they are in the set */
-static
-void remove_elements(
-   SORTED_SET*           sorted_set,         /**< sorted set */
-   int                   nelts,              /**< number of elements to remove */ 
-   const int*            elts                /**< elements to insert */ 
-  )
-{
-   int i;
-   
-   /* just remove one at a time */
-   for(i = 0; i < nelts; i++)
-      remove_element(sorted_set, elts[i]);
-}
-
-/** remove elements at the start of a sorted set */
-static
-void remove_elements_at_start(
-   SORTED_SET*           sorted_set,         /**< sorted set */
-   int                   nelts               /**< number of elements to remove from start */ 
-  )
-{
-   memmove(sorted_set->elements,sorted_set->elements+nelts,(sorted_set->n-nelts)*sizeof(int));
-   sorted_set->n -= nelts;
-}
 
 int units_ok(
    const SIMPLE_SET*     simple_set,         /**< set */
@@ -656,8 +556,8 @@ void initialise_units(
    /* make right a copy of input, but with elements ordered according to covariate p */
    right->n = simple_set->n;
    right->start = 0;
-   memcpy(right->elements, simple_set->elements + simple_set->start, simple_set->n*sizeof(int));
-   bottomupmergesortint(right->elements, right->n, right->keys[p]); 
+   sort_units(simple_set->elements + simple_set->start, simple_set->n, simple_set->keys[p], simple_set->nkeyvals[p],
+      get_tmpunits(workspace)->elements, right->elements);
    
    *left_simple_set = left;
    *right_simple_set = right;
@@ -695,26 +595,6 @@ SIMPLE_SET* make_units(
 
    return initial_simple_set;
 }
-
-static
-void free_sorted_set(
-   SORTED_SET*           sorted_set          /**< sorted set */
-   )
-{
-   free(sorted_set->elements);
-   free(sorted_set->key);
-   free(sorted_set);
-}
-
-static
-void shallow_free_sorted_set(
-   SORTED_SET*           sorted_set          /**< sorted set */
-   )
-{
-   free(sorted_set->elements);
-   free(sorted_set);
-}
-
 
 void free_units(
    SIMPLE_SET*           simple_set,         /**< set */
@@ -757,27 +637,26 @@ int next_shallow_split(
    )
 {
 
-   const int this_start = right_set->start + start;
-   int idx = this_start;
+   int idx = right_set->start + start;
    
    /* nothing to move from right to left */
-   if( !(start < right_set->n) )
+   if( !(idx < right_set->start + right_set->n) )
       return 0;
 
    /* splitting value is just starting covariate value on the right */
-   *splitval = data_xp[right_set->elements[this_start]]; 
+   *splitval = data_xp[right_set->elements[idx]]; 
 
    /* find any additional units on right with *splitval as covariate value */
-   while( idx < right_set->n - right_start && data_xp[right_set->elements[idx]] == *splitval )
+   while( idx < right_set->start + right_set->n && data_xp[right_set->elements[idx]] == *splitval )
       idx++
 
    /* if all moved from right to left this is not a split */
-   if( idx == right_set->n - right_start )
+   if( idx == right_set->start + right_set->n )
       return 0;
 
-   /* record what's removed */
-   *nelts = idx - this_start;
-   *elts = right_set->elements + this_start;
+   /* record what's moved from right to left */
+   *nelts = idx - (right_set->start + start);
+   *elts = right_set->elements + right_set->start + start;
 
    return 1;
 }

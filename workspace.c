@@ -12,15 +12,16 @@ struct workspace
    int                   num_cols_y;         /**< number of rewards */
    double*               rewards;            /**< size is number of actions */
    double*               rewards2;           /**< size is number of actions */
-   UNITS**               sets;               /**< a sorted set for LEFT and RIGHT and each depth and each covariate, 
+   UNITS**               sets;               /**< units for LEFT and RIGHT and each depth and each covariate, 
                                                 each with space = number of units */
+   UNITS                 tmpunits;           /**< additional space = number of units */
    NODE**                trees;              /**< a tree for each possible depth */
 };
 
 /** make workspace to provide pre-allocated space for various functions */
 WORKSPACE* make_workspace(
    int                   depth,              /**< (maximum) depth of returned tree */
-   CONST_UNITS           initial_sorted_sets, /**< initial sorted sets */
+   CONST_UNITS           initial_units,      /**< initial units */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x,         /**< number of covariates */
    int                   num_cols_y          /**< number of rewards/actions */
@@ -45,9 +46,11 @@ WORKSPACE* make_workspace(
       workspace->sets[i] = (UNITS*) malloc(ndepths*sizeof(UNITS));
       for( d = 0; d < ndepths; d++)
       {
-         workspace->sets[i][d] = shallow_copy_units(initial_sorted_sets, num_cols_x);
+         workspace->sets[i][d] = shallow_copy_units(initial_units, num_cols_x);
       }
    }
+
+   workspace->tmpunits = shallow_copy_units(initial_units, num_cols_x);
 
    workspace->trees = (NODE**) malloc(ndepths*sizeof(NODE*));
    for(d = 0; d < ndepths; d++)
@@ -83,6 +86,8 @@ void free_workspace(
    }
    free(workspace->sets);
 
+   shallow_free_units(workspace->tmpunits;
+   
    for( d = 0; d < ndepths; d++)
       tree_free(workspace->trees[d]);
    free(workspace->trees);
@@ -99,6 +104,15 @@ double* get_rewards_space(
    return workspace->rewards;
 }
 
+/** return tmp units */
+UNITS get_tmpunits(
+   const WORKSPACE*      workspace           /**< workspace */
+   )
+{
+   return workspace->tmpunits;
+}
+
+   
 /** return array of zeroes, one zero for each reward */
 double* get_rewards_space_zeroed(
    WORKSPACE*            workspace           /**< workspace */
