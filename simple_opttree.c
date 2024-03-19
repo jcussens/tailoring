@@ -210,9 +210,13 @@ void level_one_learning(
       /* initialise the index which will specify the current split */
       int idx = 0;
 
-      /* initialise so that left_units is empty and right_units is a copy of units */
+      /* initialise so that left_units is empty and right_units is a copy of units 
+         ready for splitting on covariate p */
       initialise_units(units, p, 1, num_cols_x, workspace, &left_units, &right_units);
-      
+
+      assert( units_ok((CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
+      assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
+
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data 
          elts[0] ... elts[nelts-1] are the units moved from right to left */
       while( next_shallow_split( (CONST_UNITS) right_units, p, idx, data_xp, &splitval, &elts, &nelts) )
@@ -290,7 +294,7 @@ void find_best_split(
    assert( num_cols_y >= 1 );
    assert( num_cols_x == 0 || data_x != NULL );
    assert( data_y != NULL );
-   assert( units_ok(units, data_x, num_rows, num_cols_x) );
+   assert( units_ok(units, -1, data_x, num_rows, num_cols_x) );
 
 #ifdef VERBOSE
    printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(units));
@@ -345,18 +349,19 @@ void find_best_split(
 
       double splitval;
 
-      /* initialise so that left_units is empty and right_units is a copy of units */
+      /* initialise so that left_units is empty and right_units is a copy of units 
+         ready for splitting on covariate p */
       initialise_units(units, p, depth, num_cols_x, workspace, &left_units, &right_units);
 
-      assert( units_ok((CONST_UNITS) left_units, data_x, num_rows, num_cols_x) );
-      assert( units_ok((CONST_UNITS) right_units, data_x, num_rows, num_cols_x) );
+      assert( units_ok((CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
+      assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
       while( !(*perfect) && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval) )
       {
          
-         assert( units_ok((CONST_UNITS) left_units, data_x, num_rows, num_cols_x) );
-         assert( units_ok((CONST_UNITS) right_units, data_x, num_rows, num_cols_x) );
+         assert( units_ok((CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
+         assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
 #ifdef VERYVERBOSE
          printf("Working on split value %g for covariate %d.\n", splitval, p);
@@ -440,7 +445,7 @@ NODE* tree_search_simple(
 
    /* make initial set of units from covariate data */
    units = make_units(data_x, num_rows, num_cols_x);
-   assert( units_ok( (CONST_UNITS) units, data_x, num_rows, num_cols_x) );
+   assert( units_ok( (CONST_UNITS) units, -1, data_x, num_rows, num_cols_x) );
    
    /* create working spaces of various sorts (trees, units, arrays of rewards, etc) */
    workspace = make_workspace(depth, (CONST_UNITS) units, num_rows, num_cols_x, num_cols_y);

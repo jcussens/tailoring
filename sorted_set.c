@@ -286,13 +286,14 @@ void remove_elements_at_start(
 /** for debugging only: check that a non-empty collection of sorted sets represent the same underlying set and that each is appropriately sorted */
 int units_ok(
    const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
+   int                   p,                  /**< if !=-1 then units must be ready for splitting on covariate p */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x          /**< number of covariates */
    )
 {
 
-   int p;
+   int pp;
    int n;
    int i;
    int* elements0;
@@ -303,11 +304,13 @@ int units_ok(
    assert( sorted_sets[0] != NULL );
    assert( num_rows >= 1 );
    assert( num_cols_x >= 0 );
-
+   /* p is not used since SORTED_SET units always ready for splitting on any covariate */
+   assert( p >= -1 && p < num_cols_x );
+   
    /* check that each sorted set is of the same size */
    n = sorted_sets[0]->n;
-   for( p = 1; p < num_cols_x; p++ )
-      if( sorted_sets[p]->n != n )
+   for( pp = 1; pp < num_cols_x; pp++ )
+      if( sorted_sets[pp]->n != n )
          return 0;
 
    elements0 = (int*) malloc(n*sizeof(int));
@@ -318,10 +321,10 @@ int units_ok(
 
    ok = 1;
    
-   for( p = 0; ok && p < num_cols_x; p++ )
+   for( pp = 0; ok && pp < num_cols_x; pp++ )
    {
-      const double* data_xp = data_x+(p*num_rows);
-      const SORTED_SET* sorted_setp = sorted_sets[p];
+      const double* data_xp = data_x+(pp*num_rows);
+      const SORTED_SET* sorted_setp = sorted_sets[pp];
 
       /* check that set is sorted */
       if( n > 1 )
@@ -333,7 +336,7 @@ int units_ok(
             }
 
       /* check that each sorted set has same elements as the first */
-      if( p > 0 )
+      if( pp > 0 )
       {
          for(i = 0; i < n; i++)
             elements[i] = sorted_setp->elements[i];

@@ -32,6 +32,7 @@ void shallow_free_units(
 /** for debugging only: check that a non-empty collection of sorted sets represent the same underlying set and that each is appropriately sorted */
 int units_ok(
    CONST_UNITS           units,              /**< units */
+   int                   p,                  /**< if !=-1 then units must be ready for splitting on covariate p */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x          /**< number of covariates */

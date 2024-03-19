@@ -98,14 +98,24 @@ void radix_sort(
    )
 {
    int exp;
+   /* int i; */
+   int* tmp2;
 
    /* sort a on least significant digit and put result in b */
    counting_sort_radix(a, n, b, key, 1);
+   /* for( i = 0; i < n; i++) */
+   /*    printf("%d,",key[b[i]]); */
+   /* printf("**********\n\n\n"); */
    
-   for( exp = 10; exp / maxkey > 0; exp *= 10 )
+   for( exp = 10; maxkey / exp  > 0; exp *= 10 )
    {
       counting_sort_radix((const int*) b, n, tmp, key, exp);
-      b = tmp;
+      tmp2 = tmp;
+      tmp = b;
+      b = tmp2;
+      /* for( i = 0; i < n; i++) */
+      /*    printf("%d,",key[b[i]]); */
+      /* printf("**********\n\n\n"); */
    }
 }
 
@@ -178,9 +188,10 @@ void bottomupmergesort(
 }
 
 
-
+/** (for debugging) check that a simple_set is valid. If p!=-1 then check it is ready for splitting on covariate p */
 int units_ok(
    const SIMPLE_SET*     simple_set,         /**< set */
+   int                   p,                  /**< if !=-1 then units must be ready for splitting on covariate p */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x          /**< number of covariates */
@@ -208,27 +219,43 @@ int units_ok(
 
    if( num_cols_x > 0 )
    {
-      int p;
+      int pp;
       
       if( simple_set->keys == NULL )
          return 0;
       if( simple_set->nkeyvals == NULL )
          return 0;
 
-      for( p = 0; p < num_cols_x; p++ )
+      for( pp = 0; pp < num_cols_x; pp++ )
       {
          int i;
          
-         if(simple_set->keys[p] == NULL )
+         if(simple_set->keys[pp] == NULL )
             return 0;
-         if(simple_set->nkeyvals[p] < 1 )
+         if(simple_set->nkeyvals[pp] < 1 )
             return 0;
 
          for( i = 0; i < num_rows; i++ )
          {
-            if( !(simple_set->keys[p][i] < simple_set->nkeyvals[p]) )
+            if( !(simple_set->keys[pp][i] < simple_set->nkeyvals[pp]) )
                return 0;
          }
+      }
+   }
+
+   /* now check ordered for covariate p */
+   if( p != -1 )
+   {
+      int idx;
+      const double* data_xp = data_x + p*num_rows;
+      
+      for( idx = simple_set->start + 1; idx < simple_set->start + simple_set->n; idx++)
+      {
+         /* printf("%d %d %d\n",p,idx-1,idx); */
+         /* printf("%d %d\n",(simple_set->keys[p])[simple_set->elements[idx-1]],(simple_set->keys[p])[simple_set->elements[idx]]); */
+         /* printf("%g %g\n",data_xp[simple_set->elements[idx-1]],data_xp[simple_set->elements[idx]]); */
+         if( data_xp[simple_set->elements[idx-1]] > data_xp[simple_set->elements[idx]] )
+            return 0;
       }
    }
    
@@ -474,6 +501,32 @@ void initialise_units(
    *right_simple_set = right;
 }
 
+void print_simple_set(
+   const SIMPLE_SET*     simple_set,
+   const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+   int                   num_rows,           /**< number of units in full dataset */
+   int                   num_cols_x
+   )
+{
+   int i;
+   int p;
+
+   for(i = simple_set->start; i < simple_set->start + simple_set->n; i++)
+      printf("%d,",simple_set->elements[i]);
+   printf("\n");
+   
+   for( p = 0; p < num_cols_x; p++)
+   {
+      const double* data_xp = data_x+p*num_rows;
+      
+      printf("%d:\n", p);
+      for(i = simple_set->start; i < simple_set->start + simple_set->n; i++)
+         printf("(%g,%d) ", data_xp[simple_set->elements[i]], (simple_set->keys[p])[simple_set->elements[i]]);
+      printf("\n");
+   }
+   
+}
+
 SIMPLE_SET* make_units(
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
@@ -507,6 +560,8 @@ SIMPLE_SET* make_units(
    
    free(tmp_indices);
 
+   /* print_simple_set(initial_simple_set, data_x, num_rows, num_cols_x); */
+   
    return initial_simple_set;
 }
 
