@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-/* #define VERYVERBOSE */
+/* #define VERYVERBOSE  */
 
 #ifdef VERYVERBOSE
 #define VERBOSE
@@ -190,6 +190,8 @@ void level_one_learning(
    int bestp;
 #endif
 
+   UNITS left_units;
+   UNITS right_units;
    
    /* get reward for each action if no split were done */
    find_nosplit_rewards(units, num_cols_y, data_y, num_rows, nosplit_rewards);
@@ -207,10 +209,13 @@ void level_one_learning(
 
       /* initialise the index which will specify the current split */
       int idx = 0;
+
+      /* initialise so that left_units is empty and right_units is a copy of units */
+      initialise_units(units, p, 1, num_cols_x, workspace, &left_units, &right_units);
       
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data 
          elts[0] ... elts[nelts-1] are the units moved from right to left */
-      while( next_shallow_split(units, p, idx, data_xp, &splitval, &elts, &nelts) )
+      while( next_shallow_split( (CONST_UNITS) right_units, p, idx, data_xp, &splitval, &elts, &nelts) )
       {
          double this_reward;
          
