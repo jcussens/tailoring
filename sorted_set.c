@@ -464,7 +464,6 @@ int next_split(
    assert(data_xp != NULL);
    assert(num_cols_x > 0);
    assert(splitval != NULL);
-   assert((elts != NULL && nelts != NULL) || (elts == NULL && nelts == NULL));
    
    left_sorted_setp = left_sorted_sets[p];
    right_sorted_setp = right_sorted_sets[p];

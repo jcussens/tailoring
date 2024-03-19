@@ -86,7 +86,7 @@ void free_workspace(
    }
    free(workspace->sets);
 
-   shallow_free_units(workspace->tmpunits;
+   shallow_free_units(workspace->tmpunits, num_cols_x);
    
    for( d = 0; d < ndepths; d++)
       tree_free(workspace->trees[d]);

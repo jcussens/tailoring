@@ -31,7 +31,7 @@ void counting_sort(
    int                   n,                  /**< length of input array */
    int*                  b,                  /**< will contain sorted array */
    int                   k,                  /**< number of distinct key values */
-   const int*            key,                /**< key[elem] is the key value for elem */
+   const int*            key                 /**< key[elem] is the key value for elem */
    )
 {
    int i;
@@ -126,15 +126,6 @@ void sort_units(
       radix_sort(a, n, b, tmp, key, nkeyvals-1);
 }
 
-/** comparison function for sorting integers in ascending order */
-static
-int cmpfunc (
-   const void* a,
-   const void* b
-   )
-{
-   return ( *(int*)a - *(int*)b );
-}
 
 
 /** merge a pair of ordered subsequences to get a single ordered subsequence
@@ -164,34 +155,6 @@ void bottomupmerge(
   }
 }
 
-/** merge a pair of ordered subsequences to get a single ordered subsequence
- * left run is indices[ileft:iright-1]
- * right run is indices[iright:iend-1]
- */
-static
-void bottomupmergeint(
-   const int*            indices,            /**< global array */
-   int                   ileft,              /**< index of first element of left subsequence */
-   int                   iright,             /**< index of first element of right subsequence */
-   int                   iend,               /**< iend-1 is index of last element of right subsequence */
-   int*                  tmp,                /**< on output tmp[ileft:iend-1] has the merged subsequence */
-   const int*            key                 /**< key[i] is ordering key for i */
-  )
-{
-  int i = ileft;
-  int j = iright;
-  int k;
-
-  for( k = ileft; k < iend; k++ )
-  {
-    if( i < iright && (j >= iend || key[indices[i]] <= key[indices[j]]) )
-      tmp[k] = indices[i++];
-    else
-      tmp[k] = indices[j++];
-  }
-}
-
-
 /** sort an array by bottom up merge sort */
 static
 void bottomupmergesort(
@@ -212,30 +175,6 @@ void bottomupmergesort(
 
     memcpy(indices,tmp,size);
   }
-}
-
-/** sort an array by bottom up merge sort */
-static
-void bottomupmergesortint(
-   int*                  indices,            /**< array to sort */
-   int                   n,                  /**< length of array */
-   const key*            key                 /**< key[i] is ordering key for i */
-  )
-{
-  int width;
-  int i;
-  const size_t size = n*sizeof(int);
-  /* TODO: preallocate this (or use a different sorting algorithm) */
-  int* tmp = (int*) malloc(size);
-  
-  for( width = 1; width < n; width *= 2)
-  {
-    for( i = 0; i < n; i += 2*width)
-      bottomupmergeint(indices, i, MIN(i+width,n), MIN(i+2*width,n), tmp, key);
-
-    memcpy(indices,tmp,size);
-  }
-  free(tmp);
 }
 
 
@@ -412,11 +351,11 @@ int next_split(
    assert(left_set->n == 0 || data_xp[left_set->elements[leftend-1]] < *splitval); 
 
    /* move all units on right with *splitval as covariate value to left */
-   while( right_set->n > 0 && data_xp[right_set->_elements[right_set->start]] == *splitval )
+   while( right_set->n > 0 && data_xp[right_set->elements[right_set->start]] == *splitval )
    {
-      left->elements[leftend++] = right_set->elements[right_set->start++];
-      left->n++;
-      right->n--;
+      left_set->elements[leftend++] = right_set->elements[right_set->start++];
+      left_set->n++;
+      right_set->n--;
    }
 
    /* if all moved from right to left this is not a split */
@@ -434,7 +373,6 @@ SIMPLE_SET* shallow_copy_units(
    )
 {
    SIMPLE_SET* target;
-   int i;
 
    target = (SIMPLE_SET*) malloc(sizeof(SIMPLE_SET));
    target->elements = (int*) malloc(source->size * sizeof(int));
@@ -443,7 +381,7 @@ SIMPLE_SET* shallow_copy_units(
    target->start = source->start;
    target->n = source->n;
    target->keys = source->keys;
-   target->nkeyvsals = source->nkeyvals;
+   target->nkeyvals = source->nkeyvals;
 
    return target;
 }
@@ -468,63 +406,27 @@ int* get_key(
    keysp = (int*) malloc(num_rows * sizeof(int));
 
    keyval = 0;
-   keysp[0] = keyval;
+   keysp[elements[0]] = keyval;
    *nkeyvals = 1;
 
    for(i = 1; i < num_rows; i++ )
    {
       if( data_xp[elements[i]] == data_xp[elements[i-1]] )
       {
-         keysp[i] = keyval;
+         keysp[elements[i]] = keyval;
       }
       else
       {
-         keysp[i] = ++keyval;
+         keysp[elements[i]] = ++keyval;
          (*nkeyvals)++;
       }
    }
+
    return keysp;
 }
 
 
 
-/** make a sorted set from elements 0,...,num_indices-1 
- * this function allocates all the necessary memory for the sorted set
- * @return The sorted set
- */
-static
-SORTED_SET* make_sorted_set(
-   int                   num_indices,        /**< size of set */
-   const double*         data_xx,            /**< data_xx[i] is ordering key for element i */
-   int*                  tmp                 /**< temporary storage for ordering of size at least num_indices */
-  )
-{
-  SORTED_SET* sorted_set;
-  int i;
-  int* elements;
-  int* key;
-
-  sorted_set = (SORTED_SET*) malloc(sizeof(SORTED_SET));
-  elements = (int* ) malloc(num_indices*sizeof(int));
-  key = (int* ) malloc(num_indices*sizeof(int));
-  for( i = 0; i < num_indices; i++)
-    elements[i] = i;
-
-  if( data_xx != NULL )
-  {
-     /* sort the elements using data_xx values as key */
-     bottomupmergesort(elements, tmp, num_indices, data_xx);
-  }
-  
-  for( i = 0; i < num_indices; i++)
-    key[elements[i]] = i;
-  
-  sorted_set->elements = elements;
-  sorted_set->n = num_indices;
-  sorted_set->key = key;
-  
-  return sorted_set;
-}
 
 /** initialise so that each left_sorted_set (for each covariate) is empty and each 
  *  right_sorted_set is a copy of the sorted set (for that covariate) 
@@ -539,9 +441,10 @@ void initialise_units(
    SIMPLE_SET**          right_simple_set    /**< pointer to output right set */
    )
 {
-   int pp;
    SIMPLE_SET* left = NULL;
    SIMPLE_SET* right = NULL;
+
+   /* int i; */
    
    left = get_left_sorted_sets(workspace,depth);
    right = get_right_sorted_sets(workspace,depth);
@@ -558,6 +461,14 @@ void initialise_units(
    right->start = 0;
    sort_units(simple_set->elements + simple_set->start, simple_set->n, simple_set->keys[p], simple_set->nkeyvals[p],
       get_tmpunits(workspace)->elements, right->elements);
+
+   /* for(i = 0; i < simple_set->n; i++) */
+   /*    printf("%d,",(simple_set->keys[p])[simple_set->elements[i]]); */
+   /* printf("\n"); */
+   /* for(i = 0; i < right->n; i++) */
+   /*    printf("%d,",(right->keys[p])[right->elements[i]]); */
+   /* printf("\n"); */
+
    
    *left_simple_set = left;
    *right_simple_set = right;
@@ -573,12 +484,13 @@ SIMPLE_SET* make_units(
    int* tmp_indices;
    int p;
    SIMPLE_SET* initial_simple_set; 
+   int i;
    
    tmp_indices = (int*) malloc(num_rows*sizeof(int));
    
    initial_simple_set = (SIMPLE_SET*) malloc(sizeof(SIMPLE_SET));
    initial_simple_set->elements = (int*) malloc(num_rows * sizeof(int));
-   for( i = 0; i < num_rows: i++ )
+   for( i = 0; i < num_rows; i++ )
       initial_simple_set->elements[i] = i;
    initial_simple_set->size = num_rows;
    initial_simple_set->start = 0;
@@ -587,6 +499,8 @@ SIMPLE_SET* make_units(
    initial_simple_set->nkeyvals = (int*) malloc(num_cols_x * sizeof(int));
    for( p = 0; p < num_cols_x; p++)
    {
+      int nkeyvals;
+      
       initial_simple_set->keys[p] = get_key(initial_simple_set->elements, data_x+p*num_rows, num_rows, tmp_indices, &nkeyvals);
       initial_simple_set->nkeyvals[p] = nkeyvals;
    }
@@ -606,7 +520,6 @@ void free_units(
    for( p = 0; p < num_cols_x; p++)
    {
       free(simple_set->keys[p]);
-      free(simple_set->nkeyvals[p]);
    }
    free(simple_set->keys);
    free(simple_set->nkeyvals);
@@ -648,7 +561,7 @@ int next_shallow_split(
 
    /* find any additional units on right with *splitval as covariate value */
    while( idx < right_set->start + right_set->n && data_xp[right_set->elements[idx]] == *splitval )
-      idx++
+      idx++;
 
    /* if all moved from right to left this is not a split */
    if( idx == right_set->start + right_set->n )

@@ -454,6 +454,8 @@ NODE* tree_search_simple(
       num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &perfect); 
 
    /* free memory */
+   free(best_actions);
+   free(worst_actions);
    free_workspace(workspace, depth, num_cols_x);
    free_units(units, num_cols_x);
 

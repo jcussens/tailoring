@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-/* #define USE_SORTED_SET */
-#define USE_SIMPLE_SET
+#define USE_SORTED_SET 
+/* #define USE_SIMPLE_SET */
 
 struct workspace;
 typedef struct workspace WORKSPACE;  /**< Work space structure */
