@@ -470,7 +470,7 @@ NODE* tree_search_simple(
    free_units(units, num_cols_x);
 
    /* remove any nodes below leaves, and merge leaves with the same action */
-   /* fix_tree(tree); */
+   fix_tree(tree);
 
    /* return optimal tree */
    return tree;

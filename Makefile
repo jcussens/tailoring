@@ -1,4 +1,5 @@
 SRC = main.c  reading.c  simple_opttree.c  tree.c  workspace.c
+SRC2 = simple_opttree.c  tree.c  workspace.c
 
 sorted_set : $(SRC) sorted_set.c
 	gcc -g -DUSE_SORTED_SET -DNDEBUG -Wall -O2 -o sorted_set $(SRC) sorted_set.c
@@ -11,3 +12,6 @@ sorted_set_dbg : $(SRC) sorted_set.c
 
 simple_set_dbg : $(SRC) simple_set.c
 	gcc -g -DUSE_SIMPLE_SET -Wall -o simple_set_dbg $(SRC) simple_set.c
+
+tests: $(SRC2) tests.c simple_set.c
+	gcc -g -DUSE_SIMPLE_SET -Wall -o tests $(SRC2) tests.c simple_set.c

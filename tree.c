@@ -182,7 +182,7 @@ void print_tree_policytree(
    char**                covnames,           /**< covnames[j] is the name of covariate j */
    int                   depth,              /**< depth of the tree */
    int                   nactions,           /**< number of actions */
-   char**                actionnames         /**< covnames[j] is the name of action j */
+   char**                actionnames         /**< actionnames[j] is the name of action j */
   )
 {
    int i;

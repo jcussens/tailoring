@@ -75,3 +75,60 @@ getting the right tree!
 Wed 13 Mar 17:07:18 GMT 2024
 
 version about to be committed has been tested (and passed) with valgrind
+
+Tue 19 Mar 15:19:30 GMT 2024
+
+currently have two versions: sorted_sets and simple_sets. on binary
+data the latter is far faster, on float data initial experiments show
+sorted_sets faster. here's results on binary data:
+
+(base) uw20605@IT079795:~/repos/tailoring$ time ./simple_set untracked/IFLS.txt 2 3
+policy_tree object
+Tree depth:   3
+Actions:  1: "scores.DML" 2: "scores.DR"
+Variable splits:
+split_variable: "past_ind_mis"  split_value: 0
+  split_variable: "agecat.f3"  split_value: 0
+    split_variable: "province.f18"  split_value: 0
+      * action: 2
+      * action: 1
+    split_variable: "province.f32"  split_value: 0
+      * action: 2
+      * action: 1
+  split_variable: "region.f3-Jawa"  split_value: 0
+    split_variable: "poorcard_imp"  split_value: 0
+      * action: 2
+      * action: 1
+    split_variable: "past_mis"  split_value: 0
+      * action: 1
+      * action: 2
+Reward: 117.766
+
+real	0m17.022s
+user	0m17.000s
+sys	0m0.016s
+(base) uw20605@IT079795:~/repos/tailoring$ time ./sorted_set untracked/IFLS.txt 2 3
+policy_tree object
+Tree depth:   3
+Actions:  1: "scores.DML" 2: "scores.DR"
+Variable splits:
+split_variable: "past_ind_mis"  split_value: 0
+  split_variable: "agecat.f3"  split_value: 0
+    split_variable: "province.f18"  split_value: 0
+      * action: 2
+      * action: 1
+    split_variable: "province.f32"  split_value: 0
+      * action: 2
+      * action: 1
+  split_variable: "region.f3-Jawa"  split_value: 0
+    split_variable: "poorcard_imp"  split_value: 0
+      * action: 2
+      * action: 1
+    split_variable: "past_mis"  split_value: 0
+      * action: 1
+      * action: 2
+Reward: 117.766
+
+real	8m8.125s
+user	8m8.091s
+sys	0m0.012s

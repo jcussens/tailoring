@@ -8,14 +8,16 @@
 #define DEFAULT_MIN_NODE_SIZE 1
 #define DEFAULT_DEPTH 3
 
+/**< free all data */
+static
 void freedata(
-   int                   num_cols_x,
-   int                   num_cols_y,
-   char**                covnames,
-   char**                actionnames,
-   double*               data_x,
-   double*               data_y,
-   NODE*                 tree
+   int                   num_cols_x,         /**< number of covariates */
+   int                   num_cols_y,         /**< number of actions */
+   char**                covnames,           /**< covnames[j] is the name of covariate j */
+   char**                actionnames,        /**< actionnames[j] is the name of action j */
+   double*               data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+   double*               data_y,             /**< data_y[d*num_rows+elt] is the reward for action d for unit elt */
+   NODE*                 tree                /**< policy tree */
    )
 {
    int i;
@@ -43,6 +45,9 @@ void freedata(
       free(data_y);
 }
 
+/**< process command line arguments
+   @return 1 if all is well, otherwise 0 */
+static
 int process_commandline(
    int                   argc,               /**< number of command line arguments */
    char**                argv,               /**< command line arguments */
