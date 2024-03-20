@@ -132,3 +132,32 @@ Reward: 117.766
 real	8m8.125s
 user	8m8.091s
 sys	0m0.012s
+
+Wed 20 Mar 14:52:13 GMT 2024
+
+For R package, looking at policytree.
+There is a file tree_search.h which has a prototype for a function
+tree_search.
+The file Rcppbindings.cpp defines a function tree_search_rcpp which
+calls tree_search.
+The R file policy_tree.R defines a function policy_tree which calls
+tree_search_rcpp
+
+tree_search.h is a "normal" C++ header file
+Rcppbindings.cpp is a C++ file that references Rcpp types. This is the
+equivalent of rcpp_hello_world.cpp in the skeleton.
+So need to write our own C/C++ file to translate NODE* type into an R list.
+
+Wed 20 Mar 19:53:37 GMT 2024
+
+policytree approach
+put root into queue
+pop queue (now empty) and record stuff
+push root->left_child
+push root->right_child
+pop root->left_child and record stuff
+push root->left_child->left_child
+push root->left_child->right_child
+pop root->right_child
+
+so process breadth-first, left to right.
