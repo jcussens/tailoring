@@ -1,5 +1,7 @@
-/** functions for policy trees */
-
+/** @file tree.c
+ *  @brief Functions for policy trees
+ *  @author James Cussens
+ */
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -49,8 +51,8 @@ void print_tree_policytree_rec(
    }
 }
 
+/** does a node split data using some value of some variable? */
 #ifndef NDEBUG
-/* does a node split data using some value of some variable? */
 static
 int is_varsplit(
    NODE*                 node                /**< node */
@@ -95,9 +97,12 @@ void prune_tree(
    }
 }
 
+/** if a node has two child leaves with the same action remove those children
+ * and make node a leaf with that action
+ */
 static
 void merge_leaves(
-   NODE*                 node                /**< root node */
+   NODE*                 node                /**< node */
    )
 {
    assert(node != NULL);
@@ -198,7 +203,9 @@ void print_tree_policytree(
 }
 
 
-/* is a node a leaf node? */
+/** is a node a leaf node? 
+ * @return 1 if node is a leaf, else 0
+*/
 int is_leaf(
    NODE*                 node                /**< node */
    )
@@ -340,7 +347,10 @@ int assigned_action(
       return assigned_action(tree->right_child, data_x, num_rows, elt);
 }
 
-
+/** check whether a tree is 'perfect' for a set of units
+ * if tree is not perfect a reason is printed to standard output
+ * @return 1 if tree is perfect else 0
+ */
 int check_perfect(
    const NODE*           tree,               /**< allegedly perfect tree */
    int                   nunits,             /**< number of units for tree */
@@ -404,7 +414,7 @@ int has_bothchildren(
 }
 
 
-/* get the reward associated with a node */
+/** get the reward associated with a node */
 double get_reward(
    NODE*                 node                /**< node */
    )
@@ -412,7 +422,7 @@ double get_reward(
    return node->reward;
 }
 
-/* get the action associated with a node */
+/** get the action associated with a node */
 int get_action(
    NODE*                 node                /**< node */
    )
@@ -421,7 +431,7 @@ int get_action(
 }
 
 
-/* set the reward associated with a node */
+/** set the reward associated with a node */
 void set_reward(
    NODE*                 node,               /**< node */
    double                reward              /**< reward to associate with node */
@@ -431,7 +441,7 @@ void set_reward(
 }
 
 
-/* get the variable index associated with a node */
+/** get the variable index associated with a node */
 int get_index(
    NODE*                 node                /**< node */
    )
@@ -439,7 +449,7 @@ int get_index(
    return node->index;
 }
 
-/* get the split value associated with a node */
+/** get the split value associated with a node */
 double get_value(
    NODE*                 node                /**< node */
    )
@@ -448,7 +458,7 @@ double get_value(
 }
 
 
-/* get the children of a node */
+/** get the children of a node */
 void get_children(
    NODE*                 node,               /**< node */
    NODE**                left_child,         /**< pointer to left child */

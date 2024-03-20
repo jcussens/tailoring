@@ -1,3 +1,8 @@
+/** @file simple_opttree.c
+ *  @brief Functions for building a tree
+ *  @author James Cussens
+ */
+
 #include "simple_opttree.h"
 #include "units.h"
 #include "workspace.h"

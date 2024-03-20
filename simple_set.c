@@ -1,3 +1,7 @@
+/** @file simple_set.c
+ *  @brief Implements a set of units as a single array
+ *  @author James Cussens
+ */
 #include "units.h"
 #include "workspace.h"
 #include <assert.h>
@@ -5,10 +9,10 @@
 #include <stdlib.h>
 #include <stdio.h> /* only for debugging */
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
+#define MIN(a,b) (((a)<(b))?(a):(b))         /**< compute minimum of 2 values */
+#define MAX(a,b) (((a)>(b))?(a):(b))         /**< compute maximum of 2 values */
 
-#define MAXKEYVALS 30
+#define MAXKEYVALS 30                        /**< maximum number of key values to use counting sort (otherwise use radix sort) */
 
 /** 
  * simple set
@@ -22,9 +26,10 @@ struct simple_set
    int**                 keys;               /**< let data_xp be covariate values for covariate p then 
                                               * (1) if data_xp[i] < data_xp[j] then keys[p][i] < keys[p][j] and
                                               * (2) if data_xp[i] == data_xp[j] then keys[p][i] == keys[p][j] */
-   int*                  nkeyvals;           /** nkeyvals[p] is the number of distinct data_xp values */
+   int*                  nkeyvals;           /**< nkeyvals[p] is the number of distinct data_xp values */
 };
 
+/** counting sort */
 static
 void counting_sort(
    const int*            a,                  /**< input array to sort */
@@ -56,7 +61,7 @@ void counting_sort(
       b[(count[key[a[i]]]--)-1] = a[i];
 }
 
-
+/** counting sort on a particular digit */
 static
 void counting_sort_radix(
    const int*            a,                  /**< input array to sort */
@@ -87,6 +92,7 @@ void counting_sort_radix(
       b[(count[(key[a[i]]/exp)%10]--)-1] = a[i];
 }
 
+/** radix sort */
 static
 void radix_sort(
    const int*            a,                  /**< input array to sort */
@@ -297,7 +303,7 @@ int get_size(
    return simple_set->n;
 }
 
-/* find best action and its associated reward for a set of units */
+/** find best action and its associated reward for a set of units */
 void find_best_action(
    const SIMPLE_SET*     simple_set,         /**< simple set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
@@ -393,7 +399,7 @@ int next_split(
    
 }
 
-/* make a 'shallow' copy of source sorted sets */
+/** make a 'shallow' copy of source sorted sets */
 SIMPLE_SET* shallow_copy_units(
    const SIMPLE_SET*     source,            /**< source  */
    int                   num_cols_x         /**< number of covariates */
@@ -413,11 +419,14 @@ SIMPLE_SET* shallow_copy_units(
    return target;
 }
 
-
+/** get integer key values after sorting units on a double key function, elements with the same double key value
+ * get the same integer key value. also compute the number of distinct keys (== number of distinct double key values)
+ * @return key where key[elem] is key value for elem
+ */
 static
 int* get_key(
    int*                  elements,           /**< elements (unordered) */
-   const double*         data_xp,            /**< covariate values for some covariate */
+   const double*         data_xp,            /**< covariate values for some covariate for sorting */
    int                   num_rows,           /**< number of units in full dataset */
    int*                  tmp,                /**< temporary working space */
    int*                  nkeyvals            /**< number of distinct data_xp values */
@@ -501,11 +510,12 @@ void initialise_units(
    *right_simple_set = right;
 }
 
+/** print out a simple set (for debugging only) */
 void print_simple_set(
-   const SIMPLE_SET*     simple_set,
+   const SIMPLE_SET*     simple_set,         /**< units */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
-   int                   num_cols_x
+   int                   num_cols_x          /**< number of covariates */
    )
 {
    int i;
@@ -527,6 +537,9 @@ void print_simple_set(
    
 }
 
+/** make a set of units from covariate data 
+ * @return the set of units
+ */
 SIMPLE_SET* make_units(
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
@@ -565,6 +578,7 @@ SIMPLE_SET* make_units(
    return initial_simple_set;
 }
 
+/** free a set of units */
 void free_units(
    SIMPLE_SET*           simple_set,         /**< set */
    int                   num_cols_x          /**< number of covariates */
@@ -582,6 +596,7 @@ void free_units(
    free(simple_set);
 }
 
+/** free a shallow copy of a set of units */
 void shallow_free_units(
    SIMPLE_SET*           simple_set,         /**< set */
    int                   num_cols_x          /**< number of covariates */

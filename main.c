@@ -1,3 +1,7 @@
+/** @file main.c
+ *  @brief main
+ *  @author James Cussens
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -5,10 +9,10 @@
 #include "simple_opttree.h"
 #include "tree.h"
 
-#define DEFAULT_MIN_NODE_SIZE 1
-#define DEFAULT_DEPTH 3
+#define DEFAULT_MIN_NODE_SIZE 1 /**< default size for minimum number of units to be in a leaf */
+#define DEFAULT_DEPTH 3         /**< default depth limit for a policy tree */
 
-/**< free all data */
+/** free all data */
 static
 void freedata(
    int                   num_cols_x,         /**< number of covariates */
@@ -45,7 +49,7 @@ void freedata(
       free(data_y);
 }
 
-/**< process command line arguments
+/** process command line arguments
    @return 1 if all is well, otherwise 0 */
 static
 int process_commandline(

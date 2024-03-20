@@ -1,3 +1,7 @@
+/** @file sorted_set.c
+ *  @brief Implements a set of units with an array for each covariate
+ *  @author James Cussens
+ */
 #include "units.h"
 #include "workspace.h"
 #include <assert.h>
@@ -5,8 +9,8 @@
 #include <stdlib.h>
 #include <stdio.h> /* only for debugging */
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
+#define MIN(a,b) (((a)<(b))?(a):(b))         /**< compute minimum of 2 values */
+#define MAX(a,b) (((a)>(b))?(a):(b))         /**< compute maximum of 2 values */
 
 /** 
  * sorted set, policy tree style
@@ -393,7 +397,7 @@ int get_size(
    return (sorted_sets[0])->n;
 }
 
-/* find best action and its associated reward for a set of units */
+/** find best action and its associated reward for a set of units */
 void find_best_action(
    const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
@@ -510,7 +514,7 @@ int next_split(
    
 }
 
-/* make a 'shallow' copy of source sorted sets */
+/** make a 'shallow' copy of source sorted sets */
 SORTED_SET** shallow_copy_units(
    const SORTED_SET**    sources,            /**< source sorted sets */
    int                   nsets               /**< number of sources */
@@ -647,6 +651,7 @@ SORTED_SET** make_units(
    return initial_sorted_sets;
 }
 
+/** free a sorted set (for a particular covariate) */
 static
 void free_sorted_set(
    SORTED_SET*           sorted_set          /**< sorted set */
@@ -657,6 +662,7 @@ void free_sorted_set(
    free(sorted_set);
 }
 
+/** free a shallow copy of a sorted set (for a particular covariate) */
 static
 void shallow_free_sorted_set(
    SORTED_SET*           sorted_set          /**< sorted set */
@@ -667,6 +673,7 @@ void shallow_free_sorted_set(
 }
 
 
+/** free a set of units */
 void free_units(
    SORTED_SET**          sorted_sets,        /**< sorted sets */
    int                   nsets               /**< number of sorted sets */
@@ -679,6 +686,7 @@ void free_units(
    free(sorted_sets);
 }
 
+/** free a shallow copy of a set of units */
 void shallow_free_units(
    SORTED_SET**          sorted_sets,        /**< sorted sets */
    int                   nsets               /**< number of sorted sets */

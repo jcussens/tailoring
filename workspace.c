@@ -1,12 +1,18 @@
+/** @file workspace.c
+ *  @brief Workspace functions
+ *  @author James Cussens
+ */
+
 #include "workspace.h"
 #include "units.h"
 #include "tree.h"
 #include <assert.h>
 #include <stdlib.h>
 
-#define LEFT 0
-#define RIGHT 1
+#define LEFT 0                               /**< index for left children */
+#define RIGHT 1                              /**< index for right children */
 
+/** pre-allocated workspace used by many functions */
 struct workspace
 {
    int                   num_cols_y;         /**< number of rewards */

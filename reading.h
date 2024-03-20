@@ -1,3 +1,7 @@
+/** @file reading.h
+ *  @brief Functions for reading in data
+ *  @author James Cussens
+ */
 #ifndef __READING_H__
 #define __READING_H__
 
@@ -5,6 +9,9 @@
 extern "C" {
 #endif
 
+/** read data from a given file name and number of actions
+ * @return 0 if all is well, else 1
+ */
 int readfile(
    char*                 filename,           /**< name of file with data */
    int                   num_cols_y,         /**< num_cols_y is the number of actions */

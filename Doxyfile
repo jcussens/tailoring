@@ -1,0 +1,5 @@
+PROJECT_NAME           = "fastpolicytree"
+INPUT                  = .
+EXTRACT_STATIC	       = YES
+CALL_GRAPH	       = YES
+CALLER_GRAPH	       = YES

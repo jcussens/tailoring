@@ -1,3 +1,7 @@
+/** @file tests.c
+ *  @brief Tests
+ *  @author James Cussens
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -5,14 +9,15 @@
 #include "tree.h"
 
 
+/** re-arrange input data */
 static
 void make_data(
-   double input[],
-   int num_rows,
-   int num_cols_x,
-   int num_cols_y,
-   double data_x[],
-   double data_y[]
+   double                input[],            /**< input */
+   int                   num_rows,           /**< number of rows in input */
+   int                   num_cols_x,         /**< number of covariates in input */
+   int                   num_cols_y,         /**< number of actions in input */
+   double                data_x[],           /**< (output) covariate data */
+   double                data_y[]            /**< (output) reward data */
    )
 {
    int i = 0;
@@ -29,6 +34,7 @@ void make_data(
    }
 }
 
+/** test 1 */
 static
 void test_1(
    int                   depth               /**< depth of tree */
@@ -53,6 +59,7 @@ void test_1(
    tree_free(tree);
 }
 
+/** main */
 int main(
    int                   argc,               /**< number of command line arguments */
    char*                 argv[]              /**< command line arguments */

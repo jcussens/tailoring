@@ -1,3 +1,8 @@
+/** @file simple_opttree.h
+ *  @brief Functions for building a tree
+ *  @author James Cussens
+ */
+
 #ifndef __SIMPLE_OPTTREE_H__
 #define __SIMPLE_OPTTREE_H__
 

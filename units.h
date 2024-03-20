@@ -1,3 +1,7 @@
+/** @file units.h
+ *  @brief Prototypes for functions manipulating sets of units, independent of how those sets are implemented
+ *  @author James Cussens
+ */
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -11,19 +15,19 @@ UNITS make_units(
    int                   num_cols_x          /**< number of covariates */
    );
 
-/* free (space for) units */
+/** free (space for) units */
 void free_units(
    UNITS                 units,              /**< units */
    int                   num_cols_x          /**< number of covariates */
    );
 
-/* make a 'shallow' copy of units, these copies should be freed by calling shallow_free_units */
+/** make a 'shallow' copy of units, these copies should be freed by calling shallow_free_units */
 UNITS shallow_copy_units(
    CONST_UNITS           units,              /**< source units */
    int                   num_cols_x          /**< number of covariates */
    );
 
-/* free (space for) units previously created as shallow copies */
+/** free (space for) units previously created as shallow copies */
 void shallow_free_units(
    UNITS                 sorted_sets,        /**< units */
    int                   num_cols_x          /**< number of covariates */

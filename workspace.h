@@ -1,3 +1,8 @@
+/** @file workspace.h
+ *  @brief Workspace functions
+ *  @author James Cussens
+ */
+
 #ifndef __WORKSPACE_H__
 #define __WORKSPACE_H__
 

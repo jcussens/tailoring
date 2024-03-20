@@ -1,10 +1,14 @@
+/** @file reading.c
+ *  @brief Functions for reading in data
+ *  @author James Cussens
+ */
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
-#define MAX_LINE_LENGTH 2000
-#define MAX_COVARIATE_NAME_LENGTH 50
+#define MAX_LINE_LENGTH 2000                 /**< maximum allowed length of a line in the input file */
+#define MAX_COVARIATE_NAME_LENGTH 50         /**< maximum allowed length of a covariate name */
 
 /** count number of space separate fields in a line 
  * @return The number of space separated fields
@@ -27,6 +31,9 @@ int getnfields(
   return nfields;
 }
 
+/** read data from a given file name and number of actions
+ * @return 0 if all is well, else 1
+ */
 int readfile(
    char*                 filename,           /**< name of file with data */
    int                   num_cols_y,         /**< num_cols_y is the number of actions */

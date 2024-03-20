@@ -1,3 +1,7 @@
+/** @file tree.h
+ *  @brief Functions for policy trees
+ *  @author James Cussens
+ */
 #ifndef __TREE_H__
 #define __TREE_H__
 
