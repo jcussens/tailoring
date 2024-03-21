@@ -531,3 +531,99 @@ void record_level_one_split(
    node->right_child->action_id = right_action;
 }
 
+/** put a node and then all its descendants in the right place in an array of nodes */
+static
+void depth_first_nodes(
+   NODE*                 node,               /**< current node */
+   int                   depth,              /**< depth of current node */
+   const int*            offset,             /**< offset for each depth */
+   int*                  nd,                 /**< nd[d] is number of nodes at depth d already visited */ 
+   NODE**                nodes               /**< array of nodes to populate */
+   )
+{
+   /* put current node at correct position */
+   nodes[offset[depth] + nd[depth]++] = node;
+
+   if( node->left_child != NULL )
+      depth_first_nodes(node->left_child, depth+1, offset, nd, nodes);
+
+   if( node->right_child != NULL )
+      depth_first_nodes(node->right_child, depth+1, offset, nd, nodes);
+}
+
+/** return nodes in a tree ordered breadth-first, left-right 
+ * @return nodes in a tree ordered breadth-first, left-right 
+ */
+NODE** breadth_first_nodes(
+   NODE*                 root,               /**< root node */
+   int                   depth,              /**< depth of tree */
+   int*                  num_nodes           /**< length of return array */
+   )
+{
+   int i;
+   int* offset = (int*) malloc((depth+1)*sizeof(int));
+   int* nd;
+   NODE** nodes;
+
+   /* offset[i] is the number of nodes of depth less than i */
+   *num_nodes = 1;
+   for(i = 0; i <= depth; i++)
+   {
+      offset[i] = *num_nodes - 1;
+      *num_nodes *= 2;
+   }
+   *num_nodes *= 2;
+   (*num_nodes)--;
+
+   nodes = (NODE**) calloc(*num_nodes,sizeof(NODE*));
+   nd = (int*) calloc(depth+1,sizeof(int));
+
+   depth_first_nodes(root, 0, (const int*) offset, nd, nodes);
+
+   free(nd);
+   free(offset);
+
+   return nodes;
+}
+
+   
+/** return the first (ie leftmost) node at a given depth, or NULL if there is none
+ * @return the first (ie leftmost) node at a given depth, or NULL if there is none*/ 
+NODE* first_at_depth(
+   NODE*                 root,               /**< root node */
+   int                   depth               /**< depth */
+   )
+{
+
+   assert( root != NULL );
+   assert( depth >= 0 );
+   
+   if( depth == 0 )
+      return root;
+
+   if( root->left_child == NULL )
+      return NULL;
+
+   return first_at_depth(root->left_child, depth-1);
+}
+
+/** return the next node at a given depth, or NULL if there is none
+ * @return the next node at a given depth, or NULL if there is none*/ 
+NODE* next_at_depth(
+   NODE*                 root,               /**< root node */
+   NODE*                 node,               /**< current node */
+   int                   depth               /**< depth */
+   )
+{
+
+   assert( root != NULL );
+   assert( depth >= 0 );
+   
+   if( depth == 0 )
+      return root;
+
+   if( root->left_child == NULL )
+      return NULL;
+
+   return first_at_depth(root->left_child, depth-1);
+}

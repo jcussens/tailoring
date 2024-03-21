@@ -163,6 +163,14 @@ void fix_tree(
    NODE*                 root                /**< root node */
    );
 
+/** return nodes in a tree ordered breadth-first, left-right 
+ * @return nodes in a tree ordered breadth-first, left-right 
+ */
+NODE** breadth_first_nodes(
+   NODE*                 root,               /**< root node */
+   int                   depth,              /**< depth of tree */
+   int*                  num_nodes           /**< length of return array */
+   );
 
 #ifdef __cplusplus
 }
