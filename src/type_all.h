@@ -11,6 +11,7 @@ extern "C" {
 
 /* #define USE_SORTED_SET  */
 /* #define USE_SIMPLE_SET */
+/* #define PRINTING_ALLOWED */
 
 struct workspace;
 typedef struct workspace WORKSPACE;  /**< Work space structure */

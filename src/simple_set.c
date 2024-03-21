@@ -7,8 +7,9 @@
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef PRINTING_ALLOWED
 #include <stdio.h> /* only for debugging */
-
+#endif
 #define MIN(a,b) (((a)<(b))?(a):(b))         /**< compute minimum of 2 values */
 #define MAX(a,b) (((a)>(b))?(a):(b))         /**< compute maximum of 2 values */
 
@@ -109,9 +110,6 @@ void radix_sort(
 
    /* sort a on least significant digit and put result in b */
    counting_sort_radix(a, n, b, key, 1);
-   /* for( i = 0; i < n; i++) */
-   /*    printf("%d,",key[b[i]]); */
-   /* printf("**********\n\n\n"); */
    
    for( exp = 10; maxkey / exp  > 0; exp *= 10 )
    {
@@ -119,9 +117,6 @@ void radix_sort(
       tmp2 = tmp;
       tmp = b;
       b = tmp2;
-      /* for( i = 0; i < n; i++) */
-      /*    printf("%d,",key[b[i]]); */
-      /* printf("**********\n\n\n"); */
    }
 }
 
@@ -256,13 +251,8 @@ int units_ok(
       const double* data_xp = data_x + p*num_rows;
       
       for( idx = simple_set->start + 1; idx < simple_set->start + simple_set->n; idx++)
-      {
-         /* printf("%d %d %d\n",p,idx-1,idx); */
-         /* printf("%d %d\n",(simple_set->keys[p])[simple_set->elements[idx-1]],(simple_set->keys[p])[simple_set->elements[idx]]); */
-         /* printf("%g %g\n",data_xp[simple_set->elements[idx-1]],data_xp[simple_set->elements[idx]]); */
          if( data_xp[simple_set->elements[idx-1]] > data_xp[simple_set->elements[idx]] )
             return 0;
-      }
    }
    
    return 1;
@@ -498,18 +488,11 @@ void initialise_units(
    sort_units(simple_set->elements + simple_set->start, simple_set->n, simple_set->keys[p], simple_set->nkeyvals[p],
       get_tmpunits(workspace)->elements, right->elements);
 
-   /* for(i = 0; i < simple_set->n; i++) */
-   /*    printf("%d,",(simple_set->keys[p])[simple_set->elements[i]]); */
-   /* printf("\n"); */
-   /* for(i = 0; i < right->n; i++) */
-   /*    printf("%d,",(right->keys[p])[right->elements[i]]); */
-   /* printf("\n"); */
-
-   
    *left_simple_set = left;
    *right_simple_set = right;
 }
 
+#ifdef PRINTING_ALLOWED
 /** print out a simple set (for debugging only) */
 void print_simple_set(
    const SIMPLE_SET*     simple_set,         /**< units */
@@ -534,8 +517,8 @@ void print_simple_set(
          printf("(%g,%d) ", data_xp[simple_set->elements[i]], (simple_set->keys[p])[simple_set->elements[i]]);
       printf("\n");
    }
-   
 }
+#endif
 
 /** make a set of units from covariate data 
  * @return the set of units
@@ -573,8 +556,6 @@ SIMPLE_SET* make_units(
    
    free(tmp_indices);
 
-   /* print_simple_set(initial_simple_set, data_x, num_rows, num_cols_x); */
-   
    return initial_simple_set;
 }
 

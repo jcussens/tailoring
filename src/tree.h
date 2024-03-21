@@ -135,6 +135,7 @@ int is_leaf(
    NODE*                 node                /**< node */
    );
 
+#ifdef PRINTING_ALLOWED
 /** prints a policy tree in policytree style to standard output */
 void print_tree_policytree(
    NODE*                 tree,               /**< policy tree to print */
@@ -156,6 +157,7 @@ void print_tree(
 void print_tree_raw(
    NODE*                 tree               /**< policy tree to print */
    );
+#endif
 
 /** fix tree, remove 'dummy' nodes and then merge leaves with the same action
 */

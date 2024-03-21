@@ -2,7 +2,9 @@
  *  @brief Functions for policy trees
  *  @author James Cussens
  */
+#ifdef PRINTING_ALLOWED
 #include <stdio.h>
+#endif
 #include <assert.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -24,6 +26,7 @@ struct node
 
 /* LOCAL FUNCTIONS */
 
+#ifdef PRINTING_ALLOWED
 /** prints a policy tree in policytree style to standard output */
 static
 void print_tree_policytree_rec(
@@ -50,6 +53,7 @@ void print_tree_policytree_rec(
       printf("* action: %d\n", tree->action_id + 1);
    }
 }
+#endif
 
 /** does a node split data using some value of some variable? */
 #ifndef NDEBUG
@@ -144,6 +148,7 @@ void merge_leaves(
 
 /* PUBLIC FUNCTIONS */
 
+#ifdef PRINTING_ALLOWED
 /** print a policy tree (debugging only) 
  * if covariate names are not supplied then the indices for covariates are used
  */
@@ -201,7 +206,7 @@ void print_tree_policytree(
 
    print_tree_policytree_rec(tree, covnames, 0);   
 }
-
+#endif
 
 /** is a node a leaf node? 
  * @return 1 if node is a leaf, else 0
@@ -216,6 +221,7 @@ int is_leaf(
 }
 
 
+#ifdef PRINTING_ALLOWED
 /** prints a policy tree to standard output */
 void print_tree_raw(
    NODE*                 tree               /**< policy tree to print */
@@ -237,6 +243,7 @@ void print_tree_raw(
    if( tree->right_child != NULL )
       print_tree_raw(tree->right_child);
 }
+#endif
 
 /**
  * Return a 'skeleton' policy tree of required depth
@@ -348,7 +355,7 @@ int assigned_action(
 }
 
 /** check whether a tree is 'perfect' for a set of units
- * if tree is not perfect a reason is printed to standard output
+ * if tree is not perfect a reason may be printed to standard output (depending on compilation options)
  * @return 1 if tree is perfect else 0
  */
 int check_perfect(
@@ -368,9 +375,11 @@ int check_perfect(
       int assigned = assigned_action(tree, data_x, num_rows, elt);
       if( assigned != best_actions[elt] )
       {
+#ifdef PRINTING_ALLOWED
          printf("Tree for %d elements is not, in fact, perfect!\n", nunits);
          printf("elt %d is assigned %d but best action is %d in following tree.\n", elt, assigned, best_actions[elt]);
          print_tree(tree, NULL);
+#endif
          return 0;
       }
    }

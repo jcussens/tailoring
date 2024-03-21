@@ -9,3 +9,4 @@ Description: Constructs optimal policy trees from covariate and reward data.
 License: GPL (>= 2)
 Imports: Rcpp (>= 1.0.7)
 LinkingTo: Rcpp
+RoxygenNote: 7.3.1

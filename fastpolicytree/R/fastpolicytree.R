@@ -1,5 +1,11 @@
-#' Fit a policy with exact tree search
+#' Construct an optimal policy tree from covariate and reward data
 #'
+#' This function accepts almost the same input and generates the same
+#' type of output as the policy_tree function in the policytree
+#' package. The only difference is that this function has no
+#' 'split.step' argument (since it is effectively hard-coded to the
+#' value 1).
+#' 
 #' @param X The covariates used. Dimension \eqn{N*p} where \eqn{p} is the number of features.
 #' @param Gamma The rewards for each action. Dimension \eqn{N*d} where \eqn{d} is the number of actions.
 #' @param depth The depth of the fitted tree. Default is 3.
