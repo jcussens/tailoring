@@ -109,7 +109,7 @@ int next_shallow_split(
    int                   start,              /**< starting index */
    const double*         data_xp,            /**< values for covariate to split on */
    double*               splitval,           /**< (pointer to) found value to split on */
-   int**                 elts,               /**< (pointer to) the elements moved */
+   ELEMENT**             elts,               /**< (pointer to) the elements moved */
    int*                  nelts               /**< (pointer to) number of elements moved */
    );
 

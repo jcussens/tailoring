@@ -23,7 +23,7 @@
 static
 void update_left_rewards(
    double*               left_rewards,       /**< rewards for each action for a 'left' set of units */
-   int*                  elts,               /**< units just moved into 'left' set of units */
+   ELEMENT*              elts,               /**< units just moved into 'left' set of units */
    int                   nelts,              /**< number of units just moved into 'left' set of units */
    const double*         data_y,             /**< data_y[d*num_rows+elt] is the reward for action d for unit elt */
    int                   num_rows,           /**< number of units in full dataset */
@@ -182,7 +182,7 @@ void level_one_learning(
    NODE* left_child;
    NODE* right_child;
    
-   int* elts;
+   ELEMENT* elts;
    int nelts;
 
    double best_left_reward;

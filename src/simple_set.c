@@ -15,16 +15,18 @@
 
 #define MAXKEYVALS 30                        /**< maximum number of key values to use counting sort (otherwise use radix sort) */
 
+typedef int KEY;
+
 /** 
  * simple set
 */
 struct simple_set
 {
-   int*                  elements;           /**< pointer to space for the set */
+   ELEMENT*              elements;           /**< pointer to space for the set */
    int                   size;               /**< size of space for set */
    int                   start;              /**< elements[start] is the first element of the set */ 
    int                   n;                  /**< number of elements in set */
-   int**                 keys;               /**< let data_xp be covariate values for covariate p then 
+   KEY**                 keys;               /**< let data_xp be covariate values for covariate p then 
                                               * (1) if data_xp[i] < data_xp[j] then keys[p][i] < keys[p][j] and
                                               * (2) if data_xp[i] == data_xp[j] then keys[p][i] == keys[p][j] */
    int*                  nkeyvals;           /**< nkeyvals[p] is the number of distinct data_xp values */
@@ -33,11 +35,11 @@ struct simple_set
 /** counting sort */
 static
 void counting_sort(
-   const int*            a,                  /**< input array to sort */
+   const ELEMENT*        a,                  /**< input array to sort */
    int                   n,                  /**< length of input array */
-   int*                  b,                  /**< will contain sorted array */
+   ELEMENT*              b,                  /**< will contain sorted array */
    int                   k,                  /**< number of distinct key values */
-   const int*            key                 /**< key[elem] is the key value for elem */
+   const KEY*            key                 /**< key[elem] is the key value for elem */
    )
 {
    int i;
@@ -65,10 +67,10 @@ void counting_sort(
 /** counting sort on a particular digit */
 static
 void counting_sort_radix(
-   const int*            a,                  /**< input array to sort */
+   const ELEMENT*        a,                  /**< input array to sort */
    int                   n,                  /**< length of input array */
-   int*                  b,                  /**< will contain sorted array */
-   const int*            key,                /**< key[elem] is the key value for elem */
+   ELEMENT*              b,                  /**< will contain sorted array */
+   const KEY*            key,                /**< key[elem] is the key value for elem */
    int                   exp                 /**< = 1, 10, 100, .. indicates which digit to sort on */
    )
 {
@@ -96,24 +98,23 @@ void counting_sort_radix(
 /** radix sort */
 static
 void radix_sort(
-   const int*            a,                  /**< input array to sort */
+   const ELEMENT*        a,                  /**< input array to sort */
    int                   n,                  /**< length of input array */
-   int*                  b,                  /**< will contain sorted array */
-   int*                  tmp,                /**< tmp array, at least as long as b */
-   const int*            key,                /**< key[elem] is the key value for elem */
+   ELEMENT*              b,                  /**< will contain sorted array */
+   ELEMENT*              tmp,                /**< tmp array, at least as long as b */
+   const KEY*            key,                /**< key[elem] is the key value for elem */
    int                   maxkey              /**< maximal value of key[elem] */
    )
 {
    int exp;
-   /* int i; */
-   int* tmp2;
+   ELEMENT* tmp2;
 
    /* sort a on least significant digit and put result in b */
    counting_sort_radix(a, n, b, key, 1);
    
    for( exp = 10; maxkey / exp  > 0; exp *= 10 )
    {
-      counting_sort_radix((const int*) b, n, tmp, key, exp);
+      counting_sort_radix((const ELEMENT*) b, n, tmp, key, exp);
       tmp2 = tmp;
       tmp = b;
       b = tmp2;
@@ -123,12 +124,12 @@ void radix_sort(
 /** sort an array of integers according to key values */
 static
 void sort_units(
-   const int*            a,                  /**< array to be sorted */
+   const ELEMENT*        a,                  /**< array to be sorted */
    int                   n,                  /**< length of array to be sorted */
-   const int*            key,                /**< key[elem] is key value for elem */
+   const KEY*            key,                /**< key[elem] is key value for elem */
    int                   nkeyvals,           /**< key values are 0,...,nkeyvals-1 */
-   int*                  tmp,                /**< temporary array of length at least n */
-   int*                  b                   /**< output array of length at least n */
+   ELEMENT*              tmp,                /**< temporary array of length at least n */
+   ELEMENT*              b                   /**< output array of length at least n */
    )
 {
    if( nkeyvals <= MAXKEYVALS )
@@ -145,11 +146,11 @@ void sort_units(
  */
 static
 void bottomupmerge(
-   const int*            indices,            /**< global array */
+   const ELEMENT*        indices,            /**< global array */
    int                   ileft,              /**< index of first element of left subsequence */
    int                   iright,             /**< index of first element of right subsequence */
    int                   iend,               /**< iend-1 is index of last element of right subsequence */
-   int*                  tmp,                /**< on output tmp[ileft:iend-1] has the merged subsequence */
+   ELEMENT*              tmp,                /**< on output tmp[ileft:iend-1] has the merged subsequence */
    const double*         data_x_p            /**< data_x_p[i] is ordering key for i */
   )
 {
@@ -169,8 +170,8 @@ void bottomupmerge(
 /** sort an array by bottom up merge sort */
 static
 void bottomupmergesort(
-   int*                  indices,            /**< array to sort */
-   int*                  tmp,                /**< on output, sorted array */              
+   ELEMENT*              indices,            /**< array to sort */
+   ELEMENT*              tmp,                /**< on output, sorted array */              
    int                   n,                  /**< length of array */
    const double*         data_x_p            /**< data_x_p[i] is ordering key for i */
   )
@@ -398,7 +399,7 @@ SIMPLE_SET* shallow_copy_units(
    SIMPLE_SET* target;
 
    target = (SIMPLE_SET*) malloc(sizeof(SIMPLE_SET));
-   target->elements = (int*) malloc(source->size * sizeof(int));
+   target->elements = (ELEMENT*) malloc(source->size * sizeof(ELEMENT));
    memcpy(target->elements, source->elements, (source->size)*sizeof(int));
    target->size = source->size;
    target->start = source->start;
@@ -414,22 +415,22 @@ SIMPLE_SET* shallow_copy_units(
  * @return key where key[elem] is key value for elem
  */
 static
-int* get_key(
-   int*                  elements,           /**< elements (unordered) */
+KEY* get_key(
+   ELEMENT*              elements,           /**< elements (unordered) */
    const double*         data_xp,            /**< covariate values for some covariate for sorting */
    int                   num_rows,           /**< number of units in full dataset */
-   int*                  tmp,                /**< temporary working space */
+   ELEMENT*              tmp,                /**< temporary working space */
    int*                  nkeyvals            /**< number of distinct data_xp values */
    )
 {
    int i;
-   int* keysp;
+   KEY* keysp;
    int keyval;
    
    /* sort the elements using data_xp values as key */
    bottomupmergesort(elements, tmp, num_rows, data_xp);
 
-   keysp = (int*) malloc(num_rows * sizeof(int));
+   keysp = (KEY*) malloc(num_rows * sizeof(KEY));
 
    keyval = 0;
    keysp[elements[0]] = keyval;
@@ -470,8 +471,6 @@ void initialise_units(
    SIMPLE_SET* left = NULL;
    SIMPLE_SET* right = NULL;
 
-   /* int i; */
-   
    left = get_left_sorted_sets(workspace,depth);
    right = get_right_sorted_sets(workspace,depth);
 
@@ -530,15 +529,15 @@ SIMPLE_SET* make_units(
    )
 {
 
-   int* tmp_indices;
+   ELEMENT* tmp_indices;
    int p;
    SIMPLE_SET* initial_simple_set; 
    int i;
    
-   tmp_indices = (int*) malloc(num_rows*sizeof(int));
+   tmp_indices = (ELEMENT*) malloc(num_rows*sizeof(ELEMENT));
    
    initial_simple_set = (SIMPLE_SET*) malloc(sizeof(SIMPLE_SET));
-   initial_simple_set->elements = (int*) malloc(num_rows * sizeof(int));
+   initial_simple_set->elements = (ELEMENT*) malloc(num_rows * sizeof(ELEMENT));
    for( i = 0; i < num_rows; i++ )
       initial_simple_set->elements[i] = i;
    initial_simple_set->size = num_rows;
@@ -596,7 +595,7 @@ int next_shallow_split(
    int                   start,              /**< starting index */
    const double*         data_xp,            /**< values for covariate to split on */
    double*               splitval,           /**< (pointer to) found value to split on */
-   int**                 elts,               /**< (pointer to) the elements moved */
+   ELEMENT**             elts,               /**< (pointer to) the elements moved */
    int*                  nelts               /**< (pointer to) number of elements moved */
    )
 {

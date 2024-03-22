@@ -33,6 +33,8 @@ typedef const SIMPLE_SET* CONST_UNITS; /**< Constant simple sets */
 struct node;
 typedef struct node NODE;  /**< Policy tree structure */
 
+typedef unsigned int ELEMENT;
+
 #ifdef __cplusplus
 }
 #endif
