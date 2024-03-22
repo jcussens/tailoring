@@ -34,6 +34,10 @@ Rcpp::List tree_search_rcpp(
    {
       NODE* node = treenodes[idx];
 
+      // just ignore non-nodes
+      if( node == NULL )
+	continue;
+      
       if( is_leaf(node) )
       {
          int action = get_action(node);

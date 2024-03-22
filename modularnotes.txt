@@ -175,3 +175,9 @@ files
 7. Do "R CMD build fastpolicytree"
 8. Do "R CMD check fastpolicytree_1.0.tar.gz"
 9. Do "sudo R CMD INSTALL fastpolicytree_1.0.tar.gz"
+
+Fri 22 Mar 09:06:40 GMT 2024
+
+to debug R which calls C/C++ code do: "R -d gdb"
+CTRL-C to get gdb prompt
+"continue" to get back to R process
