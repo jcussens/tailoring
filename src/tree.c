@@ -581,7 +581,6 @@ NODE** breadth_first_nodes(
       offset[i] = *num_nodes - 1;
       *num_nodes *= 2;
    }
-   *num_nodes *= 2;
    (*num_nodes)--;
 
    nodes = (NODE**) calloc(*num_nodes,sizeof(NODE*));

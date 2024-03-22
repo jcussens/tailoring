@@ -118,6 +118,10 @@ int main(
   
    int min_node_size = DEFAULT_MIN_NODE_SIZE;
 
+   /* NODE** nodes; */
+   /* int num_nodes; */
+   /* int i; */
+   
    status = process_commandline(argc, argv, &filename, &num_cols_y, &depth); 
 
    assert( status == 0 || status == 1);
@@ -164,6 +168,13 @@ int main(
    {
       printf("Did not build tree since no data supplied.\n");
    }
+
+   /* nodes = breadth_first_nodes(tree, depth, &num_nodes); */
+   /* for( i = 0; i < num_nodes; i++ ) */
+   /* { */
+   /*    printf("%d/%d::\n",i,num_nodes); */
+   /*    print_tree(nodes[i],NULL); */
+   /* } */
    
    freedata(num_cols_x, num_cols_y, covnames, actionnames, data_x, data_y, tree);
    
