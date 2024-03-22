@@ -161,3 +161,17 @@ push root->left_child->right_child
 pop root->right_child
 
 so process breadth-first, left to right.
+
+Thu 21 Mar 17:57:51 GMT 2024
+
+To make R package
+1. Ensure in correct directory
+2. Start R
+3. Do "library(Rcpp)"
+4. Do "compileAttributes()" - this will generate wrapper code
+5. Also, if needed, do library(roxygen2); roxygenise()" to update .Rd
+files
+6. Leave R
+7. Do "R CMD build fastpolicytree"
+8. Do "R CMD check fastpolicytree_1.0.tar.gz"
+9. Do "sudo R CMD INSTALL fastpolicytree_1.0.tar.gz"

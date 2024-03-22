@@ -13,6 +13,7 @@
 #' 
 #' @return A policy_tree object.
 #'
+#' @export
 fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1) {
   n.features <- ncol(X)
   n.actions <- ncol(Gamma)
