@@ -195,7 +195,6 @@ void level_one_learning(
    int bestp;
 #endif
 
-   UNITS left_units;
    UNITS right_units;
    
    /* get reward for each action if no split were done */
@@ -215,11 +214,10 @@ void level_one_learning(
       /* initialise the index which will specify the current split */
       int idx = 0;
 
-      /* initialise so that left_units is empty and right_units is a copy of units 
+      /* initialise so that right_units is a copy of units 
          ready for splitting on covariate p */
-      initialise_units(units, p, 1, num_cols_x, workspace, &left_units, &right_units);
+      shallow_initialise_units(units, p, num_cols_x, workspace, &right_units);
 
-      assert( units_ok((CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
       assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data 

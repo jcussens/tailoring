@@ -610,6 +610,37 @@ SORTED_SET* make_sorted_set(
 /** initialise so that each left_sorted_set (for each covariate) is empty and each 
  *  right_sorted_set is a copy of the sorted set (for that covariate) 
 */
+void shallow_initialise_units(
+   const SORTED_SET**    sorted_sets,        /**< input sorted sets */
+   int                   p,                  /**< splitting covariate */
+   int                   num_cols_x,         /**< number of covariates */
+   WORKSPACE*            workspace,          /**< workspace */
+   SORTED_SET***         right_sorted_sets   /**< pointer to output right sets */
+   )
+{
+   int pp;
+   SORTED_SET** rights = NULL;
+   /* get common size of sorted sets */
+   int n = (sorted_sets[0])->n;
+   
+   rights = get_right_sorted_sets(workspace,depth);
+
+   assert( rights != NULL );
+   
+   /* do not need to set key, since this is fixed */
+   for( pp = 0; pp < num_cols_x; pp++ )
+   {
+      memcpy((rights[pp])->elements, (sorted_sets[pp])->elements, n*sizeof(int));
+      (rights[pp])->n = n;
+   }
+
+   *right_sorted_sets = rights;
+   
+}
+
+/** initialise so that each left_sorted_set (for each covariate) is empty and each 
+ *  right_sorted_set is a copy of the sorted set (for that covariate) 
+*/
 void initialise_units(
    const SORTED_SET**    sorted_sets,        /**< input sorted sets */
    int                   p,                  /**< splitting covariate */

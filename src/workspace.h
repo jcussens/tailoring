@@ -33,6 +33,11 @@ UNITS get_tmpunits(
    const WORKSPACE*      workspace           /**< workspace */
    );
 
+/** return secondary tmp units */
+int* get_tmp2(
+   const WORKSPACE*      workspace           /**< workspace */
+   );
+
 /** return array of doubles, one double for each reward */
 double* get_rewards_space(
    const WORKSPACE*      workspace           /**< workspace */

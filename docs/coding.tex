@@ -26,9 +26,10 @@ represent the set of functions $f:N \rightarrow A$ representable by a
 policy tree of depth $d$. $f(i)$ assigns an action to unit $i$, so it
 is an \emph{action assignment function}. Let $S$ be the set of splits
 available, each split $s \in S$ being defined by a choice of covariate
-$j$ and a value $v_s$ for that covariate. Let $x_{ij}$ be the value of
+$j$ and a value $v$ for that covariate, so each $s \in S$ is
+determined by a pair $s=(j,v)$. Let $x_{ij}$ be the value of
 covariate $j$ for unit $i$. If a unit $i$ is such that
-$x_{ij} \leq v_{s}$ then we say the unit is sent left by the split,
+$x_{ij} \leq v$ then we say the unit is sent left by the split $s=(j,v)$,
 otherwise it is sent right.
 
 Let $s_{L}(N)$ (resp.\ $s_{R}(N)$) be the units sent left (resp.\

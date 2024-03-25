@@ -21,6 +21,7 @@ struct workspace
    UNITS**               sets;               /**< units for LEFT and RIGHT and each depth and each covariate, 
                                                 each with space = number of units */
    UNITS                 tmpunits;           /**< additional space = number of units */
+   int*                  tmp2;               /**< additional space = number of units */
    NODE**                trees;              /**< a tree for each possible depth */
 };
 
@@ -57,6 +58,7 @@ WORKSPACE* make_workspace(
    }
 
    workspace->tmpunits = shallow_copy_units(initial_units, num_cols_x);
+   workspace->tmp2 = (int*) malloc(ndepths*sizeof(int));
 
    workspace->trees = (NODE**) malloc(ndepths*sizeof(NODE*));
    for(d = 0; d < ndepths; d++)
@@ -93,6 +95,7 @@ void free_workspace(
    free(workspace->sets);
 
    shallow_free_units(workspace->tmpunits, num_cols_x);
+   free(workspace->tmp2);
    
    for( d = 0; d < ndepths; d++)
       tree_free(workspace->trees[d]);
@@ -116,6 +119,14 @@ UNITS get_tmpunits(
    )
 {
    return workspace->tmpunits;
+}
+
+/** return secondary tmp units */
+int* get_tmp2(
+   const WORKSPACE*      workspace           /**< workspace */
+   )
+{
+   return workspace->tmp2;
 }
 
    

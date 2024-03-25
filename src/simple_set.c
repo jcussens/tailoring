@@ -70,6 +70,7 @@ void counting_sort_radix(
    const ELEMENT*        a,                  /**< input array to sort */
    int                   n,                  /**< length of input array */
    ELEMENT*              b,                  /**< will contain sorted array */
+   int*                  tmp2,               /**< temporary working space */
    const KEY*            key,                /**< key[elem] is the key value for elem */
    int                   exp                 /**< = 1, 10, 100, .. indicates which digit to sort on */
    )
@@ -84,7 +85,10 @@ void counting_sort_radix(
    
    /* get count for each key value */
    for(i = 0; i < n; i++ )
-      count[(key[a[i]]/exp)%10]++;
+   {
+      tmp2[i] = (key[a[i]]/exp)%10;
+      count[tmp2[i]]++;
+   }
 
    /* alter so that c[i] is number of key vals <= i */ 
    for(i = 1; i < 10; i++ )
@@ -92,7 +96,7 @@ void counting_sort_radix(
 
    /* put each element of a into correct place in b */
    for(i = n-1; i >=0; i--)
-      b[(count[(key[a[i]]/exp)%10]--)-1] = a[i];
+      b[(count[tmp2[i]]--)-1] = a[i];
 }
 
 /** radix sort */
@@ -102,22 +106,23 @@ void radix_sort(
    int                   n,                  /**< length of input array */
    ELEMENT*              b,                  /**< will contain sorted array */
    ELEMENT*              tmp,                /**< tmp array, at least as long as b */
+   int*                  tmp2,               /**< tmp array, at least as long as b */
    const KEY*            key,                /**< key[elem] is the key value for elem */
    int                   maxkey              /**< maximal value of key[elem] */
    )
 {
    int exp;
-   ELEMENT* tmp2;
+   ELEMENT* tmp3;
 
    /* sort a on least significant digit and put result in b */
-   counting_sort_radix(a, n, b, key, 1);
+   counting_sort_radix(a, n, b, tmp2, key, 1);
    
    for( exp = 10; maxkey / exp  > 0; exp *= 10 )
    {
-      counting_sort_radix((const ELEMENT*) b, n, tmp, key, exp);
-      tmp2 = tmp;
+      counting_sort_radix((const ELEMENT*) b, n, tmp, tmp2, key, exp);
+      tmp3 = tmp;
       tmp = b;
-      b = tmp2;
+      b = tmp3;
    }
 }
 
@@ -129,13 +134,14 @@ void sort_units(
    const KEY*            key,                /**< key[elem] is key value for elem */
    int                   nkeyvals,           /**< key values are 0,...,nkeyvals-1 */
    ELEMENT*              tmp,                /**< temporary array of length at least n */
+   int*                  tmp2,               /**< temporary array of length at least n */
    ELEMENT*              b                   /**< output array of length at least n */
    )
 {
    if( nkeyvals <= MAXKEYVALS )
       counting_sort(a, n, b, nkeyvals, key);
    else
-      radix_sort(a, n, b, tmp, key, nkeyvals-1);
+      radix_sort(a, n, b, tmp, tmp2, key, nkeyvals-1);
 }
 
 
@@ -506,11 +512,38 @@ void initialise_units(
    right->n = simple_set->n;
    right->start = 0;
    sort_units(simple_set->elements + simple_set->start, simple_set->n, simple_set->keys[p], simple_set->nkeyvals[p],
-      get_tmpunits(workspace)->elements, right->elements);
+      get_tmpunits(workspace)->elements, get_tmp2(workspace), right->elements);
 
    *left_simple_set = left;
    *right_simple_set = right;
 }
+
+
+/** initialise so that right_simple_set is a copy of the sorted set and we are ready to look for depth=1 splits using covariate p */
+void shallow_initialise_units(
+   const SIMPLE_SET*     simple_set,         /**< input set */
+   int                   p,                  /**< splitting covariate */
+   int                   num_cols_x,         /**< number of covariates */
+   WORKSPACE*            workspace,          /**< workspace */
+   SIMPLE_SET**          right_simple_set    /**< pointer to output right set */
+   )
+{
+
+   SIMPLE_SET* right = NULL;
+
+   right = get_right_sorted_sets(workspace,1);
+
+   assert( right != NULL );
+
+   /* make right a copy of input, but with elements ordered according to covariate p */
+   right->n = simple_set->n;
+   right->start = 0;
+   sort_units(simple_set->elements + simple_set->start, simple_set->n, simple_set->keys[p], simple_set->nkeyvals[p],
+      get_tmpunits(workspace)->elements, get_tmp2(workspace), right->elements);
+
+   *right_simple_set = right;
+}
+
 
 #ifdef PRINTING_ALLOWED
 /** print out a simple set (for debugging only) */

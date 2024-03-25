@@ -78,6 +78,16 @@ int get_size(
    CONST_UNITS           units               /**< units */
    );
 
+/** create a full 'right' set to prepare for looking for depth=1 splits using a given covariate */
+void shallow_initialise_units(
+   CONST_UNITS           units,              /**< input units */
+   int                   p,                  /**< splitting covariate */
+   int                   num_cols_x,         /**< number of covariates */
+   WORKSPACE*            workspace,          /**< workspace */
+   UNITS*                right_units         /**< pointer to output right units */
+   );
+
+
 /** create an empty 'left' set of units and full 'right' set to prepare for looking for splits using a given covariate */
 void initialise_units(
    CONST_UNITS           units,              /**< input units */
