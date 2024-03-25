@@ -318,7 +318,7 @@ void find_best_split(
       int best_action;
 
       /* find best action and its associated reward */
-      find_best_action(units, data_y, num_rows, num_cols_y, workspace, &best_reward, &best_action);
+      find_best_action(units, data_y, num_rows, num_cols_y, workspace, *perfect, &best_reward, &best_action);
 
       /* make node a leaf with found best action and associated reward */
       make_leaf(node, best_reward, best_action);
