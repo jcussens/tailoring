@@ -58,7 +58,7 @@ WORKSPACE* make_workspace(
    }
 
    workspace->tmpunits = shallow_copy_units(initial_units, num_cols_x);
-   workspace->tmp2 = (int*) malloc(ndepths*sizeof(int));
+   workspace->tmp2 = (int*) malloc(num_rows*sizeof(int));
 
    workspace->trees = (NODE**) malloc(ndepths*sizeof(NODE*));
    for(d = 0; d < ndepths; d++)
