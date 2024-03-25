@@ -17,8 +17,12 @@ Rcpp::List tree_search_rcpp(
    int num_rows = X.rows();
    int num_cols_x = X.cols();
    int num_cols_y = Y.cols();
+   double reward;
+   int perfect;
+
    NODE* root = tree_search_simple(depth, min_node_size, X.begin(), Y.begin(),
-      num_rows, num_cols_x, num_cols_y);
+				   num_rows, num_cols_x, num_cols_y, &reward,
+				   &perfect);
    int num_nodes;
    NODE** treenodes = breadth_first_nodes(root, depth, &num_nodes);
    

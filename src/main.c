@@ -115,7 +115,9 @@ int main(
 
    int status;
    NODE* tree = NULL;
-  
+   double reward;
+   int perfect;
+   
    int min_node_size = DEFAULT_MIN_NODE_SIZE;
 
    /* NODE** nodes; */
@@ -158,11 +160,13 @@ int main(
    
    if( num_rows > 0 )
    {
-      tree = tree_search_simple(depth, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y);
+      tree = tree_search_simple(depth, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, &reward, &perfect);
       
       print_tree_policytree(tree, covnames, depth, num_cols_y, actionnames);
       
-      printf("Reward: %g\n", get_reward(tree));
+      printf("Reward: %g\n", reward);
+      if( perfect )
+         printf("Tree is perfect.\n");
    }
    else
    {

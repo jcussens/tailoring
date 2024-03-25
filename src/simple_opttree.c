@@ -420,7 +420,9 @@ NODE* tree_search_simple(
   const double*          data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
   int                    num_rows,           /**< number of units in full dataset */
   int                    num_cols_x,         /**< number of covariates */
-  int                    num_cols_y          /**< number of actions */
+  int                    num_cols_y,         /**< number of actions */
+  double*                reward,             /**< reward for optimal tree */
+  int*                   perfect             /**< whether the returned optimal tree is 'perfect' */
   )
 {
    NODE* tree = NULL;
@@ -428,7 +430,6 @@ NODE* tree_search_simple(
    WORKSPACE* workspace = NULL;
    int* best_actions = NULL;
    int* worst_actions = NULL;
-   int perfect;
 
    /* Permitted: depth 0 trees, no covariates */
    /* Not permitted: no data, min_node_size < 1, number of actions < 1 */ 
@@ -462,12 +463,14 @@ NODE* tree_search_simple(
    assert( worst_actions != NULL );
    
    /* record that we have yet to find a 'perfect' tree for this data */
-   perfect = 0;
+   *perfect = 0;
 
    /* find the optimal tree */
    find_best_split(tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,
-      num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &perfect); 
+      num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, perfect); 
 
+   *reward = get_reward(tree);
+   
    /* free memory */
    free(best_actions);
    free(worst_actions);

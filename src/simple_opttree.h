@@ -22,7 +22,10 @@ NODE* tree_search_simple(
   const double*          data_y,             /**< 'gammas', data_y+(d*num_rows) points to values for reward d */
   int                    num_rows,           /**< number of units in full dataset */
   int                    num_cols_x,         /**< number of covariates */
-  int                    num_cols_y          /**< number of actions */
+  int                    num_cols_y,         /**< number of actions */
+  double*                reward,             /**< reward for optimal tree */
+  int*                   perfect             /**< whether the returned optimal tree is 'perfect' */
+
    );
 
 #ifdef __cplusplus
