@@ -1,4 +1,4 @@
-SRC = main.c  reading.c  simple_opttree.c  tree.c  workspace.c type_all.h
+SRC = main.c  reading.c  simple_opttree.c  tree.c  workspace.c type_all.h versiongit.h
 SRC2 = simple_opttree.c  tree.c  workspace.c type_all.h
 SRCDIR = src
 MAINSRC = $(addprefix $(SRCDIR)/,$(SRC))
