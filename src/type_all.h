@@ -13,6 +13,10 @@ extern "C" {
 /* #define USE_SIMPLE_SET */
 /* #define PRINTING_ALLOWED */
 
+#ifdef USEGITHASH
+include "versiongit.h"
+#endif
+
 struct workspace;
 typedef struct workspace WORKSPACE;  /**< Work space structure */
 
