@@ -78,5 +78,10 @@ Rcpp::List tree_search_rcpp(
    return result;
 }
    
+// [[Rcpp::export]]
+Rcpp::CharacterVector githash_rcpp()
+{
+   return CharacterVector::create(GITHASH);
+}
    
 
