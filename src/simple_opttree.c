@@ -309,7 +309,7 @@ void find_best_split(
    /* if this dataset is pure we can make a perfect leaf */
    if( pure )
       *perfect = 1;
-
+   
    /* nothing further to do if depth limit reached or if too few datapoints for splitting or if dataset is pure */
    if( depth == 0 || get_size(units) <= min_node_size || pure )
    {
@@ -347,9 +347,6 @@ void find_best_split(
 
       double this_reward;
 
-      int left_perfect = 0;
-      int right_perfect = 0;
-
       double splitval;
 
       /* initialise so that left_units is empty and right_units is a copy of units 
@@ -362,7 +359,10 @@ void find_best_split(
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
       while( !(*perfect) && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval) )
       {
-         
+
+         int left_perfect = 0;
+         int right_perfect = 0;
+
          assert( units_ok((CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
          assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
@@ -380,7 +380,7 @@ void find_best_split(
 
          /* tree is perfect if and only if both left and right tree are perfect */
          *perfect = left_perfect && right_perfect;
-
+         
          /* get reward for this split */
          this_reward = get_reward(left_child) + get_reward(right_child);
 

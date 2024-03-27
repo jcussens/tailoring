@@ -116,7 +116,7 @@ int main(
    int status;
    NODE* tree = NULL;
    double reward;
-   int perfect;
+   int perfect = 0;
    
    int min_node_size = DEFAULT_MIN_NODE_SIZE;
 

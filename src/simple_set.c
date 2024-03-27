@@ -126,6 +126,46 @@ void radix_sort(
    }
 }
 
+#if 0
+static
+void swap(
+   ELEMENT*              b,                  /**< array to be sorted */
+   int                   i,
+   int                   j
+   )
+{
+   int tmp;
+   
+   tmp = b[i];
+   b[i] = b[j];
+   b[j] = tmp;
+}
+
+static
+void quicksort(
+   ELEMENT*              b,                  /**< array to be sorted */
+   int                   left,               /**< length of array to be sorted */
+   int                   right,              /**< length of array to be sorted */
+   const KEY*            key                 /**< key[elem] is key value for elem */
+   )
+{
+   int i;
+   int last;
+
+   if( left >= right )
+      return;
+   swap(b, left, (left+right)/2);
+   last = left;
+   for( i = left+1; i <= right; i++)
+      if( key[b[i]] < key[b[left]] )
+         swap(b, ++last, i);
+   swap(b, left, last);
+   quicksort(b, left, last-1, key);
+   quicksort(b, last+1, right, key);
+}
+#endif
+
+
 /** sort an array of integers according to key values */
 static
 void sort_units(
@@ -141,7 +181,13 @@ void sort_units(
    if( nkeyvals <= MAXKEYVALS )
       counting_sort(a, n, b, nkeyvals, key);
    else
-      radix_sort(a, n, b, tmp, tmp2, key, nkeyvals-1);
+   {
+      /* int i; */
+      /* for(i = 0; i < n; i++) */
+      /*    b[i] = a[i]; */
+      /* quicksort(b, 0, n-1, key); */
+      radix_sort(a, n, b, tmp, tmp2, key, nkeyvals-1); 
+   }
 }
 
 
