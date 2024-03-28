@@ -42,6 +42,17 @@ int units_ok(
    int                   num_cols_x          /**< number of covariates */
    );
 
+/** get the reward for a set if all units in the set were assigned their best action *
+ * @return the reward for a set if all units in the set were assigned their best action *
+ */
+double ub(
+   CONST_UNITS           units,              /**< set */
+   const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+   int                   num_rows,           /**< number of units in full dataset */
+   const int*            best_actions        /**< best_actions[i] is the best action for unit i */
+   );
+
+
 /** Determine whether a set is 'pure'.
  * A pure set is one where each unit has the same best action
  * @return 1 if the set is pure, else 0

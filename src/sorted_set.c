@@ -17,19 +17,19 @@
 */
 struct sorted_set
 {
-  int*                   elements;           /**< the sorted set */
+  ELEMENT*               elements;           /**< the sorted set */
   int                    n;                  /**< size of subset */
   int*                   key;                /**< sorting key: if i < j then key[elements[i]] < key[elements[j]]  */
 };
 
-/** comparison function for sorting integers in ascending order */
+/** comparison function for sorting elements in ascending order */
 static
 int cmpfunc (
    const void* a,
    const void* b
    )
 {
-   return ( *(int*)a - *(int*)b );
+   return ( *(ELEMENT*)a - *(ELEMENT*)b );
 }
 
 
@@ -39,11 +39,11 @@ int cmpfunc (
  */
 static
 void bottomupmerge(
-   const int*            indices,            /**< global array */
+   const ELEMENT*        indices,            /**< global array */
    int                   ileft,              /**< index of first element of left subsequence */
    int                   iright,             /**< index of first element of right subsequence */
    int                   iend,               /**< iend-1 is index of last element of right subsequence */
-   int*                  tmp,                /**< on output tmp[ileft:iend-1] has the merged subsequence */
+   ELEMENT*              tmp,                /**< on output tmp[ileft:iend-1] has the merged subsequence */
    const double*         data_x_p            /**< data_x_p[i] is ordering key for i */
   )
 {
@@ -64,15 +64,15 @@ void bottomupmerge(
 /** sort an array by bottom up merge sort */
 static
 void bottomupmergesort(
-   int*                  indices,            /**< array to sort */
-   int*                  tmp,                /**< on output, sorted array */              
+   ELEMENT*              indices,            /**< array to sort */
+   ELEMENT*              tmp,                /**< on output, sorted array */              
    int                   n,                  /**< length of array */
    const double*         data_x_p            /**< data_x_p[i] is ordering key for i */
   )
 {
   int width;
   int i;
-  const size_t size = n*sizeof(int);
+  const size_t size = n*sizeof(ELEMENT);
   
   for( width = 1; width < n; width *= 2)
   {
@@ -88,7 +88,7 @@ void bottomupmergesort(
 static
 void insert_element(
    SORTED_SET*           sorted_set,         /**< sorted set */
-   int                   elt                 /**< element to insert */ 
+   ELEMENT               elt                 /**< element to insert */ 
   )
 {
   unsigned int left;
@@ -97,7 +97,7 @@ void insert_element(
   int eltval;
   const int* key = sorted_set->key;
   int n;
-  int* set;  
+  ELEMENT* set;  
   
   assert(sorted_set != NULL);
   assert(elt >= 0);
@@ -164,7 +164,7 @@ void insert_element(
   
   /* move, if necessary */
   if( mid < n )
-    memmove(set+mid+2,set+mid+1,(n-mid-1)*sizeof(int));
+    memmove(set+mid+2,set+mid+1,(n-mid-1)*sizeof(ELEMENT));
   
   /* insert at mid+1 */
   set[mid+1] = elt;
@@ -177,7 +177,7 @@ void insert_element(
 static
 int remove_element(
    SORTED_SET*           sorted_set,         /**< sorted set */
-   int                   elt                 /**< element to remove */
+   ELEMENT               elt                 /**< element to remove */
   )
 {
 
@@ -188,7 +188,7 @@ int remove_element(
    int eltval;
    const int* key = sorted_set->key;
    int n;
-   int* set;  
+   ELEMENT* set;  
    int retval = -1;
    
    assert(sorted_set != NULL);
@@ -221,7 +221,7 @@ int remove_element(
    {
       /* unless the last element, have to shift elements */
       if( mid < n-1)
-         memmove(set+mid,set+mid+1,(n-mid-1)*sizeof(int));
+         memmove(set+mid,set+mid+1,(n-mid-1)*sizeof(ELEMENT));
       sorted_set->n--;
    }
    
@@ -234,7 +234,7 @@ static
 void insert_elements(
    SORTED_SET*           sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to insert */ 
-   const int*            elts                /**< elements to insert */ 
+   const ELEMENT*        elts                /**< elements to insert */ 
   )
 {
    int i;
@@ -249,7 +249,7 @@ static
 void add_elements_at_end(
    SORTED_SET*           sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to insert */ 
-   const int*            elts                /**< elements to insert */ 
+   const ELEMENT*        elts                /**< elements to insert */ 
   )
 {
    int i;
@@ -266,7 +266,7 @@ static
 void remove_elements(
    SORTED_SET*           sorted_set,         /**< sorted set */
    int                   nelts,              /**< number of elements to remove */ 
-   const int*            elts                /**< elements to insert */ 
+   const ELEMENT*        elts                /**< elements to insert */ 
   )
 {
    int i;
@@ -283,7 +283,7 @@ void remove_elements_at_start(
    int                   nelts               /**< number of elements to remove from start */ 
   )
 {
-   memmove(sorted_set->elements,sorted_set->elements+nelts,(sorted_set->n-nelts)*sizeof(int));
+   memmove(sorted_set->elements,sorted_set->elements+nelts,(sorted_set->n-nelts)*sizeof(ELEMENT));
    sorted_set->n -= nelts;
 }
 
@@ -300,8 +300,8 @@ int units_ok(
    int pp;
    int n;
    int i;
-   int* elements0;
-   int* elements;
+   ELEMENT* elements0;
+   ELEMENT* elements;
    int ok;
    
    assert( sorted_sets != NULL );
@@ -317,11 +317,11 @@ int units_ok(
       if( sorted_sets[pp]->n != n )
          return 0;
 
-   elements0 = (int*) malloc(n*sizeof(int));
+   elements0 = (ELEMENT*) malloc(n*sizeof(ELEMENT));
    for(i = 0; i < n; i++)
       elements0[i] = sorted_sets[0]->elements[i];
-   qsort(elements0, n, sizeof(int), cmpfunc);
-   elements = (int*) malloc(n*sizeof(int));
+   qsort(elements0, n, sizeof(ELEMENT), cmpfunc);
+   elements = (ELEMENT*) malloc(n*sizeof(ELEMENT));
 
    ok = 1;
    
@@ -344,7 +344,7 @@ int units_ok(
       {
          for(i = 0; i < n; i++)
             elements[i] = sorted_setp->elements[i];
-         qsort(elements, n, sizeof(int), cmpfunc);
+         qsort(elements, n, sizeof(ELEMENT), cmpfunc);
          for(i = 0; i < n; i++)
             if( elements[i] != elements0[i] )
             {
@@ -359,7 +359,28 @@ int units_ok(
 
    return ok;
 }
-   
+
+/** get the reward for a set if all units in the set were assigned their best action *
+ * @return the reward for a set if all units in the set were assigned their best action *
+ */
+double ub(
+   const SORTED_SET**    sorted_sets,        /**< set */
+   const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+   int                   num_rows,           /**< number of units in full dataset */
+   const int*            best_actions        /**< best_actions[i] is the best action for unit i */
+   )
+{
+   int i;
+   double ub = 0.0;
+   const SORTED_SET* sorted_set = sorted_sets[0];
+
+   for(i = 0; i < sorted_set->n; i++)
+      ub += *(data_y + num_rows*best_actions[sorted_set->elements[i]] + sorted_set->elements[i]);
+         
+   return ub;
+}
+
+
 /** Determine whether a set is 'pure'.
  * A pure set is one where each unit has the same best action
  * @return 1 if the set is pure, else 0
@@ -485,7 +506,7 @@ int next_split(
    SORTED_SET* right_sorted_setp;
    int nmoved;
    int pp;
-   const int* right_sorted_setp_elements;
+   const ELEMENT* right_sorted_setp_elements;
    /* int i; */
    
    assert(left_sorted_sets != NULL);
@@ -555,12 +576,12 @@ SORTED_SET** shallow_copy_units(
       SORTED_SET* target;
       
       target = (SORTED_SET*) malloc(sizeof(SORTED_SET));
-      target->elements = (int*) malloc(source->n*sizeof(int));
+      target->elements = (ELEMENT*) malloc(source->n*sizeof(ELEMENT));
       target->n = source->n;
       /* just copy pointer */
       target->key = source->key;
 
-      memcpy(target->elements, source->elements, (source->n)*sizeof(int));
+      memcpy(target->elements, source->elements, (source->n)*sizeof(ELEMENT));
 
       targets[p] = target;
    }
@@ -577,17 +598,17 @@ static
 SORTED_SET* make_sorted_set(
    int                   num_indices,        /**< size of set */
    const double*         data_xx,            /**< data_xx[i] is ordering key for element i */
-   int*                  tmp                 /**< temporary storage for ordering of size at least num_indices */
+   ELEMENT*              tmp                 /**< temporary storage for ordering of size at least num_indices */
   )
 {
   SORTED_SET* sorted_set;
   int i;
-  int* elements;
+  ELEMENT* elements;
   int* key;
 
   sorted_set = (SORTED_SET*) malloc(sizeof(SORTED_SET));
-  elements = (int* ) malloc(num_indices*sizeof(int));
-  key = (int* ) malloc(num_indices*sizeof(int));
+  elements = (ELEMENT*) malloc(num_indices*sizeof(ELEMENT));
+  key = (int*) malloc(num_indices*sizeof(int));
   for( i = 0; i < num_indices; i++)
     elements[i] = i;
 
@@ -623,7 +644,7 @@ void shallow_initialise_units(
    /* get common size of sorted sets */
    int n = (sorted_sets[0])->n;
    
-   rights = get_right_sorted_sets(workspace,depth);
+   rights = get_right_sorted_sets(workspace,1);
 
    assert( rights != NULL );
    
@@ -685,12 +706,12 @@ SORTED_SET** make_units(
 {
 
    SORTED_SET** initial_sorted_sets;
-   int* tmp_indices;
+   ELEMENT* tmp_indices;
    int p;
    
    initial_sorted_sets = (SORTED_SET**) malloc(MAX(1,num_cols_x)*sizeof(SORTED_SET*));
 
-   tmp_indices = (int*) malloc(num_rows*sizeof(int));
+   tmp_indices = (ELEMENT*) malloc(num_rows*sizeof(ELEMENT));
 
    /* if no covariates, create a single dummy sorted set .. */
    if( num_cols_x == 0 )
@@ -761,7 +782,7 @@ int next_shallow_split(
    int                   start,              /**< starting index */
    const double*         data_xp,            /**< values for covariate to split on */
    double*               splitval,           /**< (pointer to) found value to split on */
-   int**                 elts,               /**< (pointer to) the elements moved */
+   ELEMENT**             elts,               /**< (pointer to) the elements moved */
    int*                  nelts               /**< (pointer to) number of elements moved */
    )
 {

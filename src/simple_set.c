@@ -310,7 +310,26 @@ int units_ok(
    
    return 1;
 }
-   
+
+/** get the reward for a set if all units in the set were assigned their best action *
+ * @return the reward for a set if all units in the set were assigned their best action *
+ */
+double ub(
+   const SIMPLE_SET*     simple_set,         /**< set */
+   const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+   int                   num_rows,           /**< number of units in full dataset */
+   const int*            best_actions        /**< best_actions[i] is the best action for unit i */
+   )
+{
+   int i;
+   double ub = 0.0;
+
+   for(i = simple_set->start; i < simple_set->start + simple_set->n; i++)
+      ub += *(data_y + num_rows*best_actions[simple_set->elements[i]] + simple_set->elements[i]);
+         
+   return ub;
+}
+
 /** Determine whether a set is 'pure'.
  * A pure set is one where each unit has the same best action
  * @return 1 if the set is pure, else 0
