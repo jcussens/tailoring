@@ -363,7 +363,7 @@ int units_ok(
 /** get the reward for a set if all units in the set were assigned their best action *
  * @return the reward for a set if all units in the set were assigned their best action *
  */
-double ub(
+double reward_ub(
    const SORTED_SET**    sorted_sets,        /**< set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */

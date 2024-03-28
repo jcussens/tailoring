@@ -196,6 +196,9 @@ void level_one_learning(
 #endif
 
    UNITS right_units;
+
+   /* get best possible reward */
+   double rewardub = reward_ub(units, data_y, num_rows, best_actions);
    
    /* get reward for each action if no split were done */
    find_nosplit_rewards(units, num_cols_y, data_y, num_rows, nosplit_rewards);
@@ -233,6 +236,8 @@ void level_one_learning(
          /* get reward for this split */
          this_reward = best_left_reward + best_right_reward;
 
+         assert( this_reward <= rewardub );
+
          /* if best so far, update */
          if( first_reward || this_reward > best_reward ) 
          {
@@ -245,6 +250,13 @@ void level_one_learning(
             bestp = p;
 #endif
             first_reward = 0;
+
+            /* if this reward is best possible, just stop searching */
+            if( this_reward == rewardub )
+            {
+               *perfect = 1;
+               break;
+            }
          }
 
          /* update index to move split along */
