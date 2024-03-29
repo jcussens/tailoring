@@ -197,6 +197,9 @@ void level_one_learning(
 
    UNITS right_units;
 
+   /* initially no perfect split has been found */
+   *perfect = 0;
+   
    /* get best possible reward */
    double rewardub = reward_ub(units, data_y, num_rows, best_actions);
    
@@ -314,6 +317,9 @@ void find_best_split(
 #ifdef VERBOSE
    printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(units));
 #endif
+
+   /* initially no perfect tree has been found */
+   *perfect = 0;
    
    /* determine whether the dataset is pure, i.e. whether each unit has same best action */
    pure = is_pure(units, best_actions);
@@ -372,8 +378,8 @@ void find_best_split(
       while( !(*perfect) && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval) )
       {
 
-         int left_perfect = 0;
-         int right_perfect = 0;
+         int left_perfect;
+         int right_perfect;
 
          assert( units_ok((CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
          assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
