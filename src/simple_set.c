@@ -39,7 +39,8 @@ void counting_sort(
    int                   n,                  /**< length of input array */
    ELEMENT*              b,                  /**< will contain sorted array */
    int                   k,                  /**< number of distinct key values */
-   const KEY*            key                 /**< key[elem] is the key value for elem */
+   const KEY*            key,                /**< key[elem] is the key value for elem */
+   ELEMENT*              tmp                 /**< tmp array, at least as long as b */
    )
 {
    int i;
@@ -53,7 +54,10 @@ void counting_sort(
    
    /* get count for each key value */
    for(i = 0; i < n; i++ )
-      count[key[a[i]]]++;
+   {
+      tmp[i] = key[a[i]];
+      count[tmp[i]]++;
+   }
 
    /* alter so that c[i] is number of key vals <= i */ 
    for(i = 1; i < k; i++ )
@@ -61,7 +65,7 @@ void counting_sort(
 
    /* put each element of a into correct place in b */
    for(i = n-1; i >=0; i--)
-      b[(count[key[a[i]]]--)-1] = a[i];
+      b[(count[tmp[i]]--)-1] = a[i];
 }
 
 /** counting sort on a particular digit */
@@ -179,7 +183,7 @@ void sort_units(
    )
 {
    if( nkeyvals <= MAXKEYVALS )
-      counting_sort(a, n, b, nkeyvals, key);
+      counting_sort(a, n, b, nkeyvals, key, tmp);
    else
    {
       /* int i; */
