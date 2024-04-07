@@ -508,7 +508,7 @@ int next_split(
    SORTED_SET* right_sorted_setp;
    int nmoved;
    int pp;
-   const ELEMENT* right_sorted_setp_elements;
+   ELEMENT* right_sorted_setp_elements;
    /* int i; */
    
    assert(left_sorted_sets != NULL);
