@@ -19,6 +19,31 @@
 #include <stdio.h>
 #endif
 
+/** TODO */
+static
+double update_bestworstdiff(
+   const ELEMENT*        elts,               /**< elements */
+   int                   nelts,              /**< number of elements */
+   int                   num_rows,           /**< number of units */
+   const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+   const int*            best_actions,       /**< best actions */
+   const int*            worst_actions       /**< worst actions */
+   )
+{
+   int i;
+   double res = 0.0;
+
+   for( i = 0; i < nelts; i++ )
+   {
+      ELEMENT elt = elts[i];
+      const double* tmp = data_y + elt;
+      res += (*(tmp+best_actions[elt]*num_rows) - *(tmp+worst_actions[elt]*num_rows)); 
+   }
+   return res;
+}
+
+
+
 /**< update the total reward for each action for a set of 'left' units due to new units being moved into this 'left' set */
 static
 void update_left_rewards(
@@ -364,9 +389,15 @@ void find_best_split(
       const double* data_xp = data_x+(p*num_rows);
 
       double this_reward;
+      double last_reward;
 
       double splitval;
 
+      int have_last_reward = 0;
+      double bestworstdiff = 0.0;
+      ELEMENT* elts;
+      int nelts;
+      
       /* initialise so that left_units is empty and right_units is a copy of units 
          ready for splitting on covariate p */
       initialise_units(units, p, depth, num_cols_x, workspace, &left_units, &right_units);
@@ -375,15 +406,25 @@ void find_best_split(
       assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
-      while( !(*perfect) && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval) )
+      while( !(*perfect) && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval, &elts, &nelts) )
       {
 
          int left_perfect;
          int right_perfect;
-
+         
          assert( units_ok((CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
          assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
+         if( have_last_reward )
+         {
+            bestworstdiff += update_bestworstdiff(elts, nelts, num_rows, data_y, best_actions, worst_actions);
+            if( last_reward + bestworstdiff <= best_reward )
+            {
+               continue;
+            }
+         }
+
+         
 #ifdef VERYVERBOSE
          printf("Working on split value %g for covariate %d.\n", splitval, p);
 #endif
@@ -402,6 +443,11 @@ void find_best_split(
          /* get reward for this split */
          this_reward = get_reward(left_child) + get_reward(right_child);
 
+         /* record that reward for this split was found and reset bestworstdiff */
+         last_reward = this_reward;
+         have_last_reward = 1;
+         bestworstdiff = 0.0;
+         
          /* if best so far, update */
          if( first_reward || this_reward > best_reward ) 
          {

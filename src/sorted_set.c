@@ -499,7 +499,9 @@ int next_split(
    int                   p,                  /**< covariate to split on */
    const double*         data_xp,            /**< values for covariate to split on */
    int                   num_cols_x,         /**< number of covariates */
-   double*               splitval            /**< (pointer to) found value to split on */
+   double*               splitval,           /**< (pointer to) found value to split on */
+   ELEMENT**             elts,               /**< (pointer to) elements moved */
+   int*                  nelts               /**< (pointer to) number of elements moved */
    )
 {
    SORTED_SET* left_sorted_setp;
@@ -553,6 +555,9 @@ int next_split(
    /* update left and right sorted sets for splitting covariate */
    add_elements_at_end(left_sorted_setp, nmoved, right_sorted_setp_elements);
    remove_elements_at_start(right_sorted_setp, nmoved);
+
+   *elts = right_sorted_setp_elements;
+   *nelts = nmoved;
    
    return 1;
    

@@ -444,11 +444,13 @@ int next_split(
    int                   p,                  /**< covariate to split on */
    const double*         data_xp,            /**< values for covariate to split on */
    int                   num_cols_x,         /**< number of covariates */
-   double*               splitval            /**< (pointer to) found value to split on */
+   double*               splitval,           /**< (pointer to) found value to split on */
+   ELEMENT**             elts,               /**< (pointer to) elements moved */
+   int*                  nelts               /**< (pointer to) number of elements moved */
    )
 {
    int leftend;
-
+   
    assert(left_set != NULL);
    assert(right_set != NULL);
    assert(p >= 0 && p < num_cols_x);
@@ -456,6 +458,8 @@ int next_split(
    assert(num_cols_x > 0);
    assert(splitval != NULL);
 
+   *nelts = 0;
+   
    /* nothing to move from right to left */
    if( right_set->n == 0 )
       return 0;
@@ -476,11 +480,14 @@ int next_split(
       left_set->elements[leftend++] = right_set->elements[right_set->start++];
       left_set->n++;
       right_set->n--;
+      (*nelts)++;
    }
 
    /* if all moved from right to left this is not a split */
    if( right_set->n == 0 )
       return 0;
+
+   *elts = left_set->elements + leftend - *nelts;
    
    return 1;
    

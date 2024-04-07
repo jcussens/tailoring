@@ -207,6 +207,73 @@ an upper bound on $R^{*}_{d,N}$. Similarly, if we have found
 $f^{*}_{d,N}$ and remove $N_2$ from $N$ to get $N_1$, (\ref{eq:lb})
 provides an upper bound on $R^{*}_{d,N_{1}}$.
 
+Rephrasing this in the language of splits, suppose we have a split
+which divides a set of units $N$ into a `left' set $N_{1}$ and a
+`right' set $N_{2}$ and that we have found $f^{*}_{d,N_{1}}$ and
+$f^{*}_{d,N_{2}}$, and thus also $R^{*}_{d,N_{1}}$ and
+$R^{*}_{d,N_{2}}$. Next, consider a new split which moves a set of
+units $N_3$ from right to left. We want an upper bound on the reward
+for the optimal tree for this new split. This reward is
+$R^{*}_{d,N_{1}\dot\cup N_{3}} +
+R^{*}_{d,N_{2}\setminus N_{3}}$. Using
+(\ref{eq:ub}) we have that $R^{*}_{d,N_{1}\dot\cup N_{3}} \leq
+R^{*}_{d,N_{1}} + \sum_{i \in N_{3}} \max_{a \in A} r(i,a)$. 
+
+Using (\ref{eq:lb}) we have that $R^{*}_{d,N_{2}\setminus N_{3}} \leq
+R(f^{*}_{d,N_{2}},N_{2}\setminus N_{3}) + \sum_{i \in
+  N_{3}}(r(i,f^{*}_{d,N_{2}}(i)) - \min_{a \in A} r(i,a) )$. So
+\begin{eqnarray}
+  \label{eq:splitub}
+  \lefteqn{
+  R^{*}_{d,N_{1}\dot\cup N_{3}} +
+  R^{*}_{d,N_{2}\setminus N_{3}}}&& \nonumber \\
+& \leq & R^{*}_{d,N_{1}} + 
+R(f^{*}_{d,N_{2}},N_{2}\setminus N_{3}) + \sum_{i \in
+  N_{3}} \max_{a \in A} r(i,a)   - \min_{a \in A} r(i,a) +
+r(i,f^{*}_{d,N_{2}}(i)) \nonumber \\
+& = & R^{*}_{d,N_{1}} + R^{*}_{d,N_{2}}  - \sum_{i \in
+  N_{3}} r(i,f^{*}_{d,N_{2}}(i))  + \sum_{i \in
+  N_{3}} \max_{a \in A} r(i,a)   - \min_{a \in A} r(i,a) +
+r(i,f^{*}_{d,N_{2}}(i)) \nonumber \\
+& = &  R^{*}_{d,N_{1}} + R^{*}_{d,N_{2}} + \sum_{i \in
+  N_{3}} \max_{a \in A} r(i,a)   - \min_{a \in A} r(i,a) \nonumber \\
+\end{eqnarray}
+
+\subsubsection{Simple proofs}
+\label{sec:simple}
+
+Claim:
+\begin{equation}
+  \label{eq:simpleleft}
+  R^{*}_{d,N_{1}\dot\cup N_{3}}  \leq R^{*}_{d,N_{1}} +    \sum_{i \in
+  N_{3}} \max_{a \in A} r(i,a)
+\end{equation}
+Proof. Assume opposite and get a contradiction:
+\begin{eqnarray*}
+  R^{*}_{d,N_{1}\dot\cup N_{3}} & > &R^{*}_{d,N_{1}} +    \sum_{i \in
+    N_{3}} \max_{a \in A} r(i,a)\\
+\Leftrightarrow  R(f^{*}_{d,N_{1}\dot\cup N_{3}},N_{1}) & > & R^{*}_{d,N_{1}} +    \sum_{i \in
+    N_{3}} \left[ \max_{a \in A} r(i,a) - R(f^{*}_{d,N_{1}\dot\cup N_{3}},i)\right]
+\end{eqnarray*}
+This is a contradiction.
+
+Claim:
+\begin{equation}
+  \label{eq:simpleright}
+    R^{*}_{d,N_{2}\setminus N_{3}}} \leq R^{*}_{d,N_{2}} - \sum_{i \in
+    N_{3}} \min_{a \in A} r(i,a)
+\end{equation}
+Proof. Assume opposite and get a contradiction:
+\begin{eqnarray*}
+    R^{*}_{d,N_{2}\setminus N_{3}}} & > & R^{*}_{d,N_{2}} - \sum_{i \in
+    N_{3}} \min_{a \in A} r(i,a) \\
+\Leftrightarrow  R(f^{*}_{d,N_{2}\setminus N_{3}},N_{2}) & > & R^{*}_{d,N_{2}} + \sum_{i \in
+    N_{3}} \left[  R(f^{*}_{d,N_{2}\setminus N_{3}},i) -  \min_{a \in A} r(i,a)\right]
+\end{eqnarray*}
+This is a contradiction.
+
+
+
 \begin{table}
   \centering
   \begin{tabular}{|l|l|} \hline
