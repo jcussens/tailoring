@@ -8,6 +8,7 @@
 #include "workspace.h"
 #include <assert.h>
 #include <stdlib.h>
+/* #include <stdio.h> */
 
 /* #define VERYVERBOSE  */
 
@@ -357,6 +358,7 @@ void find_best_split(
    /* if no chance of exceeding the cutoff, just abort */
    if( reward_cutoff_set && best_possible_reward <= reward_cutoff )
    {
+      /* printf("size=%d, depth=%d, best_possible=%g, cutoff=%g\n", get_size(units), depth, best_possible_reward, reward_cutoff); */
       *aborted = 1;
       return;
    }
@@ -432,6 +434,9 @@ void find_best_split(
 
          int left_reward_cutoff_set = 0;
          int right_reward_cutoff_set = 0;
+         int left_aborted = 0;
+         int right_aborted = 0;
+
          /* set to dummy values */
          double left_reward_cutoff = 0.0;
          double right_reward_cutoff = 0.0;
@@ -455,8 +460,15 @@ void find_best_split(
          
          /* find optimal tree for left data set */
          find_best_split(left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
-            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &left_perfect, left_reward_cutoff_set, left_reward_cutoff, aborted);
+            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &left_perfect, left_reward_cutoff_set, left_reward_cutoff, &left_aborted);
 
+         /* no tree from this split */
+         if( left_aborted )
+         {
+            /* printf("left tree aborted\n"); */
+            continue;
+         }
+         
          if( best_reward_set )
          {
             right_reward_cutoff = best_reward - get_reward(left_child);
@@ -474,7 +486,14 @@ void find_best_split(
          
          /* find optimal tree for right data set */
          find_best_split(right_child, depth-1, (CONST_UNITS) right_units, min_node_size, data_x, data_y,
-            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &right_perfect, right_reward_cutoff_set, right_reward_cutoff, aborted); 
+            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &right_perfect, right_reward_cutoff_set, right_reward_cutoff, &right_aborted); 
+
+         /* no tree from this split */
+         if( right_aborted )
+         {
+            /* printf("right tree aborted\n"); */
+            continue;
+         }
 
          /* tree is perfect if and only if both left and right tree are perfect */
          *perfect = left_perfect && right_perfect;
@@ -502,8 +521,16 @@ void find_best_split(
       }
    }
 
-   /* set node to best tree */
-   retrieve_best_tree(workspace, node, depth);
+   if( best_reward_set )
+   {
+      /* set node to best tree */
+      retrieve_best_tree(workspace, node, depth);
+   }
+   else
+   {
+      /* indicate that no acceptable tree found */
+      *aborted = 1;
+   }
 
 #ifdef VERYVERBOSE
    printf("Best split for depth=%d tree for dataset of size %d is split value %g for covariate %d with reward %g.\n",
