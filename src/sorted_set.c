@@ -425,7 +425,6 @@ void find_best_action(
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_y,         /**< number of rewards/actions */
    WORKSPACE*            workspace,          /**< workspace */
-   int                   perfect,            /**< perfect=1 if set is known to be perfect */
    double*               best_reward,        /**< (pointer to) best reward */
    int*                  best_action         /**< (pointer to) best action */
    )
@@ -447,27 +446,6 @@ void find_best_action(
    /* get reward for each action */
    sorted_set = sorted_sets[0];
 
-   /* if set known to be perfect then best action for first element is 
-      best for whole set */
-   if( perfect )
-   {
-      int elt = sorted_set->elements[0];
-      
-      *best_reward = data_y[elt];
-      *best_action = 0;
-      for( d = 1; d < num_cols_y; d++ )
-      {
-         const double* dyelt = data_y + d*num_rows;
-         if( dyelt[elt] > *best_reward )
-         {
-            *best_reward = dyelt[elt];
-            *best_action = d;
-         }
-      }
-      return;
-   }
-
-   
    for( d = 0; d < num_cols_y; d++ )
    {
       const double* dyelt = data_y + d*num_rows;

@@ -197,8 +197,7 @@ void level_one_learning(
    int                   num_cols_y,         /**< number of actions */
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
    const int*            worst_actions,      /**< worst_actions[i] is the worst action for unit i */
-   WORKSPACE*            workspace,          /**< workspace */
-   int*                  perfect             /**< *perfect=1 iff each unit assigned its best action, else *perfect=0 */
+   WORKSPACE*            workspace           /**< workspace */
    )
 {
    int p;
@@ -222,9 +221,7 @@ void level_one_learning(
 #endif
 
    UNITS right_units;
-
-   /* initially no perfect split has been found */
-   *perfect = 0;
+   int optimal_tree_found;
    
    /* get best possible reward */
    double rewardub = reward_ub(units, data_y, num_rows, best_actions);
@@ -235,7 +232,8 @@ void level_one_learning(
    get_children(node, &left_child, &right_child);
    
    /* consider each covariate for splitting */
-   for( p = 0; !(*perfect) && p < num_cols_x; p++)
+   optimal_tree_found = 0;
+   for( p = 0; !optimal_tree_found && p < num_cols_x; p++)
    {
       const double* data_xp = data_x+(p*num_rows);
       double splitval;
@@ -281,9 +279,9 @@ void level_one_learning(
             first_reward = 0;
 
             /* if this reward is best possible, just stop searching */
-            if( this_reward == rewardub )
+            if( this_reward >= rewardub )
             {
-               *perfect = 1;
+               optimal_tree_found = 1;
                break;
             }
          }
@@ -315,7 +313,6 @@ void find_best_split(
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
    const int*            worst_actions,      /**< worst_actions[i] is the worst action for unit i */
    WORKSPACE*            workspace,          /**< working space */
-   int*                  perfect,            /**< *perfect=1 iff each unit assigned its best action, else *perfect=0 */
    int                   reward_cutoff_set,  /**< whether a reward cutoff has been set */
    double                reward_cutoff,      /**< if reward_cutoff_set, only interested in trees with reward above this value. it's OK to abort search
                                               * if we know we will not find a tree above this value */
@@ -334,6 +331,8 @@ void find_best_split(
    UNITS left_units;
    UNITS right_units;
 
+   int optimal_tree_found;
+   
    assert( node != NULL );
    assert( depth >= 0 );
    assert( units != NULL);
@@ -360,30 +359,25 @@ void find_best_split(
       return;
    }
    
-   /* initially no perfect tree has been found */
-   *perfect = 0;
-   
    /* determine whether the dataset is pure, i.e. whether each unit has same best action */
    pure = is_pure(units, best_actions);
 
-   /* if this dataset is pure we can make a perfect leaf */
-   if( pure )
-      *perfect = 1;
-   
    /* nothing further to do if depth limit reached or if too few datapoints for splitting or if dataset is pure */
    if( depth == 0 || get_size(units) <= min_node_size || pure )
    {
       int best_action;
 
       /* find best action and its associated reward */
-      find_best_action(units, data_y, num_rows, num_cols_y, workspace, *perfect, &best_reward, &best_action);
+      find_best_action(units, data_y, num_rows, num_cols_y, workspace, &best_reward, &best_action);
 
       /* make node a leaf with found best action and associated reward */
       make_leaf(node, best_reward, best_action);
 
-      /* we did not abort */
-      *tree_set = 1;
-      
+      if( reward_cutoff_set && get_reward(node) <= reward_cutoff )
+         *tree_set = 0;
+      else
+         *tree_set = 1;
+
       /* all done */
       return;
    }
@@ -392,10 +386,12 @@ void find_best_split(
    if( depth == 1 )
    {
       level_one_learning(node, units, data_x, data_y,
-         num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, perfect); 
+         num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace); 
 
-      /* don't currently abort during level_one_learning */
-      *tree_set = 1;
+      if( reward_cutoff_set && get_reward(node) <= reward_cutoff )
+         *tree_set = 0;
+      else
+         *tree_set = 1;
       
       return;
    }
@@ -406,8 +402,9 @@ void find_best_split(
    assert( left_child != NULL );
    assert( right_child != NULL );
 
-   /* consider each covariate for splitting (stopping if we find a perfect split) */
-   for( p = 0; !(*perfect) && p < num_cols_x; p++)
+   /* consider each covariate for splitting (stopping if we find a provably optimal tree) */
+   optimal_tree_found = 0;
+   for( p = 0; !optimal_tree_found && p < num_cols_x; p++)
    {
       const double* data_xp = data_x+(p*num_rows);
 
@@ -429,11 +426,8 @@ void find_best_split(
       assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
-      while( !(*perfect) && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval, &elts, &nelts) )
+      while( !optimal_tree_found && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval, &elts, &nelts) )
       {
-
-         int left_perfect;
-         int right_perfect;
 
          int left_reward_cutoff_set = 0;
          int right_reward_cutoff_set = 0;
@@ -463,7 +457,7 @@ void find_best_split(
          
          /* find optimal tree for left data set */
          find_best_split(left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
-            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &left_perfect, left_reward_cutoff_set, left_reward_cutoff, &left_tree_set);
+            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, left_reward_cutoff_set, left_reward_cutoff, &left_tree_set);
 
          /* no tree from this split */
          if( !left_tree_set )
@@ -489,7 +483,7 @@ void find_best_split(
          
          /* find optimal tree for right data set */
          find_best_split(right_child, depth-1, (CONST_UNITS) right_units, min_node_size, data_x, data_y,
-            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &right_perfect,
+            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, 
             right_reward_cutoff_set, right_reward_cutoff, &right_tree_set); 
 
          /* no tree from this split */
@@ -499,9 +493,6 @@ void find_best_split(
             continue;
          }
 
-         /* tree is perfect if and only if both left and right tree are perfect */
-         *perfect = left_perfect && right_perfect;
-         
          /* get reward for this split */
          this_reward = get_reward(left_child) + get_reward(right_child);
 
@@ -520,6 +511,11 @@ void find_best_split(
                record_best_tree(workspace, node, depth);
                
                best_reward_set = 1;
+
+               /* if there can be no better tree, stop looking for one!
+                * use ">=" rather than"==" since should reduce numerical problems */
+               if( best_reward >= best_possible_reward )
+                  optimal_tree_found = 1;                 
             }
          }
       }
@@ -557,8 +553,7 @@ NODE* tree_search_simple(
   int                    num_rows,           /**< number of units in full dataset */
   int                    num_cols_x,         /**< number of covariates */
   int                    num_cols_y,         /**< number of actions */
-  double*                reward,             /**< reward for optimal tree */
-  int*                   perfect             /**< whether the returned optimal tree is 'perfect' */
+  double*                reward              /**< reward for optimal tree */
   )
 {
    NODE* tree = NULL;
@@ -602,12 +597,9 @@ NODE* tree_search_simple(
    assert( best_actions != NULL );
    assert( worst_actions != NULL );
    
-   /* record that we have yet to find a 'perfect' tree for this data */
-   *perfect = 0;
-
    /* find the optimal tree */
    find_best_split(tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,
-      num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, perfect,
+      num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, 
       reward_cutoff_set, reward_cutoff, &aborted); 
 
    *reward = get_reward(tree);

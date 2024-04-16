@@ -23,9 +23,7 @@ NODE* tree_search_simple(
   int                    num_rows,           /**< number of units in full dataset */
   int                    num_cols_x,         /**< number of covariates */
   int                    num_cols_y,         /**< number of actions */
-  double*                reward,             /**< reward for optimal tree */
-  int*                   perfect             /**< whether the returned optimal tree is 'perfect' */
-
+  double*                reward              /**< reward for optimal tree */
    );
 
 #ifdef __cplusplus

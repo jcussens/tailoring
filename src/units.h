@@ -78,7 +78,6 @@ void find_best_action(
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_y,         /**< number of rewards/actions */
    WORKSPACE*            workspace,          /**< workspace */
-   int                   perfect,            /**< perfect=1 if set is known to be perfect */
    double*               best_reward,        /**< (pointer to) best reward */
    int*                  best_action         /**< (pointer to) best action */
    );
