@@ -457,10 +457,6 @@ void find_best_split(
          find_best_split(left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &left_perfect, left_reward_cutoff_set, left_reward_cutoff, aborted);
 
-         /* abort if allowed */
-         if( *aborted )
-            return;
-
          if( best_reward_set )
          {
             right_reward_cutoff = best_reward - get_reward(left_child);
@@ -480,10 +476,6 @@ void find_best_split(
          find_best_split(right_child, depth-1, (CONST_UNITS) right_units, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &right_perfect, right_reward_cutoff_set, right_reward_cutoff, aborted); 
 
-         /* abort if allowed */
-         if( *aborted )
-            return;
-         
          /* tree is perfect if and only if both left and right tree are perfect */
          *perfect = left_perfect && right_perfect;
          
