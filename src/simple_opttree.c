@@ -319,7 +319,7 @@ void find_best_split(
    int                   reward_cutoff_set,  /**< whether a reward cutoff has been set */
    double                reward_cutoff,      /**< if reward_cutoff_set, only interested in trees with reward above this value. it's OK to abort search
                                               * if we know we will not find a tree above this value */
-   int*                  aborted             /**< *aborted=1 if search for an optimal tree was aborted */
+   int*                  tree_set            /**< *tree_set=1 if search for an optimal tree was not aborted */
   )
 {
 
@@ -349,9 +349,6 @@ void find_best_split(
    printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(units));
 #endif
 
-   /* default is not to abort */
-   *aborted = 0;
-   
    /* get quick poor bound on best possible reward */
    best_possible_reward = reward_ub(units, data_y, num_rows, best_actions);
 
@@ -359,7 +356,7 @@ void find_best_split(
    if( reward_cutoff_set && best_possible_reward <= reward_cutoff )
    {
       /* printf("size=%d, depth=%d, best_possible=%g, cutoff=%g\n", get_size(units), depth, best_possible_reward, reward_cutoff); */
-      *aborted = 1;
+      *tree_set = 0;
       return;
    }
    
@@ -384,6 +381,9 @@ void find_best_split(
       /* make node a leaf with found best action and associated reward */
       make_leaf(node, best_reward, best_action);
 
+      /* we did not abort */
+      *tree_set = 1;
+      
       /* all done */
       return;
    }
@@ -393,6 +393,9 @@ void find_best_split(
    {
       level_one_learning(node, units, data_x, data_y,
          num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, perfect); 
+
+      /* don't currently abort during level_one_learning */
+      *tree_set = 1;
       
       return;
    }
@@ -434,8 +437,8 @@ void find_best_split(
 
          int left_reward_cutoff_set = 0;
          int right_reward_cutoff_set = 0;
-         int left_aborted = 0;
-         int right_aborted = 0;
+         int left_tree_set = 0;
+         int right_tree_set = 0;
 
          /* set to dummy values */
          double left_reward_cutoff = 0.0;
@@ -460,10 +463,10 @@ void find_best_split(
          
          /* find optimal tree for left data set */
          find_best_split(left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
-            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &left_perfect, left_reward_cutoff_set, left_reward_cutoff, &left_aborted);
+            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &left_perfect, left_reward_cutoff_set, left_reward_cutoff, &left_tree_set);
 
          /* no tree from this split */
-         if( left_aborted )
+         if( !left_tree_set )
          {
             /* printf("left tree aborted\n"); */
             continue;
@@ -486,10 +489,11 @@ void find_best_split(
          
          /* find optimal tree for right data set */
          find_best_split(right_child, depth-1, (CONST_UNITS) right_units, min_node_size, data_x, data_y,
-            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &right_perfect, right_reward_cutoff_set, right_reward_cutoff, &right_aborted); 
+            num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, &right_perfect,
+            right_reward_cutoff_set, right_reward_cutoff, &right_tree_set); 
 
          /* no tree from this split */
-         if( right_aborted )
+         if( !right_tree_set )
          {
             /* printf("right tree aborted\n"); */
             continue;
@@ -525,11 +529,12 @@ void find_best_split(
    {
       /* set node to best tree */
       retrieve_best_tree(workspace, node, depth);
+      *tree_set = 1;
    }
    else
    {
       /* indicate that no acceptable tree found */
-      *aborted = 1;
+      *tree_set = 0;
    }
 
 #ifdef VERYVERBOSE

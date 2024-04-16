@@ -181,3 +181,46 @@ Fri 22 Mar 09:06:40 GMT 2024
 to debug R which calls C/C++ code do: "R -d gdb"
 CTRL-C to get gdb prompt
 "continue" to get back to R process	
+
+Tue 16 Apr 14:01:52 BST 2024
+
+Managed a depth 4 tree on IFLS.txt
+
+(base) uw20605@IT079795:~/repos/tailoring$ time ./simple_set untracked/IFLS.txt 2 4
+policy_tree object
+Tree depth:   4
+Actions:  1: "scores.DML" 2: "scores.DR"
+Variable splits:
+split_variable: "past_ind_mis"  split_value: 0
+  split_variable: "sex"  split_value: 0
+    split_variable: "region.f3-Jawa"  split_value: 0
+      split_variable: "province.f18"  split_value: 0
+        * action: 2
+        * action: 1
+      split_variable: "quintile.f4"  split_value: 0
+        * action: 2
+        * action: 1
+    split_variable: "province.f32"  split_value: 0
+      split_variable: "byear.f2013"  split_value: 0
+        * action: 2
+        * action: 1
+      split_variable: "agecat.f3"  split_value: 0
+        * action: 2
+        * action: 1
+  split_variable: "raskin_imp"  split_value: 0
+    split_variable: "region.f3-Jawa"  split_value: 0
+      split_variable: "byear.f2006"  split_value: 0
+        * action: 2
+        * action: 1
+      split_variable: "province.f33"  split_value: 0
+        * action: 1
+        * action: 2
+    split_variable: "region.f4-Bali.NTB.NTT"  split_value: 0
+      split_variable: "province.f33"  split_value: 0
+        * action: 2
+        * action: 1
+      split_variable: "poorcard_imp"  split_value: 0
+        * action: 2
+        * action: 1
+Reward: 159.406
+Git commit is 7f1a2ba.
