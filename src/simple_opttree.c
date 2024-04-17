@@ -197,7 +197,11 @@ void level_one_learning(
    int                   num_cols_y,         /**< number of actions */
    const int*            best_actions,       /**< best_actions[i] is the best action for unit i */
    const int*            worst_actions,      /**< worst_actions[i] is the worst action for unit i */
-   WORKSPACE*            workspace           /**< workspace */
+   WORKSPACE*            workspace,          /**< workspace */
+   int                   reward_cutoff_set,  /**< whether a reward cutoff has been set */
+   double                reward_cutoff,      /**< if reward_cutoff_set, only interested in trees with reward above this value. it's OK to abort search
+                                              * if we know we will not find a tree above this value */
+   int*                  tree_set            /**< *tree_set=1 if search for an optimal tree was not aborted */
    )
 {
    int p;
@@ -225,6 +229,13 @@ void level_one_learning(
    
    /* get best possible reward */
    double rewardub = reward_ub(units, data_y, num_rows, best_actions);
+
+   /* if no chance of exceeding the cutoff, just abort */
+   if( reward_cutoff_set && rewardub <= reward_cutoff )
+   {
+      *tree_set = 0;
+      return;
+   }
    
    /* get reward for each action if no split were done */
    find_nosplit_rewards(units, num_cols_y, data_y, num_rows, nosplit_rewards);
@@ -373,6 +384,7 @@ void find_best_split(
       /* make node a leaf with found best action and associated reward */
       make_leaf(node, best_reward, best_action);
 
+      /* record whether cutoff (if any) was beaten */
       if( reward_cutoff_set && get_reward(node) <= reward_cutoff )
          *tree_set = 0;
       else
@@ -386,7 +398,7 @@ void find_best_split(
    if( depth == 1 )
    {
       level_one_learning(node, units, data_x, data_y,
-         num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace); 
+         num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, reward_cutoff_set, reward_cutoff, tree_set); 
 
       if( reward_cutoff_set && get_reward(node) <= reward_cutoff )
          *tree_set = 0;
