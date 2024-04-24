@@ -245,6 +245,16 @@ void bottomupmergesort(
   }
 }
 
+/** return array of elements and size of array */
+void elements(
+   const SIMPLE_SET*     simple_set,         /**< set */
+   ELEMENT**             elts,               /**< (pointer to) elements */
+   int*                  nelts               /**< (pointer to) number of elements */
+   )
+{
+   *elts = simple_set->elements+simple_set->start;
+   *nelts = simple_set->n;
+}
 
 /** (for debugging) check that a simple_set is valid. If p!=-1 then check it is ready for splitting on covariate p */
 int units_ok(
@@ -414,7 +424,8 @@ void find_best_action(
    }
 }
 
-/** given that left_set and right_set are sorted according to covariate p, find next split and associated split value
+/** given that left_set and right_set are sorted according to covariate p, find next split (if any)  and associated split value
+ * if there is a split, then both left_set and right_set are updated accordingly.
  * @return 1 if there is a next split, otherwise 0
  */
 int next_split(

@@ -20,11 +20,11 @@
 #include <stdio.h>
 #endif
 
-/** given a set of elements, compute an upper bound on the improvement on the reward for a 'left' set of units
- * by adding these units to that left set
+/** given a set of elements, compute an upper bound on the improvement on the reward for any set of units A
+ * by adding these elements to A
  */
 static
-double update_bestworstdiff(
+double get_reward_improvement_ub(
    const ELEMENT*        elts,               /**< elements */
    int                   nelts,              /**< number of elements */
    int                   num_rows,           /**< number of units */
@@ -451,7 +451,7 @@ void find_best_split(
       double this_reward;
       double splitval;
 
-      double bestworstdiff = 0.0;
+      double cum_reward_improvement_ub = 0.0;
       ELEMENT* elts;
       int nelts;
 
@@ -467,7 +467,9 @@ void find_best_split(
       assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
 
-      /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
+      /* consider each split (x[p] <= splitval, x[p] > splitval) of the data 
+       * elts, a set of size nelts, are the elements moved from right to left
+       */
       while( !optimal_tree_found && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval, &elts, &nelts) )
       {
 
@@ -485,13 +487,18 @@ void find_best_split(
 
          if( have_last_reward )
          {
-            bestworstdiff += update_bestworstdiff(elts, nelts, num_rows, data_y, best_actions, worst_actions);
-            if( last_reward + bestworstdiff <= best_reward )
+            cum_reward_improvement_ub += get_reward_improvement_ub(elts, nelts, num_rows, data_y, best_actions, worst_actions);
+            if( last_reward + cum_reward_improvement_ub <= best_reward )
             {
                continue;
             }
          }
 
+         /* can view elements now on right as shifted from no split and thus do 'symmetric' bounding */
+         /* not clear that following test provides a speed up, so not used at present */
+         /* elements(right_units, &elts, &nelts); */
+         /* if( dummy_split_reward + get_reward_improvement_ub(elts, nelts, num_rows, data_y, best_actions, worst_actions) <= best_reward ) */
+         /*    continue; */
          
 #ifdef VERYVERBOSE
          printf("Working on split value %g for covariate %d.\n", splitval, p);
@@ -538,10 +545,10 @@ void find_best_split(
          /* get reward for this split */
          this_reward = get_reward(left_child) + get_reward(right_child);
 
-         /* record that reward for this split was found and reset bestworstdiff */
+         /* record that reward for this split was found and reset cumulative reward improvement upper bound */
          last_reward = this_reward;
          have_last_reward = 1;
-         bestworstdiff = 0.0;
+         cum_reward_improvement_ub = 0.0;
          
          /* if best so far, update */
          if( !reward_cutoff_set || this_reward > reward_cutoff )

@@ -467,6 +467,18 @@ void find_best_action(
    }
 }
 
+/** return array of elements and size of array */
+void elements(
+   const SORTED_SET**    sorted_sets,        /**< sorted sets */
+   ELEMENT**             elts,               /**< (pointer to) elements */
+   int*                  nelts               /**< (pointer to) number of elements */
+   )
+{
+   *elts = sorted_sets[0]->elements;
+   *nelts = sorted_sets[0]->n;
+}
+
+
 /** find next splitting value ('splitval') for covariate p (if any) and move units from right sorted set for p to left so
  * that x[p] <= splitval for all units on left and x[p] > splitval on right. 
  * Return 1 if a split found, else 0

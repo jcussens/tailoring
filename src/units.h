@@ -109,11 +109,10 @@ void initialise_units(
    UNITS*                right_units         /**< pointer to output right units */
    );
 
-
-/** find next splitting value ('splitval') for covariate p (if any) and move units from right to left so
- * that x[p] <= splitval for all units on left and x[p] > splitval on right. 
- * Return 1 if a split found, else 0
-*/
+/** given that left_set and right_set are sorted according to covariate p, find next split (if any)  and associated split value
+ * if there is a split, then both left_units and right_units are updated accordingly.
+ * @return 1 if there is a next split, otherwise 0
+ */
 int next_split(
    UNITS                 left_units,         /**< units on the left */
    UNITS                 right_units,        /**< units on the right */ 
@@ -136,6 +135,14 @@ int next_shallow_split(
    ELEMENT**             elts,               /**< (pointer to) the elements moved */
    int*                  nelts               /**< (pointer to) number of elements moved */
    );
+
+/** return array of elements and size of array for a set of units */
+void elements(
+   CONST_UNITS           units,              /**< units */
+   ELEMENT**             elts,               /**< (pointer to) elements */
+   int*                  nelts               /**< (pointer to) number of elements */
+   );
+
 
 #ifdef __cplusplus
 }
