@@ -20,7 +20,9 @@
 #include <stdio.h>
 #endif
 
-/** TODO */
+/** given a set of elements, compute an upper bound on the improvement on the reward for a 'left' set of units
+ * by adding these units to that left set
+ */
 static
 double update_bestworstdiff(
    const ELEMENT*        elts,               /**< elements */
@@ -343,6 +345,7 @@ void find_best_split(
    UNITS right_units;
 
    int optimal_tree_found;
+   double dummy_split_reward;
    
    assert( node != NULL );
    assert( depth >= 0 );
@@ -408,6 +411,31 @@ void find_best_split(
       return;
    }
 
+   /* find reward for 'dummy' split where there are no units on one side and all units on the other */
+   /* no cutoff is used here since the primary reason for finding this tree is to bound the reward of trees
+      built using 'similar' splits */
+   /* also record this tree as best so far */
+   find_best_split(node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
+      best_actions, worst_actions, workspace, 0, reward_cutoff, tree_set);
+   assert( *tree_set );
+   dummy_split_reward = get_reward(node);
+
+   optimal_tree_found = 0;
+   if( !reward_cutoff_set || dummy_split_reward > reward_cutoff )
+   {
+      best_reward = dummy_split_reward;
+      record_best_tree(workspace, node, depth);
+      best_reward_set = 1;
+      /* if there can be no better tree, stop looking for one!
+       * use ">=" rather than"==" since should reduce numerical problems */
+      if( best_reward >= best_possible_reward )
+      {
+         optimal_tree_found = 1;
+         return;
+      }
+   }
+
+   
    /* get left and right subtrees */
    get_children(node, &left_child, &right_child);
 
@@ -415,20 +443,21 @@ void find_best_split(
    assert( right_child != NULL );
 
    /* consider each covariate for splitting (stopping if we find a provably optimal tree) */
-   optimal_tree_found = 0;
+
    for( p = 0; !optimal_tree_found && p < num_cols_x; p++)
    {
       const double* data_xp = data_x+(p*num_rows);
 
       double this_reward;
-      double last_reward;
-
       double splitval;
 
-      int have_last_reward = 0;
       double bestworstdiff = 0.0;
       ELEMENT* elts;
       int nelts;
+
+      /* we can view the reward for the dummy split as a split just before first split */
+      double last_reward = dummy_split_reward;
+      int have_last_reward = 1;
       
       /* initialise so that left_units is empty and right_units is a copy of units 
          ready for splitting on covariate p */
@@ -436,6 +465,7 @@ void find_best_split(
 
       assert( units_ok((CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
       assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
+
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data */
       while( !optimal_tree_found && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval, &elts, &nelts) )

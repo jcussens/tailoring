@@ -132,7 +132,7 @@ void record_level_one_split(
 
 /* is a node a leaf node? */
 int is_leaf(
-   NODE*                 node                /**< node */
+   const NODE*           node                /**< node */
    );
 
 #ifdef PRINTING_ALLOWED

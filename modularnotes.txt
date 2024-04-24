@@ -224,3 +224,8 @@ split_variable: "past_ind_mis"  split_value: 0
         * action: 1
 Reward: 159.406
 Git commit is 7f1a2ba.
+
+Wed 17 Apr 12:07:17 BST 2024
+
+commit b49229b and the 2 commits preceding all have basically the same
+time (37 seconds) on IFLS.txt depth=3 trees.

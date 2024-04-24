@@ -212,7 +212,7 @@ void print_tree_policytree(
  * @return 1 if node is a leaf, else 0
 */
 int is_leaf(
-   NODE*                 node                /**< node */
+   const NODE*           node                /**< node */
    )
 {
    assert(node != NULL);
@@ -304,10 +304,11 @@ void tree_copy(
   target->value = source->value;
   target->reward = source->reward;
   target->action_id = source->action_id;
-  if( source->left_child != NULL)
+  if( !is_leaf(source) )
+  {
     tree_copy(source->left_child,target->left_child);
-  if( source->right_child != NULL)
     tree_copy(source->right_child,target->right_child);
+  }
 }
 
 /** add a given reward to those nodes in a tree which a particular element visits */
