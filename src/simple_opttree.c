@@ -495,10 +495,11 @@ void find_best_split(
          }
 
          /* can view elements now on right as shifted from no split and thus do 'symmetric' bounding */
+         /* as soon as right_units has few enough elements so that bound below best so far, then can give up on this covariate */
          /* not clear that following test provides a speed up, so not used at present */
-         /* elements(right_units, &elts, &nelts); */
+         /* elements((CONST_UNITS) right_units, &elts, &nelts); */
          /* if( dummy_split_reward + get_reward_improvement_ub(elts, nelts, num_rows, data_y, best_actions, worst_actions) <= best_reward ) */
-         /*    continue; */
+         /*    break; */
          
 #ifdef VERYVERBOSE
          printf("Working on split value %g for covariate %d.\n", splitval, p);
