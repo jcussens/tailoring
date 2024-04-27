@@ -370,7 +370,7 @@ int simple_set_is_pure(
   return 1;
 }
 
-/** get common size of sorted sets */
+/** get size of set */
 int simple_set_get_size(
    const SIMPLE_SET*     simple_set          /**< set */
    )
@@ -484,7 +484,7 @@ int simple_set_next_split(
    
 }
 
-/** make a 'shallow' copy of source sorted sets */
+/** make a 'shallow' copy of source set */
 SIMPLE_SET* simple_set_shallow_copy_units(
    const SIMPLE_SET*     source,            /**< source  */
    int                   num_cols_x         /**< number of covariates */
@@ -549,8 +549,8 @@ KEY* get_key(
 
 
 
-/** initialise so that each left_sorted_set (for each covariate) is empty and each 
- *  right_sorted_set is a copy of the sorted set (for that covariate) 
+/** initialise so that left_simple_set is empty and  
+ *  right_simple_set is a copy of the simple_set sorted on covariate p
 */
 void simple_set_initialise_units(
    const SIMPLE_SET*     simple_set,         /**< input set */
@@ -565,6 +565,7 @@ void simple_set_initialise_units(
    SIMPLE_SET* left = NULL;
    SIMPLE_SET* right = NULL;
 
+   /* TODO change names of 2 functions */
    left = (SIMPLE_SET*) get_left_sorted_sets(workspace,depth);
    right = (SIMPLE_SET*) get_right_sorted_sets(workspace,depth);
 
@@ -586,7 +587,7 @@ void simple_set_initialise_units(
 }
 
 
-/** initialise so that right_simple_set is a copy of the sorted set and we are ready to look for depth=1 splits using covariate p */
+/** initialise so that right_simple_set is a copy of the input set and we are ready to look for depth=1 splits using covariate p */
 void simple_set_shallow_initialise_units(
    const SIMPLE_SET*     simple_set,         /**< input set */
    int                   p,                  /**< splitting covariate */
@@ -747,7 +748,7 @@ int simple_set_next_shallow_split(
 
 /** for each action find (total) reward if that action applied to each unit in a set of units */
 void simple_set_find_nosplit_rewards(
-   const SIMPLE_SET*     simple_set,         /**< sorted sets */
+   const SIMPLE_SET*     simple_set,         /**< simple set */
    int                   num_cols_y,         /**< number of actions */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of rows in the data */
@@ -775,3 +776,11 @@ void simple_set_find_nosplit_rewards(
    }
 }
 
+/** get number of distinct values of a covariate */
+int nkeyvals(
+   const SIMPLE_SET*     simple_set,         /**< simple set */
+   int                   i                   /**< covariate */
+   )
+{
+   return simple_set->nkeyvals[i];
+}

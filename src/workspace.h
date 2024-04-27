@@ -50,7 +50,6 @@ double* get_rewards_space_zeroed(
    WORKSPACE*            workspace           /**< workspace */
    );
 
-
 /** get left sorted sets associated with a given depth */
 UNITS get_left_sorted_sets(
    const WORKSPACE*      workspace,          /**< workspace */
@@ -62,7 +61,6 @@ UNITS get_right_sorted_sets(
    const WORKSPACE*      workspace,          /**< workspace */
    int                   depth               /**< depth */
    );
-
 
 /** record a tree of given depth in workspace as the best tree */
 void record_best_tree(

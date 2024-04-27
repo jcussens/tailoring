@@ -96,7 +96,11 @@ int process_commandline(
       printf("Warning: tree depth set to 0.\n");
 
    if( argc > 4)
+   {
       *arg4 = atoi(argv[4]);
+      if(*arg4 != 0 && *arg4 != 1)
+         printf("Warning: Fourth argument should be either 0 or 1.\n");
+   }
    else
       *arg4 = -1;
    
@@ -174,9 +178,12 @@ int main(
    /* set default strategy */
    use_simple_sets(strategy);
 
-   /* a command line value of 1 indicates wanting to use sorted sets */
-   if( arg4 == 1 )
-         use_sorted_sets(strategy);
+   if( arg4 == 0 )
+      use_simple_sets(strategy);
+   else if( arg4 == 1 )
+      use_sorted_sets(strategy);
+   else
+      decide_datatype(strategy, data_x, num_rows, num_cols_x);
    
    if( num_rows > 0 )
    {

@@ -32,6 +32,12 @@ void use_simple_sets(
    STRATEGY*             strategy            /**< solving strategy */
    );
 
+void decide_datatype(
+   STRATEGY*             strategy,           /**< solving strategy */
+   const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+   int                   num_rows,           /**< number of units in full dataset */
+   int                   num_cols_x          /**< number of covariates */
+   );
 
 #ifdef __cplusplus
 }
