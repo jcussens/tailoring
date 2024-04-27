@@ -14,6 +14,7 @@ extern "C" {
 
 /** make workspace to provide pre-allocated space for various functions */
 WORKSPACE* make_workspace(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
    int                   depth,              /**< (maximum) depth of returned tree */
    CONST_UNITS           initial_sorted_sets, /**< initial sorted sets */
    int                   num_rows,           /**< number of units in full dataset */
@@ -23,6 +24,7 @@ WORKSPACE* make_workspace(
 
 /** free the workspace */
 void free_workspace(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
    WORKSPACE*            workspace,          /**< workspace */
    int                   depth,              /**< (maximum) depth of returned tree */
    int                   num_cols_x          /**< number of covariates */

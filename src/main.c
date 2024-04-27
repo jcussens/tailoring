@@ -8,6 +8,7 @@
 #include "reading.h"
 #include "simple_opttree.h"
 #include "tree.h"
+#include "strategy.h"
 
 #define DEFAULT_MIN_NODE_SIZE 1 /**< default size for minimum number of units to be in a leaf */
 #define DEFAULT_DEPTH 3         /**< default depth limit for a policy tree */
@@ -119,6 +120,8 @@ int main(
    
    int min_node_size = DEFAULT_MIN_NODE_SIZE;
 
+   STRATEGY* strategy = get_unint_strategy();
+   
    /* NODE** nodes; */
    /* int num_nodes; */
    /* int i; */
@@ -156,10 +159,13 @@ int main(
    {
       printf("Warning: No data supplied.\n");     
    }
+
+   /* just fix on simple sets for time being */
+   use_simple_sets(strategy);
    
    if( num_rows > 0 )
    {
-      tree = tree_search_simple(depth, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, &reward);
+      tree = tree_search_simple(strategy, depth, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, &reward);
       
       print_tree_policytree(tree, covnames, depth, num_cols_y, actionnames);
       
@@ -180,6 +186,7 @@ int main(
    /* } */
    
    freedata(num_cols_x, num_cols_y, covnames, actionnames, data_x, data_y, tree);
+   free(strategy);
    
    return 0;
 }

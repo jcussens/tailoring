@@ -190,6 +190,7 @@ void store_best_worst_actions(
  */
 static
 void level_one_learning(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
    NODE*                 node,               /**< uninitialised tree to be populated with optimal tree */
    CONST_UNITS           units,              /**< the units */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
@@ -230,7 +231,7 @@ void level_one_learning(
    int optimal_tree_found;
    
    /* get best possible reward */
-   double rewardub = reward_ub(units, data_y, num_rows, best_actions);
+   double rewardub = reward_ub(strategy, units, data_y, num_rows, best_actions);
 
    /* if no chance of exceeding the cutoff, just abort */
    if( reward_cutoff_set && rewardub <= reward_cutoff )
@@ -240,7 +241,7 @@ void level_one_learning(
    }
    
    /* get reward for each action if no split were done */
-   find_nosplit_rewards(units, num_cols_y, data_y, num_rows, nosplit_rewards);
+   find_nosplit_rewards(strategy, units, num_cols_y, data_y, num_rows, nosplit_rewards);
 
    get_children(node, &left_child, &right_child);
    
@@ -259,13 +260,13 @@ void level_one_learning(
 
       /* initialise so that right_units is a copy of units 
          ready for splitting on covariate p */
-      shallow_initialise_units(units, p, num_cols_x, workspace, &right_units);
+      shallow_initialise_units(strategy, units, p, num_cols_x, workspace, &right_units);
 
-      assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
+      assert( units_ok(strategy, (CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data 
          elts[0] ... elts[nelts-1] are the units moved from right to left */
-      while( next_shallow_split( (CONST_UNITS) right_units, p, idx, data_xp, &splitval, &elts, &nelts) )
+      while( next_shallow_split(strategy, (CONST_UNITS) right_units, p, idx, data_xp, &splitval, &elts, &nelts) )
       {
          double this_reward;
          
@@ -314,6 +315,7 @@ void level_one_learning(
  */
 static
 void find_best_split(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
    NODE*                 node,               /**< uninitialised tree to be populated with optimal tree */
    int                   depth,              /**< depth of tree */
    CONST_UNITS           units,              /**< the units */
@@ -356,14 +358,14 @@ void find_best_split(
    assert( num_cols_y >= 1 );
    assert( num_cols_x == 0 || data_x != NULL );
    assert( data_y != NULL );
-   assert( units_ok(units, -1, data_x, num_rows, num_cols_x) );
+   assert( units_ok(strategy, units, -1, data_x, num_rows, num_cols_x) );
 
 #ifdef VERBOSE
    printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(units));
 #endif
 
    /* get quick poor bound on best possible reward */
-   best_possible_reward = reward_ub(units, data_y, num_rows, best_actions);
+   best_possible_reward = reward_ub(strategy, units, data_y, num_rows, best_actions);
 
    /* if no chance of exceeding the cutoff, just abort */
    if( reward_cutoff_set && best_possible_reward <= reward_cutoff )
@@ -374,15 +376,15 @@ void find_best_split(
    }
    
    /* determine whether the dataset is pure, i.e. whether each unit has same best action */
-   pure = is_pure(units, best_actions);
+   pure = is_pure(strategy, units, best_actions);
 
    /* nothing further to do if depth limit reached or if too few datapoints for splitting or if dataset is pure */
-   if( depth == 0 || get_size(units) <= min_node_size || pure )
+   if( depth == 0 || get_size(strategy, units) <= min_node_size || pure )
    {
       int best_action;
 
       /* find best action and its associated reward */
-      find_best_action(units, data_y, num_rows, num_cols_y, workspace, &best_reward, &best_action);
+      find_best_action(strategy, units, data_y, num_rows, num_cols_y, workspace, &best_reward, &best_action);
 
       /* make node a leaf with found best action and associated reward */
       make_leaf(node, best_reward, best_action);
@@ -400,7 +402,7 @@ void find_best_split(
    /* use specialised routine if only one split allowed */
    if( depth == 1 )
    {
-      level_one_learning(node, units, data_x, data_y,
+      level_one_learning(strategy, node, units, data_x, data_y,
          num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, reward_cutoff_set, reward_cutoff, tree_set); 
 
       if( reward_cutoff_set && get_reward(node) <= reward_cutoff )
@@ -415,7 +417,7 @@ void find_best_split(
    /* no cutoff is used here since the primary reason for finding this tree is to bound the reward of trees
       built using 'similar' splits */
    /* also record this tree as best so far */
-   find_best_split(node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
+   find_best_split(strategy, node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
       best_actions, worst_actions, workspace, 0, reward_cutoff, tree_set);
    assert( *tree_set );
    dummy_split_reward = get_reward(node);
@@ -461,16 +463,16 @@ void find_best_split(
       
       /* initialise so that left_units is empty and right_units is a copy of units 
          ready for splitting on covariate p */
-      initialise_units(units, p, depth, num_cols_x, workspace, &left_units, &right_units);
+      initialise_units(strategy, units, p, depth, num_cols_x, workspace, &left_units, &right_units);
 
-      assert( units_ok((CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
-      assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
+      assert( units_ok(strategy, (CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
+      assert( units_ok(strategy, (CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data 
        * elts, a set of size nelts, are the elements moved from right to left
        */
-      while( !optimal_tree_found && next_split(left_units, right_units, p, data_xp, num_cols_x, &splitval, &elts, &nelts) )
+      while( !optimal_tree_found && next_split(strategy, left_units, right_units, p, data_xp, num_cols_x, &splitval, &elts, &nelts) )
       {
 
          int left_reward_cutoff_set = 0;
@@ -482,8 +484,8 @@ void find_best_split(
          double left_reward_cutoff = 0.0;
          double right_reward_cutoff = 0.0;
          
-         assert( units_ok((CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
-         assert( units_ok((CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
+         assert( units_ok(strategy, (CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
+         assert( units_ok(strategy, (CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
          if( have_last_reward )
          {
@@ -506,7 +508,7 @@ void find_best_split(
 #endif
          
          /* find optimal tree for left data set */
-         find_best_split(left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
+         find_best_split(strategy, left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, left_reward_cutoff_set, left_reward_cutoff, &left_tree_set);
 
          /* no tree from this split */
@@ -532,7 +534,7 @@ void find_best_split(
          }
          
          /* find optimal tree for right data set */
-         find_best_split(right_child, depth-1, (CONST_UNITS) right_units, min_node_size, data_x, data_y,
+         find_best_split(strategy, right_child, depth-1, (CONST_UNITS) right_units, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, 
             right_reward_cutoff_set, right_reward_cutoff, &right_tree_set); 
 
@@ -585,7 +587,7 @@ void find_best_split(
 
 #ifdef VERYVERBOSE
    printf("Best split for depth=%d tree for dataset of size %d is split value %g for covariate %d with reward %g.\n",
-      depth, get_size(units), get_value(node), get_index(node), get_reward(node));
+      depth, get_size(strategy, units), get_value(node), get_index(node), get_reward(node));
 #endif
 
 }
@@ -596,15 +598,16 @@ void find_best_split(
  * @return An optimal policy tree
  */
 NODE* tree_search_simple(
-  int                    depth,              /**< (maximum) depth of returned tree */
-  int                    min_node_size,      /**< smallest terminal node size */
-  const double*          data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
-  const double*          data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
-  int                    num_rows,           /**< number of units in full dataset */
-  int                    num_cols_x,         /**< number of covariates */
-  int                    num_cols_y,         /**< number of actions */
-  double*                reward              /**< reward for optimal tree */
-  )
+   const STRATEGY*        strategy,           /**< tree-building strategy */
+   int                    depth,              /**< (maximum) depth of returned tree */
+   int                    min_node_size,      /**< smallest terminal node size */
+   const double*          data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
+   const double*          data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
+   int                    num_rows,           /**< number of units in full dataset */
+   int                    num_cols_x,         /**< number of covariates */
+   int                    num_cols_y,         /**< number of actions */
+   double*                reward              /**< reward for optimal tree */
+   )
 {
    NODE* tree = NULL;
    UNITS units = NULL;
@@ -635,11 +638,11 @@ NODE* tree_search_simple(
    tree = make_tree(depth);
 
    /* make initial set of units from covariate data */
-   units = make_units(data_x, num_rows, num_cols_x);
-   assert( units_ok( (CONST_UNITS) units, -1, data_x, num_rows, num_cols_x) );
+   units = make_units(strategy, data_x, num_rows, num_cols_x);
+   assert( units_ok(strategy, (CONST_UNITS) units, -1, data_x, num_rows, num_cols_x) );
    
    /* create working spaces of various sorts (trees, units, arrays of rewards, etc) */
-   workspace = make_workspace(depth, (CONST_UNITS) units, num_rows, num_cols_x, num_cols_y);
+   workspace = make_workspace(strategy, depth, (CONST_UNITS) units, num_rows, num_cols_x, num_cols_y);
 
    /* compute and store best and worst actions for each unit */
    store_best_worst_actions(data_y, num_rows, num_cols_y, &best_actions, &worst_actions);
@@ -648,7 +651,7 @@ NODE* tree_search_simple(
    assert( worst_actions != NULL );
    
    /* find the optimal tree */
-   find_best_split(tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,
+   find_best_split(strategy, tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,
       num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, 
       reward_cutoff_set, reward_cutoff, &aborted); 
 
@@ -657,8 +660,8 @@ NODE* tree_search_simple(
    /* free memory */
    free(best_actions);
    free(worst_actions);
-   free_workspace(workspace, depth, num_cols_x);
-   free_units(units, num_cols_x);
+   free_workspace(strategy, workspace, depth, num_cols_x);
+   free_units(strategy, units, num_cols_x);
 
    /* remove any nodes below leaves, and merge leaves with the same action */
    fix_tree(tree);

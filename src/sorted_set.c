@@ -4,6 +4,7 @@
  */
 #include "units.h"
 #include "workspace.h"
+#include "sorted_set.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -17,9 +18,9 @@
 */
 struct sorted_set
 {
-  ELEMENT*               elements;           /**< the sorted set */
-  int                    n;                  /**< size of subset */
-  int*                   key;                /**< sorting key: if i < j then key[elements[i]] < key[elements[j]]  */
+   ELEMENT*               elements;           /**< the sorted set */
+   int                    n;                  /**< size of subset */
+   int*                   key;                /**< sorting key: if i < j then key[elements[i]] < key[elements[j]]  */
 };
 
 /** comparison function for sorting elements in ascending order */
@@ -288,7 +289,7 @@ void remove_elements_at_start(
 }
 
 /** for debugging only: check that a non-empty collection of sorted sets represent the same underlying set and that each is appropriately sorted */
-int units_ok(
+int sorted_set_units_ok(
    const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
    int                   p,                  /**< if !=-1 then units must be ready for splitting on covariate p */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
@@ -363,7 +364,7 @@ int units_ok(
 /** get the reward for a set if all units in the set were assigned their best action *
  * @return the reward for a set if all units in the set were assigned their best action *
  */
-double reward_ub(
+double sorted_set_reward_ub(
    const SORTED_SET**    sorted_sets,        /**< set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */
@@ -385,7 +386,7 @@ double reward_ub(
  * A pure set is one where each unit has the same best action
  * @return 1 if the set is pure, else 0
  */
-int is_pure(
+int sorted_set_is_pure(
    const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
    const int*            best_actions        /**< best_actions[i] is the best action for unit i */
   )
@@ -408,7 +409,7 @@ int is_pure(
 }
 
 /** get common size of sorted sets */
-int get_size(
+int sorted_set_get_size(
    const SORTED_SET**    sorted_sets         /**< sorted sets */
    )
 {
@@ -419,7 +420,7 @@ int get_size(
 }
 
 /** find best action and its associated reward for a set of units */
-void find_best_action(
+void sorted_set_find_best_action(
    const SORTED_SET**    sorted_sets,        /**< sorted sets, representing a common unsorted set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */
@@ -468,7 +469,7 @@ void find_best_action(
 }
 
 /** return array of elements and size of array */
-void elements(
+void sorted_set_elements(
    const SORTED_SET**    sorted_sets,        /**< sorted sets */
    ELEMENT**             elts,               /**< (pointer to) elements */
    int*                  nelts               /**< (pointer to) number of elements */
@@ -483,7 +484,7 @@ void elements(
  * that x[p] <= splitval for all units on left and x[p] > splitval on right. 
  * Return 1 if a split found, else 0
  */
-int next_split(
+int sorted_set_next_split(
    SORTED_SET**          left_sorted_sets,   /**< left sorted sets, one for each covariate */
    SORTED_SET**          right_sorted_sets,  /**< right sorted sets, one for each covariate */ 
    int                   p,                  /**< covariate to split on */
@@ -554,7 +555,7 @@ int next_split(
 }
 
 /** make a 'shallow' copy of source sorted sets */
-SORTED_SET** shallow_copy_units(
+SORTED_SET** sorted_set_shallow_copy_units(
    const SORTED_SET**    sources,            /**< source sorted sets */
    int                   nsets               /**< number of sources */
    )
@@ -626,7 +627,7 @@ SORTED_SET* make_sorted_set(
 /** initialise so that each left_sorted_set (for each covariate) is empty and each 
  *  right_sorted_set is a copy of the sorted set (for that covariate) 
 */
-void shallow_initialise_units(
+void sorted_set_shallow_initialise_units(
    const SORTED_SET**    sorted_sets,        /**< input sorted sets */
    int                   p,                  /**< splitting covariate */
    int                   num_cols_x,         /**< number of covariates */
@@ -639,7 +640,7 @@ void shallow_initialise_units(
    /* get common size of sorted sets */
    int n = (sorted_sets[0])->n;
    
-   rights = get_right_sorted_sets(workspace,1);
+   rights = (SORTED_SET**) get_right_sorted_sets(workspace,1);
 
    assert( rights != NULL );
    
@@ -657,7 +658,7 @@ void shallow_initialise_units(
 /** initialise so that each left_sorted_set (for each covariate) is empty and each 
  *  right_sorted_set is a copy of the sorted set (for that covariate) 
 */
-void initialise_units(
+void sorted_set_initialise_units(
    const SORTED_SET**    sorted_sets,        /**< input sorted sets */
    int                   p,                  /**< splitting covariate */
    int                   depth,              /**< depth of associated node */
@@ -673,8 +674,8 @@ void initialise_units(
    /* get common size of sorted sets */
    int n = (sorted_sets[0])->n;
    
-   lefts = get_left_sorted_sets(workspace,depth);
-   rights = get_right_sorted_sets(workspace,depth);
+   lefts = (SORTED_SET**) get_left_sorted_sets(workspace,depth);
+   rights = (SORTED_SET**) get_right_sorted_sets(workspace,depth);
 
    assert( lefts != NULL );
    assert( rights != NULL );
@@ -693,7 +694,7 @@ void initialise_units(
 }
 
 /** make initial sorted sets one for each covariate, if there are no covariates create a single 'dummy' sorted set */
-SORTED_SET** make_units(
+SORTED_SET** sorted_set_make_units(
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    int                   num_rows,           /**< number of units in full dataset */
    int                   num_cols_x          /**< number of covariates */
@@ -744,7 +745,7 @@ void shallow_free_sorted_set(
 
 
 /** free a set of units */
-void free_units(
+void sorted_set_free_units(
    SORTED_SET**          sorted_sets,        /**< sorted sets */
    int                   nsets               /**< number of sorted sets */
    )
@@ -757,7 +758,7 @@ void free_units(
 }
 
 /** free a shallow copy of a set of units */
-void shallow_free_units(
+void sorted_set_shallow_free_units(
    SORTED_SET**          sorted_sets,        /**< sorted sets */
    int                   nsets               /**< number of sorted sets */
    )
@@ -771,7 +772,7 @@ void shallow_free_units(
 
 
 /** find units with same covariate value starting from a given index */
-int next_shallow_split(
+int sorted_set_next_shallow_split(
    const SORTED_SET**    right_sorted_sets,  /**< sorted set */
    int                   p,                  /**< covariate to split on */
    int                   start,              /**< starting index */
@@ -808,7 +809,7 @@ int next_shallow_split(
 }
 
 /** for each action find (total) reward if that action applied to each unit in a set of units */
-void find_nosplit_rewards(
+void sorted_set_find_nosplit_rewards(
    const SORTED_SET**    sorted_sets,        /**< sorted sets */
    int                   num_cols_y,         /**< number of actions */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */

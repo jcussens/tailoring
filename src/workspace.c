@@ -27,6 +27,7 @@ struct workspace
 
 /** make workspace to provide pre-allocated space for various functions */
 WORKSPACE* make_workspace(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
    int                   depth,              /**< (maximum) depth of returned tree */
    CONST_UNITS           initial_units,      /**< initial units */
    int                   num_rows,           /**< number of units in full dataset */
@@ -53,11 +54,11 @@ WORKSPACE* make_workspace(
       workspace->sets[i] = (UNITS*) malloc(ndepths*sizeof(UNITS));
       for( d = 0; d < ndepths; d++)
       {
-         workspace->sets[i][d] = shallow_copy_units(initial_units, num_cols_x);
+         workspace->sets[i][d] = shallow_copy_units(strategy, initial_units, num_cols_x);
       }
    }
 
-   workspace->tmpunits = shallow_copy_units(initial_units, num_cols_x);
+   workspace->tmpunits = shallow_copy_units(strategy, initial_units, num_cols_x);
    workspace->tmp2 = (int*) malloc(num_rows*sizeof(int));
 
    workspace->trees = (NODE**) malloc(ndepths*sizeof(NODE*));
@@ -71,6 +72,7 @@ WORKSPACE* make_workspace(
 
 /** free the workspace */
 void free_workspace(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
    WORKSPACE*            workspace,          /**< workspace */
    int                   depth,              /**< (maximum) depth of returned tree */
    int                   num_cols_x          /**< number of covariates */
@@ -88,13 +90,13 @@ void free_workspace(
    {
       for( d = 0; d < ndepths; d++)
       {
-         shallow_free_units(workspace->sets[i][d], num_cols_x);
+         shallow_free_units(strategy, workspace->sets[i][d], num_cols_x);
       }
       free(workspace->sets[i]);
    }
    free(workspace->sets);
 
-   shallow_free_units(workspace->tmpunits, num_cols_x);
+   shallow_free_units(strategy, workspace->tmpunits, num_cols_x);
    free(workspace->tmp2);
    
    for( d = 0; d < ndepths; d++)

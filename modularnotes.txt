@@ -229,3 +229,24 @@ Wed 17 Apr 12:07:17 BST 2024
 
 commit b49229b and the 2 commits preceding all have basically the same
 time (37 seconds) on IFLS.txt depth=3 trees.
+
+Fri 26 Apr 07:49:24 BST 2024
+
+putting everything together on together branch
+Could make UNITS and CONST_UNITS a typedef for void*
+
+Each prototype in units.h takes an extra 'params' argument.
+Then a new file units.c uses this to choose which actual function to call
+
+Fri 26 Apr 20:37:18 BST 2024
+
+what we need from a macro
+given the string representing the function prototype
+1) repeat that prototype, but add in '   const STRATEGY*       strategy,           /**< tree-building strategy */'
+
+2) add line  "if( units_type(strategy) == SORTED_SET_TYPE )"
+3) add "return <rettype> sorted_set_<fnname>(<arg_names>)
+4) add 'else'
+5) add "return <rettype> simple_set_<fnname>(<arg_names>)
+
+problem is: need to cast any arg declared as of type UNITS
