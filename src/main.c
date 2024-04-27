@@ -22,7 +22,8 @@ void freedata(
    char**                actionnames,        /**< actionnames[j] is the name of action j */
    double*               data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
    double*               data_y,             /**< data_y[d*num_rows+elt] is the reward for action d for unit elt */
-   NODE*                 tree                /**< policy tree */
+   NODE*                 tree,               /**< policy tree */
+   STRATEGY*             strategy            /**< strategy */
    )
 {
    int i;
@@ -48,6 +49,9 @@ void freedata(
 
    if( data_y != NULL )
       free(data_y);
+   
+   if( strategy != NULL )
+      free(strategy);
 }
 
 /** process command line arguments
@@ -58,7 +62,8 @@ int process_commandline(
    char**                argv,               /**< command line arguments */
    char**                filename,           /**< *filename will be the name of the file with the data */
    int*                  num_cols_y,         /**< *num_cols_y will be number of actions */
-   int*                  depth               /**< *depth will be required depth of tree */
+   int*                  depth,              /**< *depth will be required depth of tree */
+   int*                  arg4                /**< *arg4 will be 4th argument if present */
    )
 {
 
@@ -90,6 +95,11 @@ int process_commandline(
    if( *depth == 0 )
       printf("Warning: tree depth set to 0.\n");
 
+   if( argc > 4)
+      *arg4 = atoi(argv[4]);
+   else
+      *arg4 = -1;
+   
    return 0;
 }
 
@@ -120,13 +130,14 @@ int main(
    
    int min_node_size = DEFAULT_MIN_NODE_SIZE;
 
+   int arg4;
    STRATEGY* strategy = get_unint_strategy();
    
    /* NODE** nodes; */
    /* int num_nodes; */
    /* int i; */
    
-   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth); 
+   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, &arg4); 
 
    assert( status == 0 || status == 1);
    if( status == 1 )
@@ -160,8 +171,12 @@ int main(
       printf("Warning: No data supplied.\n");     
    }
 
-   /* just fix on simple sets for time being */
+   /* set default strategy */
    use_simple_sets(strategy);
+
+   /* a command line value of 1 indicates wanting to use sorted sets */
+   if( arg4 == 1 )
+         use_sorted_sets(strategy);
    
    if( num_rows > 0 )
    {
@@ -185,8 +200,7 @@ int main(
    /*    print_tree(nodes[i],NULL); */
    /* } */
    
-   freedata(num_cols_x, num_cols_y, covnames, actionnames, data_x, data_y, tree);
-   free(strategy);
+   freedata(num_cols_x, num_cols_y, covnames, actionnames, data_x, data_y, tree, strategy);
    
    return 0;
 }
