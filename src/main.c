@@ -65,11 +65,12 @@ int process_commandline(
    int*                  depth,              /**< *depth will be required depth of tree */
    int*                  arg4,               /**< *arg4 will be 4th argument if present */
    int*                  arg5,               /**< *arg5 will be 5th argument if present */
-   int*                  arg6                /**< *arg6 will be 6th argument if present */
+   int*                  arg6,               /**< *arg6 will be 6th argument if present */
+   int*                  arg7                /**< *arg7 will be 7th argument if present */
    )
 {
    int i;
-   int* args[3];
+   int* args[4];
    
    if( argc < 3 )
    {
@@ -102,8 +103,9 @@ int process_commandline(
    args[0] = arg4;
    args[1] = arg5;
    args[2] = arg6;
+   args[3] = arg7;
    
-   for( i = 4; i <= 6; i++ )
+   for( i = 4; i <= 7; i++ )
    {
       int* argptr = args[i-4];
       if( argc > i)
@@ -149,13 +151,14 @@ int main(
    int arg4;
    int arg5;
    int arg6;
+   int arg7;
    STRATEGY* strategy = get_unint_strategy();
    
    /* NODE** nodes; */
    /* int num_nodes; */
    /* int i; */
 
-   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, &arg4, &arg5, &arg6); 
+   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, &arg4, &arg5, &arg6, &arg7); 
 
    assert( status == 0 || status == 1);
    if( status == 1 )
@@ -202,6 +205,9 @@ int main(
 
    /* default is to compute dummy split rewards */
    set_find_dummy_split_reward(strategy, (arg6 == 0) ? 0 : 1);
+
+   /* default is to use last rewards (to avoid considering some splits) */
+   set_use_last_rewards(strategy, (arg7 == 0) ? 0 : 1);
    
    if( num_rows > 0 )
    {

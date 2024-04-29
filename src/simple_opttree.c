@@ -538,7 +538,7 @@ void find_best_split(
          assert( units_ok(strategy, (CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
          assert( units_ok(strategy, (CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
-         if( have_last_reward )
+         if( use_last_rewards(strategy) && have_last_reward )
          {
             cum_reward_improvement_ub += get_reward_improvement_ub(elts, nelts, num_rows, data_y, best_actions, worst_actions);
             if( last_reward + cum_reward_improvement_ub <= best_reward )
@@ -602,10 +602,13 @@ void find_best_split(
          /* check reward does not exceed alleged upper bound ( + epsilon ) */
          assert( !reward_ub_set || LEQ_EPSILON(this_reward, reward_ub) );
 
-         /* record that reward for this split was found and reset cumulative reward improvement upper bound */
-         last_reward = this_reward;
-         have_last_reward = 1;
-         cum_reward_improvement_ub = 0.0;
+         if( use_last_rewards(strategy) )
+         {
+            /* record that reward for this split was found and reset cumulative reward improvement upper bound */
+            last_reward = this_reward;
+            have_last_reward = 1;
+            cum_reward_improvement_ub = 0.0;
+         }
          
          /* if best so far, update */
          if( !reward_cutoff_set || GT_EPSILON(this_reward, reward_cutoff) )

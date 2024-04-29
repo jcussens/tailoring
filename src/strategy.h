@@ -62,6 +62,17 @@ void set_find_dummy_split_reward(
    int                   val                 /**< 0 for no, 1 for yes */
    );
 
+/** return whether we wish to use last rewards rewards */
+int use_last_rewards(
+   const STRATEGY*       strategy            /**< solving strategy */
+   );
+
+/** set whether we wish to use last rewards */
+void set_use_last_rewards(
+   STRATEGY*             strategy,           /**< solving strategy */
+   int                   val                 /**< 0 for no, 1 for yes */
+   );
+
 #ifdef __cplusplus
 }
 #endif

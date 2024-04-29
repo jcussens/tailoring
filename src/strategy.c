@@ -21,6 +21,7 @@ struct strategy
                                                 sorted sets (policytree style) or simple set */
    int                   find_reward_ub;     /**< whether to compute an upper bound on reward for each (sub-) dataset */
    int                   find_dummy_split_reward;     /**< whether to compute rewards for dummy splits */
+   int                   use_last_rewards;   /** whether to use last rewards */
 };
 
 /** return an uninitialised strategy */
@@ -117,5 +118,22 @@ void set_find_dummy_split_reward(
    )
 {
    strategy->find_dummy_split_reward = val;
+}
+
+/** return whether we wish to use last rewards rewards */
+int use_last_rewards(
+   const STRATEGY*       strategy            /**< solving strategy */
+   )
+{
+   return strategy->use_last_rewards;
+}
+
+/** set whether we wish to use last rewards */
+void set_use_last_rewards(
+   STRATEGY*             strategy,           /**< solving strategy */
+   int                   val                 /**< 0 for no, 1 for yes */
+   )
+{
+   strategy->use_last_rewards = val;
 }
 
