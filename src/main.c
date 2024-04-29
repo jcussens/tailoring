@@ -63,14 +63,11 @@ int process_commandline(
    char**                filename,           /**< *filename will be the name of the file with the data */
    int*                  num_cols_y,         /**< *num_cols_y will be number of actions */
    int*                  depth,              /**< *depth will be required depth of tree */
-   int*                  arg4,               /**< *arg4 will be 4th argument if present */
-   int*                  arg5,               /**< *arg5 will be 5th argument if present */
-   int*                  arg6,               /**< *arg6 will be 6th argument if present */
-   int*                  arg7                /**< *arg7 will be 7th argument if present */
+   int*                  optargs,            /**< for values from command line */
+   int                   noptargs            /**< number of values for optargs */
    )
 {
    int i;
-   int* args[4];
    
    if( argc < 3 )
    {
@@ -100,14 +97,10 @@ int process_commandline(
    if( *depth == 0 )
       printf("Warning: tree depth set to 0.\n");
 
-   args[0] = arg4;
-   args[1] = arg5;
-   args[2] = arg6;
-   args[3] = arg7;
    
-   for( i = 4; i <= 7; i++ )
+   for( i = 4; i < 4 + noptargs; i++ )
    {
-      int* argptr = args[i-4];
+      int* argptr = optargs + i - 4;
       if( argc > i)
       {
          *argptr = atoi(argv[i]);
@@ -148,17 +141,14 @@ int main(
    
    int min_node_size = DEFAULT_MIN_NODE_SIZE;
 
-   int arg4;
-   int arg5;
-   int arg6;
-   int arg7;
+   int optargs[4];
    STRATEGY* strategy = get_unint_strategy();
    
    /* NODE** nodes; */
    /* int num_nodes; */
    /* int i; */
 
-   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, &arg4, &arg5, &arg6, &arg7); 
+   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, optargs, 4); 
 
    assert( status == 0 || status == 1);
    if( status == 1 )
@@ -193,21 +183,21 @@ int main(
    }
 
    /* either accept the user's choice of dataset representation or decide based on nature of input data */
-   if( arg4 == 0 )
+   if( optargs[0] == 0 )
       use_simple_sets(strategy);
-   else if( arg4 == 1 )
+   else if( optargs[0] == 1 )
       use_sorted_sets(strategy);
    else
       decide_datatype(strategy, data_x, num_rows, num_cols_x);
 
    /* default is to compute reward upper bounds */
-   set_find_reward_ub(strategy, (arg5 == 0) ? 0 : 1);
+   set_find_reward_ub(strategy, (optargs[1] == 0) ? 0 : 1);
 
    /* default is to compute dummy split rewards */
-   set_find_dummy_split_reward(strategy, (arg6 == 0) ? 0 : 1);
+   set_find_dummy_split_reward(strategy, (optargs[2] == 0) ? 0 : 1);
 
    /* default is to use last rewards (to avoid considering some splits) */
-   set_use_last_rewards(strategy, (arg7 == 0) ? 0 : 1);
+   set_use_last_rewards(strategy, (optargs[3] == 0) ? 0 : 1);
    
    if( num_rows > 0 )
    {
