@@ -33,6 +33,9 @@ STRATEGY* get_unint_strategy(
    STRATEGY* strategy = (STRATEGY*) malloc(sizeof(STRATEGY));
    strategy->datatype = UNDECIDED_TYPE;
    strategy->find_reward_ub = -1;
+   strategy->find_dummy_split_reward = -1;
+   strategy->use_last_rewards = -1;
+   strategy->use_cutoffs = -1;
    return strategy;
 }
    

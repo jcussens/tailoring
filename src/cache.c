@@ -1,6 +1,9 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include "cache.h"
 #include "tree.h"
+#include "assert.h"
 
 #define NSLOTS 100
 
@@ -10,7 +13,6 @@ struct entry
    ELEMENT*              elts;               /**< the set */
    int                   depth;              /**< depth of tree */
    NODE*                 tree;               /**< optimal tree for set */
-   double                reward;             /**< reward for optimal tree */
 };
 typedef struct entry ENTRY;
 
@@ -42,7 +44,7 @@ int match(
 {
    int i;
    
-   if( depth != entry->depth )
+   if( depth != entry->depth || nelts != entry->nelts )
       return 0;
 
    for( i = 0; i < nelts; i++ )
@@ -58,24 +60,20 @@ ENTRY* make_entry(
    int                   nelts,              /**< number of elts in set */
    const ELEMENT*        elts,               /**< the set */
    int                   depth,              /**< depth of tree */
-   const NODE*           tree,               /**< optimal tree for set */
-   double                reward              /**< reward for optimal tree */
+   const NODE*           tree                /**< optimal tree for set */
    )
 {
    ENTRY* entry = (ENTRY*) malloc(sizeof(ENTRY));
    NODE* tree_cp = make_tree(depth);
-   ELEMENT* elts_copy = (ELEMENT*) malloc(nelts*sizeof(ELEMENT));
-   int i;
+   ELEMENT* elts_cp = (ELEMENT*) malloc(nelts*sizeof(ELEMENT));
    
    tree_copy(tree, tree_cp);
-   for( i = 0; i < nelts; i++ )
-      elts_copy[i] = elts[i];
+   memcpy(elts_cp, elts, nelts*sizeof(ELEMENT));
 
    entry->nelts = nelts;
-   entry->elts = elts_copy;
+   entry->elts = elts_cp;
    entry->depth = depth;
    entry->tree = tree_cp;
-   entry->reward = reward;
 
    return entry;
 }
@@ -97,8 +95,7 @@ int search_cache(
    int                   nelts,              /**< number of elts in set */
    const ELEMENT*        elts,               /**< the set */
    int                   depth,              /**< depth of tree */
-   NODE**                tree,               /**< if in cache, *tree is optimal tree for set */
-   double*               reward              /**< if in cache, *reward is reward for optimal tree */
+   NODE**                tree                /**< if in cache, *tree is optimal tree for set */
    )
 {
    int slot = get_slot(nelts, elts, depth);
@@ -108,7 +105,6 @@ int search_cache(
       if( match(nelts, elts, depth, (const ENTRY*) cache->slots[slot][i]) )
       {
          *tree = cache->slots[slot][i]->tree;
-         *reward = cache->slots[slot][i]->reward;
          return 1;
       }
    }
@@ -122,17 +118,30 @@ void add_to_cache(
    int                   nelts,              /**< number of elts in set */
    const ELEMENT*        elts,               /**< the set */
    int                   depth,              /**< depth of tree */
-   const NODE*           tree,               /**< optimal tree for set */
-   double                reward              /**< reward for optimal tree */
+   const NODE*           tree                /**< optimal tree for set */
 )
 {
    int slot = get_slot(nelts, elts, depth);
-   ENTRY* entry = make_entry(nelts, elts, depth, tree, reward);
+   ENTRY* entry = make_entry(nelts, elts, depth, tree);
    int idx = cache->nentries[slot];
+
+   assert(cache != NULL);
+   assert(nelts >= 0);
+   assert(elts != NULL);
+   assert(depth >= 0);
+   assert(tree != NULL);
+
+   assert(slot >= 0);
+   assert(slot < NSLOTS);
+   assert(entry != NULL);
+   assert(idx >= 0);
+
    if( idx == 0 )
       cache->slots[slot] = (ENTRY**) malloc(sizeof(ENTRY*));
    else
-      cache->slots[slot] = (ENTRY**) realloc(cache->slots[slot], idx+1);
+      cache->slots[slot] = (ENTRY**) realloc(cache->slots[slot], (idx+1)*sizeof(ENTRY*));
+
+   assert(cache->slots[slot] != NULL);
    cache->slots[slot][idx] = entry;
    (cache->nentries[slot])++;
 }
@@ -164,7 +173,8 @@ void free_cache(
       {
          free_entry(cache->slots[slot][i]);
       }
-      free(cache->slots[slot]);
+      if( cache->nentries[slot] > 0 )
+         free(cache->slots[slot]);
    }
    free(cache->slots);
    free(cache->nentries);

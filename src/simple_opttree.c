@@ -7,9 +7,11 @@
 #include "units.h"
 #include "workspace.h"
 #include "strategy.h"
+#include "cache.h"
 #include <assert.h>
 #include <stdlib.h>
-#include <stdio.h> 
+#include <stdio.h>
+#include <string.h> 
 
 /* #define VERYVERBOSE  */
 
@@ -26,6 +28,18 @@
 #define EPSILON_LEQ(A,B) (A) + EPSILON <= (B)
 #define EPSILON_GEQ(A,B) (A) + EPSILON >= (B)
 #define GT_EPSILON(A,B) (A) > (B) + EPSILON
+
+static
+int cmp(
+   const void* elt1,
+   const void* elt2
+   )
+{
+   assert(elt1 != NULL);
+   assert(elt2 != NULL);
+   
+   return (int) (*(ELEMENT*)elt1 - *(ELEMENT*)elt2);
+}
 
 /** given a set of elements, compute an upper bound on the improvement on the reward for any set of units A
  * by adding these elements to A
@@ -343,6 +357,7 @@ void level_one_learning(
 static
 void find_best_split(
    const STRATEGY*       strategy,           /**< tree-building strategy */
+   CACHE*                cache,              /**< cache */
    NODE*                 node,               /**< uninitialised tree to be populated with optimal tree */
    int                   depth,              /**< depth of tree */
    CONST_UNITS           units,              /**< the units */
@@ -381,7 +396,11 @@ void find_best_split(
 
    int optimal_tree_found;
 
-   
+   ELEMENT* elts;
+   int nelts;
+   ELEMENT* sorted_elts;
+   int nsorted_elts;
+
    assert( node != NULL );
    assert( depth >= 0 );
    assert( units != NULL);
@@ -397,6 +416,23 @@ void find_best_split(
    printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(units));
 #endif
 
+   elements(strategy, (CONST_UNITS) units, &elts, &nsorted_elts);
+   sorted_elts = (ELEMENT*) malloc(nsorted_elts*sizeof(ELEMENT));
+   memcpy(sorted_elts, elts, nsorted_elts*sizeof(ELEMENT));
+   qsort(sorted_elts, nsorted_elts, sizeof(ELEMENT), cmp);
+   if( search_cache( (const CACHE*) cache, nsorted_elts, sorted_elts, depth, &node) )
+   {
+      printf("Found optimal tree for dataset of size %d in cache.\n", nsorted_elts);
+
+      best_reward = get_reward(node);
+      if( !reward_cutoff_set || GT_EPSILON(best_reward, reward_cutoff) )
+         *tree_set = 1;
+      else
+         *tree_set = 0;
+      return;
+   }
+
+   
    if( find_reward_ub(strategy) )
    {
       /* get quick poor bound on best possible reward */
@@ -430,8 +466,10 @@ void find_best_split(
       if( reward_cutoff_set && EPSILON_LEQ(get_reward(node), reward_cutoff) )
          *tree_set = 0;
       else
+      {
+         add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
          *tree_set = 1;
-
+      }
       /* all done */
       return;
    }
@@ -445,6 +483,8 @@ void find_best_split(
 
       /* check reward does not exceed alleged upper bound ( + epsilon ) */
 
+      add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
+      
       if( *tree_set )
          assert( !reward_ub_set || LEQ_EPSILON(get_reward(node), reward_ub) );
 
@@ -457,13 +497,14 @@ void find_best_split(
       /* no cutoff is used here since the primary reason for finding this tree is to bound the reward of trees
          built using 'similar' splits */
       /* also record this tree as best so far */
-      find_best_split(strategy, node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
+      find_best_split(strategy, cache, node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
          best_actions, worst_actions, workspace, 0, reward_cutoff, tree_set);
       assert( *tree_set );
       dummy_split_reward = get_reward(node);
       dummy_split_reward_set = 1;
       
       /* check reward does not exceed alleged upper bound ( + epsilon ) */
+      printf("%g %g\n", dummy_split_reward, reward_ub);
       assert( !reward_ub_set || LEQ_EPSILON(dummy_split_reward, reward_ub) );
    
       optimal_tree_found = 0;
@@ -499,8 +540,6 @@ void find_best_split(
       double splitval;
 
       double cum_reward_improvement_ub = 0.0;
-      ELEMENT* elts;
-      int nelts;
 
       double last_reward = 0.0;  /* dummy value */
       int have_last_reward = 0;
@@ -559,7 +598,7 @@ void find_best_split(
 #endif
          
          /* find optimal tree for left data set */
-         find_best_split(strategy, left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
+         find_best_split(strategy, cache, left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, left_reward_cutoff_set, left_reward_cutoff, &left_tree_set);
 
          /* no tree from this split */
@@ -584,7 +623,7 @@ void find_best_split(
          }
          
          /* find optimal tree for right data set */
-         find_best_split(strategy, right_child, depth-1, (CONST_UNITS) right_units, min_node_size, data_x, data_y,
+         find_best_split(strategy, cache, right_child, depth-1, (CONST_UNITS) right_units, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, 
             right_reward_cutoff_set, right_reward_cutoff, &right_tree_set); 
 
@@ -635,6 +674,7 @@ void find_best_split(
    {
       /* set node to best tree */
       retrieve_best_tree(workspace, node, depth);
+      add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
       *tree_set = 1;
    }
    else
@@ -643,6 +683,8 @@ void find_best_split(
       *tree_set = 0;
    }
 
+   free(sorted_elts);
+   
 #ifdef VERYVERBOSE
    printf("Best split for depth=%d tree for dataset of size %d is split value %g for covariate %d with reward %g.\n",
       depth, get_size(strategy, units), get_value(node), get_index(node), get_reward(node));
@@ -676,6 +718,8 @@ NODE* tree_search_simple(
    int reward_cutoff_set = 0;
    double reward_cutoff = 0.0; /* dummy value */
    int aborted;
+
+   CACHE* cache = make_cache();
    
    /* Permitted: depth 0 trees, no covariates */
    /* Not permitted: no data, min_node_size < 1, number of actions < 1 */ 
@@ -709,7 +753,7 @@ NODE* tree_search_simple(
    assert( worst_actions != NULL );
    
    /* find the optimal tree */
-   find_best_split(strategy, tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,
+   find_best_split(strategy, cache, tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,
       num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, 
       reward_cutoff_set, reward_cutoff, &aborted); 
 
@@ -720,7 +764,8 @@ NODE* tree_search_simple(
    free(worst_actions);
    free_workspace(strategy, workspace, depth, num_cols_x);
    free_units(strategy, units, num_cols_x);
-
+   free_cache(cache);
+   
    /* remove any nodes below leaves, and merge leaves with the same action */
    fix_tree(tree);
 

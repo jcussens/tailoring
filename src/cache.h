@@ -21,8 +21,7 @@ int search_cache(
    int                   nelts,              /**< number of elts in set */
    const ELEMENT*        elts,               /**< the set */
    int                   depth,              /**< depth of tree */
-   NODE**                tree,               /**< if in cache, *tree is optimal tree for set */
-   double*               reward              /**< if in cache, *reward is reward for optimal tree */
+   NODE**                tree                /**< if in cache, *tree is optimal tree for set */
    );
 
 /** add an optimal tree to cache */
@@ -31,8 +30,7 @@ void add_to_cache(
    int                   nelts,              /**< number of elts in set */
    const ELEMENT*        elts,               /**< the set */
    int                   depth,              /**< depth of tree */
-   const NODE*           tree,               /**< optimal tree for set */
-   double                reward              /**< reward for optimal tree */
+   const NODE*           tree                /**< optimal tree for set */
    );
 
 /** make cache */

@@ -37,6 +37,7 @@ void print_tree_policytree_rec(
 {
 
    /* indent */
+
    int i;
 
    for(i = 0; i < level; i++)
