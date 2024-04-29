@@ -141,7 +141,7 @@ int main(
    
    int min_node_size = DEFAULT_MIN_NODE_SIZE;
 
-   int optargs[4];
+   int optargs[5];
    STRATEGY* strategy = get_unint_strategy();
    
    /* NODE** nodes; */
@@ -198,7 +198,10 @@ int main(
 
    /* default is to use last rewards (to avoid considering some splits) */
    set_use_last_rewards(strategy, (optargs[3] == 0) ? 0 : 1);
-   
+
+   /* default is to use cutoffs (to avoid considering some splits) */
+   set_use_cutoffs(strategy, (optargs[4] == 0) ? 0 : 1);
+
    if( num_rows > 0 )
    {
       tree = tree_search_simple(strategy, depth, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, &reward);

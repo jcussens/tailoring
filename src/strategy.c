@@ -22,6 +22,7 @@ struct strategy
    int                   find_reward_ub;     /**< whether to compute an upper bound on reward for each (sub-) dataset */
    int                   find_dummy_split_reward;     /**< whether to compute rewards for dummy splits */
    int                   use_last_rewards;   /** whether to use last rewards */
+   int                   use_cutoffs;        /** whether to use cutoffs */
 };
 
 /** return an uninitialised strategy */
@@ -135,5 +136,22 @@ void set_use_last_rewards(
    )
 {
    strategy->use_last_rewards = val;
+}
+
+/** return whether we wish to use cutoffs */
+int use_cutoffs(
+   const STRATEGY*       strategy            /**< solving strategy */
+   )
+{
+   return strategy->use_cutoffs;
+}
+
+/** set whether we wish to use cutoffs */
+void set_use_cutoffs(
+   STRATEGY*             strategy,           /**< solving strategy */
+   int                   val                 /**< 0 for no, 1 for yes */
+   )
+{
+   strategy->use_cutoffs = val;
 }
 

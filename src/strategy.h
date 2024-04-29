@@ -73,6 +73,18 @@ void set_use_last_rewards(
    int                   val                 /**< 0 for no, 1 for yes */
    );
 
+/** return whether we wish to use cutoffs */
+int use_cutoffs(
+   const STRATEGY*       strategy            /**< solving strategy */
+   );
+
+/** set whether we wish to use cutoffs */
+void set_use_cutoffs(
+   STRATEGY*             strategy,           /**< solving strategy */
+   int                   val                 /**< 0 for no, 1 for yes */
+   );
+
+
 #ifdef __cplusplus
 }
 #endif

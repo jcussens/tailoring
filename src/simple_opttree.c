@@ -568,20 +568,19 @@ void find_best_split(
             /* printf("left tree aborted\n"); */
             continue;
          }
-         
-         if( best_reward_set )
+
+         if( use_cutoffs(strategy) )
          {
-            right_reward_cutoff = best_reward - get_reward(left_child);
-            right_reward_cutoff_set = 1;
-         }
-         else if( reward_cutoff_set )
-         {
-            right_reward_cutoff = reward_cutoff - get_reward(left_child);
-            right_reward_cutoff_set = 1;
-         }
-         else
-         {
-            right_reward_cutoff_set = 0;
+            if( best_reward_set )
+            {
+               right_reward_cutoff = best_reward - get_reward(left_child);
+               right_reward_cutoff_set = 1;
+            }
+            else if( reward_cutoff_set )
+            {
+               right_reward_cutoff = reward_cutoff - get_reward(left_child);
+               right_reward_cutoff_set = 1;
+            }
          }
          
          /* find optimal tree for right data set */
