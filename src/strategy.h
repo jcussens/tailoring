@@ -45,12 +45,22 @@ int find_reward_ub(
    );
 
 
-/** return whether we wish to compute an upper bound on reward for each (sub-) dataset */
+/** set whether we wish to compute an upper bound on reward for each (sub-) dataset */
 void set_find_reward_ub(
    STRATEGY*             strategy,           /**< solving strategy */
    int                   val                 /**< 0 for no, 1 for yes */
    );
 
+/** return whether we wish to find dummy split rewards */
+int find_dummy_split_reward(
+   const STRATEGY*       strategy            /**< solving strategy */
+   );
+
+/** set whether we wish to find dummy split rewards */
+void set_find_dummy_split_reward(
+   STRATEGY*             strategy,           /**< solving strategy */
+   int                   val                 /**< 0 for no, 1 for yes */
+   );
 
 #ifdef __cplusplus
 }

@@ -364,18 +364,23 @@ void find_best_split(
 
    int p;
    int pure;
+   
    double best_reward;
-   double reward_ub = -1; /* dummy value */
    int best_reward_set = 0;
+
+   double reward_ub = -1; /* dummy value */
    int reward_ub_set = 0;
+   
+   double dummy_split_reward = -1; /*dummy value */
+   int dummy_split_reward_set = 0;
+
    NODE* left_child;
    NODE* right_child;
-
    UNITS left_units;
    UNITS right_units;
 
    int optimal_tree_found;
-   double dummy_split_reward;
+
    
    assert( node != NULL );
    assert( depth >= 0 );
@@ -446,30 +451,34 @@ void find_best_split(
       return;
    }
 
-   /* find reward for 'dummy' split where there are no units on one side and all units on the other */
-   /* no cutoff is used here since the primary reason for finding this tree is to bound the reward of trees
-      built using 'similar' splits */
-   /* also record this tree as best so far */
-   find_best_split(strategy, node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
-      best_actions, worst_actions, workspace, 0, reward_cutoff, tree_set);
-   assert( *tree_set );
-   dummy_split_reward = get_reward(node);
-
-   /* check reward does not exceed alleged upper bound ( + epsilon ) */
-   assert( !reward_ub_set || LEQ_EPSILON(dummy_split_reward, reward_ub) );
-   
-   optimal_tree_found = 0;
-   if( !reward_cutoff_set || GT_EPSILON(dummy_split_reward, reward_cutoff) )
+   if( find_dummy_split_reward(strategy) )
    {
-      best_reward = dummy_split_reward;
-      record_best_tree(workspace, node, depth);
-      best_reward_set = 1;
-      /* if there can be no better tree, stop looking for one!
-       * use ">=" rather than"==" since should reduce numerical problems */
-      if( reward_ub_set && EPSILON_GEQ(best_reward, reward_ub) )
+      /* find reward for 'dummy' split where there are no units on one side and all units on the other */
+      /* no cutoff is used here since the primary reason for finding this tree is to bound the reward of trees
+         built using 'similar' splits */
+      /* also record this tree as best so far */
+      find_best_split(strategy, node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
+         best_actions, worst_actions, workspace, 0, reward_cutoff, tree_set);
+      assert( *tree_set );
+      dummy_split_reward = get_reward(node);
+      dummy_split_reward_set = 1;
+      
+      /* check reward does not exceed alleged upper bound ( + epsilon ) */
+      assert( !reward_ub_set || LEQ_EPSILON(dummy_split_reward, reward_ub) );
+   
+      optimal_tree_found = 0;
+      if( !reward_cutoff_set || GT_EPSILON(dummy_split_reward, reward_cutoff) )
       {
-         optimal_tree_found = 1;
-         return;
+         best_reward = dummy_split_reward;
+         record_best_tree(workspace, node, depth);
+         best_reward_set = 1;
+         /* if there can be no better tree, stop looking for one!
+          * use ">=" rather than"==" since should reduce numerical problems */
+         if( reward_ub_set && EPSILON_GEQ(best_reward, reward_ub) )
+         {
+            optimal_tree_found = 1;
+            return;
+         }
       }
    }
 
@@ -493,9 +502,15 @@ void find_best_split(
       ELEMENT* elts;
       int nelts;
 
-      /* we can view the reward for the dummy split as a split just before first split */
-      double last_reward = dummy_split_reward;
-      int have_last_reward = 1;
+      double last_reward = 0.0;  /* dummy value */
+      int have_last_reward = 0;
+
+      if( dummy_split_reward_set )
+      {
+         /* we can view the reward for the dummy split as a split just before first split */
+         last_reward = dummy_split_reward;
+         have_last_reward = 1;
+      }
       
       /* initialise so that left_units is empty and right_units is a copy of units 
          ready for splitting on covariate p */

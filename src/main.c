@@ -64,10 +64,13 @@ int process_commandline(
    int*                  num_cols_y,         /**< *num_cols_y will be number of actions */
    int*                  depth,              /**< *depth will be required depth of tree */
    int*                  arg4,               /**< *arg4 will be 4th argument if present */
-   int*                  arg5                /**< *arg5 will be 5th argument if present */
+   int*                  arg5,               /**< *arg5 will be 5th argument if present */
+   int*                  arg6                /**< *arg6 will be 6th argument if present */
    )
 {
-
+   int i;
+   int* args[3];
+   
    if( argc < 3 )
    {
       printf("Need to supply at least a filename and the number of actions.\n");
@@ -96,24 +99,22 @@ int process_commandline(
    if( *depth == 0 )
       printf("Warning: tree depth set to 0.\n");
 
-   if( argc > 4)
+   args[0] = arg4;
+   args[1] = arg5;
+   args[2] = arg6;
+   
+   for( i = 4; i <= 6; i++ )
    {
-      *arg4 = atoi(argv[4]);
-      if(*arg4 != 0 && *arg4 != 1)
-         printf("Warning: Fourth argument ignored.\n");
+      int* argptr = args[i-4];
+      if( argc > i)
+      {
+         *argptr = atoi(argv[i]);
+         if(*argptr != 0 && *argptr != 1)
+            printf("Warning: Argument %d ignored.\n", i);
+      }
+      else
+         *argptr = -1;
    }
-   else
-      *arg4 = -1;
-
-   if( argc > 5)
-   {
-      *arg5 = atoi(argv[5]);
-      if(*arg5 != 0 && *arg5 != 1)
-         printf("Warning: Fifth argument ignored.\n");
-   }
-   else
-      *arg5 = -1;
-
    
    return 0;
 }
@@ -147,13 +148,14 @@ int main(
 
    int arg4;
    int arg5;
+   int arg6;
    STRATEGY* strategy = get_unint_strategy();
    
    /* NODE** nodes; */
    /* int num_nodes; */
    /* int i; */
 
-   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, &arg4, &arg5); 
+   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, &arg4, &arg5, &arg6); 
 
    assert( status == 0 || status == 1);
    if( status == 1 )
@@ -195,12 +197,12 @@ int main(
    else
       decide_datatype(strategy, data_x, num_rows, num_cols_x);
 
-   /* default is to not to compute reward upper bounds */
-   if( arg5 == 0)
-      set_find_reward_ub(strategy, 0);
-   else
-      set_find_reward_ub(strategy, 1);
+   /* default is to compute reward upper bounds */
+   set_find_reward_ub(strategy, (arg5 == 0) ? 0 : 1);
 
+   /* default is to compute dummy split rewards */
+   set_find_dummy_split_reward(strategy, (arg6 == 0) ? 0 : 1);
+   
    if( num_rows > 0 )
    {
       tree = tree_search_simple(strategy, depth, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, &reward);

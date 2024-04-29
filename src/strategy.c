@@ -20,6 +20,7 @@ struct strategy
    DATATYPE              datatype;           /**< type for data (currently either
                                                 sorted sets (policytree style) or simple set */
    int                   find_reward_ub;     /**< whether to compute an upper bound on reward for each (sub-) dataset */
+   int                   find_dummy_split_reward;     /**< whether to compute rewards for dummy splits */
 };
 
 /** return an uninitialised strategy */
@@ -92,12 +93,29 @@ int find_reward_ub(
    return strategy->find_reward_ub;
 }
 
-/** return whether we wish to compute an upper bound on reward for each (sub-) dataset */
+/** set whether we wish to compute an upper bound on reward for each (sub-) dataset */
 void set_find_reward_ub(
    STRATEGY*             strategy,           /**< solving strategy */
    int                   val                 /**< 0 for no, 1 for yes */
    )
 {
    strategy->find_reward_ub = val;
+}
+
+/** return whether we wish to find dummy split rewards */
+int find_dummy_split_reward(
+   const STRATEGY*       strategy            /**< solving strategy */
+   )
+{
+   return strategy->find_dummy_split_reward;
+}
+
+/** set whether we wish to find dummy split rewards */
+void set_find_dummy_split_reward(
+   STRATEGY*             strategy,           /**< solving strategy */
+   int                   val                 /**< 0 for no, 1 for yes */
+   )
+{
+   strategy->find_dummy_split_reward = val;
 }
 
