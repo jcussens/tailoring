@@ -23,6 +23,9 @@
 
 #define EPSILON 1e-09
 #define LEQ_EPSILON(A,B) (A) <= (B) + EPSILON
+#define EPSILON_LEQ(A,B) (A) + EPSILON <= (B)
+#define EPSILON_GEQ(A,B) (A) + EPSILON >= (B)
+#define GT_EPSILON(A,B) (A) > (B) + EPSILON
 
 /** given a set of elements, compute an upper bound on the improvement on the reward for any set of units A
  * by adding these elements to A
@@ -235,12 +238,33 @@ void level_one_learning(
 
    UNITS right_units;
    int optimal_tree_found;
+
+   int d;
    
    /* no tree found so far */
    *tree_set = 0;
 
    /* get reward for each action if no split were done */
    find_nosplit_rewards(strategy, units, num_cols_y, data_y, num_rows, nosplit_rewards);
+
+   /* see whether just making a leaf is optimal */
+   if( reward_ub_set )
+   {
+      for( d = 0; d < num_cols_y; d++ )
+      {
+         /* if this reward is best possible, just stop searching */
+         if( EPSILON_GEQ(nosplit_rewards[d], reward_ub) )
+         {
+            /* if reward safely above cutoff then we have a tree (which is a leaf) */
+            if( !reward_cutoff_set || GT_EPSILON(nosplit_rewards[d], reward_cutoff) )
+            {
+               make_leaf(node, nosplit_rewards[d], d);
+               *tree_set = 1;
+            }
+            return;
+         }
+      }
+   }
 
    get_children(node, &left_child, &right_child);
    
@@ -278,8 +302,8 @@ void level_one_learning(
 
          assert( !reward_ub_set || LEQ_EPSILON(this_reward, reward_ub) );
 
-         /* if best so far, update */
-         if( !reward_cutoff_set || this_reward > reward_cutoff )
+         /* if best so far and safely above cutoff , update */
+         if( !reward_cutoff_set || GT_EPSILON(this_reward, reward_cutoff) )
          {
             if( first_reward || this_reward > best_reward ) 
             {
@@ -295,7 +319,7 @@ void level_one_learning(
                first_reward = 0;
 
                /* if this reward is best possible, just stop searching */
-               if( reward_ub_set && this_reward >= reward_ub )
+               if( reward_ub_set && EPSILON_GEQ(this_reward, reward_ub) )
                {
                   optimal_tree_found = 1;
                   break;
@@ -374,10 +398,10 @@ void find_best_split(
       reward_ub = get_reward_ub(strategy, units, data_y, num_rows, best_actions);
       reward_ub_set = 1;
       
-      /* if no chance of exceeding the cutoff, just abort */
-      if( 0 && reward_cutoff_set && reward_ub <= reward_cutoff )
+      /* if no chance of exceeding the cutoff (upper bound on reward is safetly <= cutoff) , just abort */
+      if( reward_cutoff_set && EPSILON_LEQ(reward_ub, reward_cutoff) )
       {
-         /* printf("size=%d, depth=%d, best_possible=%g, cutoff=%g\n", get_size(units), depth, best_possible_reward, reward_cutoff); */
+         /* printf("size=%d, depth=%d, best_possible=%g, cutoff=%g\n", get_size(strategy, units), depth, reward_ub, reward_cutoff);  */
          *tree_set = 0;
          return;
       }
@@ -398,7 +422,7 @@ void find_best_split(
       make_leaf(node, best_reward, best_action);
 
       /* record whether cutoff (if any) was beaten */
-      if( reward_cutoff_set && get_reward(node) <= reward_cutoff )
+      if( reward_cutoff_set && EPSILON_LEQ(get_reward(node), reward_cutoff) )
          *tree_set = 0;
       else
          *tree_set = 1;
@@ -414,9 +438,7 @@ void find_best_split(
          num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, reward_cutoff_set, reward_cutoff, tree_set,
          reward_ub_set, reward_ub); 
 
-      /* check reward does not exceed alleged upper bound */
-      /* print_tree( (const NODE*) node, NULL); */
-      /* printf("%g %g\n", get_reward(node), reward_ub); */
+      /* check reward does not exceed alleged upper bound ( + epsilon ) */
 
       if( *tree_set )
          assert( !reward_ub_set || LEQ_EPSILON(get_reward(node), reward_ub) );
@@ -433,18 +455,18 @@ void find_best_split(
    assert( *tree_set );
    dummy_split_reward = get_reward(node);
 
-   /* check reward does not exceed alleged upper bound */
+   /* check reward does not exceed alleged upper bound ( + epsilon ) */
    assert( !reward_ub_set || LEQ_EPSILON(dummy_split_reward, reward_ub) );
    
    optimal_tree_found = 0;
-   if( !reward_cutoff_set || dummy_split_reward > reward_cutoff )
+   if( !reward_cutoff_set || GT_EPSILON(dummy_split_reward, reward_cutoff) )
    {
       best_reward = dummy_split_reward;
       record_best_tree(workspace, node, depth);
       best_reward_set = 1;
       /* if there can be no better tree, stop looking for one!
        * use ">=" rather than"==" since should reduce numerical problems */
-      if( reward_ub_set && best_reward >= reward_ub )
+      if( reward_ub_set && EPSILON_GEQ(best_reward, reward_ub) )
       {
          optimal_tree_found = 1;
          return;
@@ -562,8 +584,8 @@ void find_best_split(
          /* get reward for this split */
          this_reward = get_reward(left_child) + get_reward(right_child);
 
-         /* check reward does not exceed alleged upper bound */
-         assert( !reward_ub_set || this_reward <= reward_ub );
+         /* check reward does not exceed alleged upper bound ( + epsilon ) */
+         assert( !reward_ub_set || LEQ_EPSILON(this_reward, reward_ub) );
 
          /* record that reward for this split was found and reset cumulative reward improvement upper bound */
          last_reward = this_reward;
@@ -571,7 +593,7 @@ void find_best_split(
          cum_reward_improvement_ub = 0.0;
          
          /* if best so far, update */
-         if( !reward_cutoff_set || this_reward > reward_cutoff )
+         if( !reward_cutoff_set || GT_EPSILON(this_reward, reward_cutoff) )
          {
             if( !best_reward_set || this_reward > best_reward ) 
             {
@@ -583,8 +605,10 @@ void find_best_split(
 
                /* if there can be no better tree, stop looking for one!
                 * use ">=" rather than"==" since should reduce numerical problems */
-               if( reward_ub_set && best_reward >= reward_ub )
-                  optimal_tree_found = 1;                 
+               if( reward_ub_set && EPSILON_GEQ(best_reward, reward_ub) )
+               {
+                  optimal_tree_found = 1;
+               }
             }
          }
       }
