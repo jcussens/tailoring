@@ -63,7 +63,8 @@ int process_commandline(
    char**                filename,           /**< *filename will be the name of the file with the data */
    int*                  num_cols_y,         /**< *num_cols_y will be number of actions */
    int*                  depth,              /**< *depth will be required depth of tree */
-   int*                  arg4                /**< *arg4 will be 4th argument if present */
+   int*                  arg4,               /**< *arg4 will be 4th argument if present */
+   int*                  arg5                /**< *arg5 will be 5th argument if present */
    )
 {
 
@@ -99,10 +100,20 @@ int process_commandline(
    {
       *arg4 = atoi(argv[4]);
       if(*arg4 != 0 && *arg4 != 1)
-         printf("Warning: Fourth argument should be either 0 or 1.\n");
+         printf("Warning: Fourth argument ignored.\n");
    }
    else
       *arg4 = -1;
+
+   if( argc > 5)
+   {
+      *arg5 = atoi(argv[5]);
+      if(*arg5 != 0 && *arg5 != 1)
+         printf("Warning: Fifth argument ignored.\n");
+   }
+   else
+      *arg5 = -1;
+
    
    return 0;
 }
@@ -135,13 +146,14 @@ int main(
    int min_node_size = DEFAULT_MIN_NODE_SIZE;
 
    int arg4;
+   int arg5;
    STRATEGY* strategy = get_unint_strategy();
    
    /* NODE** nodes; */
    /* int num_nodes; */
    /* int i; */
-   
-   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, &arg4); 
+
+   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, &arg4, &arg5); 
 
    assert( status == 0 || status == 1);
    if( status == 1 )
@@ -153,7 +165,7 @@ int main(
    assert(min_node_size >= 1);
    
    status = readfile(filename, num_cols_y, &data_x, &data_y, &num_rows, &num_cols_x, &covnames, &actionnames);
-
+   
    assert( status == 0 || status == 1);
    if( status == 1 )
       return 1;
@@ -175,16 +187,20 @@ int main(
       printf("Warning: No data supplied.\n");     
    }
 
-   /* set default strategy */
-   use_simple_sets(strategy);
-
+   /* either accept the user's choice of dataset representation or decide based on nature of input data */
    if( arg4 == 0 )
       use_simple_sets(strategy);
    else if( arg4 == 1 )
       use_sorted_sets(strategy);
    else
       decide_datatype(strategy, data_x, num_rows, num_cols_x);
-   
+
+   /* default is to not to compute reward upper bounds */
+   if( arg5 == 0)
+      set_find_reward_ub(strategy, 0);
+   else
+      set_find_reward_ub(strategy, 1);
+
    if( num_rows > 0 )
    {
       tree = tree_search_simple(strategy, depth, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, &reward);

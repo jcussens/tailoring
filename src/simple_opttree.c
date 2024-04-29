@@ -6,9 +6,10 @@
 #include "simple_opttree.h"
 #include "units.h"
 #include "workspace.h"
+#include "strategy.h"
 #include <assert.h>
 #include <stdlib.h>
-/* #include <stdio.h> */
+#include <stdio.h> 
 
 /* #define VERYVERBOSE  */
 
@@ -19,6 +20,9 @@
 #ifdef VERBOSE
 #include <stdio.h>
 #endif
+
+#define EPSILON 1e-09
+#define LEQ_EPSILON(A,B) (A) <= (B) + EPSILON
 
 /** given a set of elements, compute an upper bound on the improvement on the reward for any set of units A
  * by adding these elements to A
@@ -204,7 +208,9 @@ void level_one_learning(
    int                   reward_cutoff_set,  /**< whether a reward cutoff has been set */
    double                reward_cutoff,      /**< if reward_cutoff_set, only interested in trees with reward above this value. it's OK to abort search
                                               * if we know we will not find a tree above this value */
-   int*                  tree_set            /**< *tree_set=1 if search for an optimal tree was not aborted */
+   int*                  tree_set,           /**< *tree_set=1 if search for an optimal tree was not aborted */
+   int                   reward_ub_set,      /**< has an upper bound on reward been set? */
+   double                reward_ub           /**< if reward_ub_set, an upper bound on the reward */
    )
 {
    int p;
@@ -230,16 +236,9 @@ void level_one_learning(
    UNITS right_units;
    int optimal_tree_found;
    
-   /* get best possible reward */
-   double rewardub = get_reward_ub(strategy, units, data_y, num_rows, best_actions);
+   /* no tree found so far */
+   *tree_set = 0;
 
-   /* if no chance of exceeding the cutoff, just abort */
-   if( reward_cutoff_set && rewardub <= reward_cutoff )
-   {
-      *tree_set = 0;
-      return;
-   }
-   
    /* get reward for each action if no split were done */
    find_nosplit_rewards(strategy, units, num_cols_y, data_y, num_rows, nosplit_rewards);
 
@@ -277,26 +276,30 @@ void level_one_learning(
          /* get reward for this split */
          this_reward = best_left_reward + best_right_reward;
 
-         assert( this_reward <= rewardub );
+         assert( !reward_ub_set || LEQ_EPSILON(this_reward, reward_ub) );
 
          /* if best so far, update */
-         if( first_reward || this_reward > best_reward ) 
+         if( !reward_cutoff_set || this_reward > reward_cutoff )
          {
-            best_reward = this_reward;
-            record_split(node, p, splitval, best_reward);
-            make_leaf(left_child, best_left_reward, best_left_action);
-            make_leaf(right_child, best_right_reward, best_right_action);
-#ifdef VERYVERBOSE
-            bestsplitval = splitval;
-            bestp = p;
-#endif
-            first_reward = 0;
-
-            /* if this reward is best possible, just stop searching */
-            if( this_reward >= rewardub )
+            if( first_reward || this_reward > best_reward ) 
             {
-               optimal_tree_found = 1;
-               break;
+               best_reward = this_reward;
+               record_split(node, p, splitval, best_reward);
+               make_leaf(left_child, best_left_reward, best_left_action);
+               make_leaf(right_child, best_right_reward, best_right_action);
+               *tree_set = 1;
+#ifdef VERYVERBOSE
+               bestsplitval = splitval;
+               bestp = p;
+#endif
+               first_reward = 0;
+
+               /* if this reward is best possible, just stop searching */
+               if( reward_ub_set && this_reward >= reward_ub )
+               {
+                  optimal_tree_found = 1;
+                  break;
+               }
             }
          }
 
@@ -338,8 +341,9 @@ void find_best_split(
    int p;
    int pure;
    double best_reward;
-   double best_possible_reward;
+   double reward_ub = -1; /* dummy value */
    int best_reward_set = 0;
+   int reward_ub_set = 0;
    NODE* left_child;
    NODE* right_child;
 
@@ -364,15 +368,19 @@ void find_best_split(
    printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(units));
 #endif
 
-   /* get quick poor bound on best possible reward */
-   best_possible_reward = get_reward_ub(strategy, units, data_y, num_rows, best_actions);
-
-   /* if no chance of exceeding the cutoff, just abort */
-   if( reward_cutoff_set && best_possible_reward <= reward_cutoff )
+   if( find_reward_ub(strategy) )
    {
-      /* printf("size=%d, depth=%d, best_possible=%g, cutoff=%g\n", get_size(units), depth, best_possible_reward, reward_cutoff); */
-      *tree_set = 0;
-      return;
+      /* get quick poor bound on best possible reward */
+      reward_ub = get_reward_ub(strategy, units, data_y, num_rows, best_actions);
+      reward_ub_set = 1;
+      
+      /* if no chance of exceeding the cutoff, just abort */
+      if( 0 && reward_cutoff_set && reward_ub <= reward_cutoff )
+      {
+         /* printf("size=%d, depth=%d, best_possible=%g, cutoff=%g\n", get_size(units), depth, best_possible_reward, reward_cutoff); */
+         *tree_set = 0;
+         return;
+      }
    }
    
    /* determine whether the dataset is pure, i.e. whether each unit has same best action */
@@ -403,13 +411,16 @@ void find_best_split(
    if( depth == 1 )
    {
       level_one_learning(strategy, node, units, data_x, data_y,
-         num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, reward_cutoff_set, reward_cutoff, tree_set); 
+         num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, reward_cutoff_set, reward_cutoff, tree_set,
+         reward_ub_set, reward_ub); 
 
-      if( reward_cutoff_set && get_reward(node) <= reward_cutoff )
-         *tree_set = 0;
-      else
-         *tree_set = 1;
-      
+      /* check reward does not exceed alleged upper bound */
+      /* print_tree( (const NODE*) node, NULL); */
+      /* printf("%g %g\n", get_reward(node), reward_ub); */
+
+      if( *tree_set )
+         assert( !reward_ub_set || LEQ_EPSILON(get_reward(node), reward_ub) );
+
       return;
    }
 
@@ -422,6 +433,9 @@ void find_best_split(
    assert( *tree_set );
    dummy_split_reward = get_reward(node);
 
+   /* check reward does not exceed alleged upper bound */
+   assert( !reward_ub_set || LEQ_EPSILON(dummy_split_reward, reward_ub) );
+   
    optimal_tree_found = 0;
    if( !reward_cutoff_set || dummy_split_reward > reward_cutoff )
    {
@@ -430,7 +444,7 @@ void find_best_split(
       best_reward_set = 1;
       /* if there can be no better tree, stop looking for one!
        * use ">=" rather than"==" since should reduce numerical problems */
-      if( best_reward >= best_possible_reward )
+      if( reward_ub_set && best_reward >= reward_ub )
       {
          optimal_tree_found = 1;
          return;
@@ -548,6 +562,9 @@ void find_best_split(
          /* get reward for this split */
          this_reward = get_reward(left_child) + get_reward(right_child);
 
+         /* check reward does not exceed alleged upper bound */
+         assert( !reward_ub_set || this_reward <= reward_ub );
+
          /* record that reward for this split was found and reset cumulative reward improvement upper bound */
          last_reward = this_reward;
          have_last_reward = 1;
@@ -566,7 +583,7 @@ void find_best_split(
 
                /* if there can be no better tree, stop looking for one!
                 * use ">=" rather than"==" since should reduce numerical problems */
-               if( best_reward >= best_possible_reward )
+               if( reward_ub_set && best_reward >= reward_ub )
                   optimal_tree_found = 1;                 
             }
          }

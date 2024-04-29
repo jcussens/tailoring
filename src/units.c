@@ -86,7 +86,9 @@ void shallow_free_units(
    DISPATCH_UNITS(shallow_free_units, num_cols_x)
 }
 
-/** for debugging only: check that a non-empty collection of sorted sets represent the same underlying set and that each is appropriately sorted */
+/** for debugging only: check that a non-empty collection of sorted sets represent the same underlying set and that each is appropriately sorted 
+ * this is very slow, so by default no check is done
+ */
 int units_ok(
    const STRATEGY*       strategy,           /**< tree-building strategy */
    CONST_UNITS           units,              /**< units */
@@ -96,7 +98,11 @@ int units_ok(
    int                   num_cols_x          /**< number of covariates */
    )
 {
+#ifdef CHECK_UNITSOK
    DISPATCH_CONSTUNITS(units_ok, p, data_x, num_rows, num_cols_x)
+#else
+   return 1;
+#endif
 }
 
 /** get the reward for a set if all units in the set were assigned their best action *

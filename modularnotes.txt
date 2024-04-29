@@ -250,3 +250,8 @@ given the string representing the function prototype
 5) add "return <rettype> simple_set_<fnname>(<arg_names>)
 
 problem is: need to cast any arg declared as of type UNITS
+
+Mon 29 Apr 07:09:48 BST 2024
+
+with current uncommitted code get the wrong tree with IFLS depth=1 if
+finding reward is turned off.

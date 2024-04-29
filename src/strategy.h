@@ -39,6 +39,19 @@ void decide_datatype(
    int                   num_cols_x          /**< number of covariates */
    );
 
+/** return whether we wish to compute an upper bound on reward for each (sub-) dataset */
+int find_reward_ub(
+   const STRATEGY*       strategy            /**< solving strategy */
+   );
+
+
+/** return whether we wish to compute an upper bound on reward for each (sub-) dataset */
+void set_find_reward_ub(
+   STRATEGY*             strategy,           /**< solving strategy */
+   int                   val                 /**< 0 for no, 1 for yes */
+   );
+
+
 #ifdef __cplusplus
 }
 #endif

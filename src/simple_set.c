@@ -340,8 +340,10 @@ double simple_set_get_reward_ub(
    double ub = 0.0;
 
    for(i = simple_set->start; i < simple_set->start + simple_set->n; i++)
+   {
       ub += *(data_y + num_rows*best_actions[simple_set->elements[i]] + simple_set->elements[i]);
-         
+      /* printf("%d %d %d %g\n", i, simple_set->elements[i], best_actions[simple_set->elements[i]], ub); */
+   }     
    return ub;
 }
 
