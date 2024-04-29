@@ -102,7 +102,7 @@ int units_ok(
 /** get the reward for a set if all units in the set were assigned their best action *
  * @return the reward for a set if all units in the set were assigned their best action *
  */
-double reward_ub(
+double get_reward_ub(
    const STRATEGY*       strategy,           /**< tree-building strategy */
    CONST_UNITS           units,              /**< set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
@@ -110,7 +110,7 @@ double reward_ub(
    const int*            best_actions        /**< best_actions[i] is the best action for unit i */
    )
 {
-   DISPATCH_CONSTUNITS(reward_ub, data_y, num_rows, best_actions)
+   DISPATCH_CONSTUNITS(get_reward_ub, data_y, num_rows, best_actions)
 }
 
 /** Determine whether a set is 'pure'.

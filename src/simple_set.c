@@ -329,7 +329,7 @@ int simple_set_units_ok(
 /** get the reward for a set if all units in the set were assigned their best action *
  * @return the reward for a set if all units in the set were assigned their best action *
  */
-double simple_set_reward_ub(
+double simple_set_get_reward_ub(
    const SIMPLE_SET*     simple_set,         /**< set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
    int                   num_rows,           /**< number of units in full dataset */

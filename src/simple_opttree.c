@@ -231,7 +231,7 @@ void level_one_learning(
    int optimal_tree_found;
    
    /* get best possible reward */
-   double rewardub = reward_ub(strategy, units, data_y, num_rows, best_actions);
+   double rewardub = get_reward_ub(strategy, units, data_y, num_rows, best_actions);
 
    /* if no chance of exceeding the cutoff, just abort */
    if( reward_cutoff_set && rewardub <= reward_cutoff )
@@ -365,7 +365,7 @@ void find_best_split(
 #endif
 
    /* get quick poor bound on best possible reward */
-   best_possible_reward = reward_ub(strategy, units, data_y, num_rows, best_actions);
+   best_possible_reward = get_reward_ub(strategy, units, data_y, num_rows, best_actions);
 
    /* if no chance of exceeding the cutoff, just abort */
    if( reward_cutoff_set && best_possible_reward <= reward_cutoff )

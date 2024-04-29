@@ -53,7 +53,7 @@ int units_ok(
 /** get the reward for a set if all units in the set were assigned their best action *
  * @return the reward for a set if all units in the set were assigned their best action *
  */
-double reward_ub(
+double get_reward_ub(
    const STRATEGY*       strategy,           /**< tree-building strategy */
    CONST_UNITS           units,              /**< set */
    const double*         data_y,             /**< gammas, data_y+(d*num_rows) points to values for reward d */
