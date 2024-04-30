@@ -95,7 +95,7 @@ int search_cache(
    int                   nelts,              /**< number of elts in set */
    const ELEMENT*        elts,               /**< the set */
    int                   depth,              /**< depth of tree */
-   NODE**                tree                /**< if in cache, *tree is optimal tree for set */
+   NODE*                 tree                /**< if in cache, tree is set to optimal tree for set */
    )
 {
    int slot = get_slot(nelts, elts, depth);
@@ -104,7 +104,7 @@ int search_cache(
    {
       if( match(nelts, elts, depth, (const ENTRY*) cache->slots[slot][i]) )
       {
-         *tree = cache->slots[slot][i]->tree;
+         tree_copy(cache->slots[slot][i]->tree,tree);
          return 1;
       }
    }

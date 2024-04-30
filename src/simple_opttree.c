@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h> 
 
-/* #define VERYVERBOSE  */
+#define VERBOSE  
 
 #ifdef VERYVERBOSE
 #define VERBOSE
@@ -413,16 +413,16 @@ void find_best_split(
    assert( units_ok(strategy, units, -1, data_x, num_rows, num_cols_x) );
 
 #ifdef VERBOSE
-   printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(units));
+   printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(strategy, units));
 #endif
 
    elements(strategy, (CONST_UNITS) units, &elts, &nsorted_elts);
    sorted_elts = (ELEMENT*) malloc(nsorted_elts*sizeof(ELEMENT));
    memcpy(sorted_elts, elts, nsorted_elts*sizeof(ELEMENT));
    qsort(sorted_elts, nsorted_elts, sizeof(ELEMENT), cmp);
-   if( search_cache( (const CACHE*) cache, nsorted_elts, sorted_elts, depth, &node) )
+   if( search_cache( (const CACHE*) cache, nsorted_elts, sorted_elts, depth, node) )
    {
-      printf("Found optimal tree for dataset of size %d in cache.\n", nsorted_elts);
+      printf("Found optimal tree for depth=%d with reward=%g for dataset of size %d in cache.\n", depth, get_reward(node), nsorted_elts);
 
       best_reward = get_reward(node);
       if( !reward_cutoff_set || GT_EPSILON(best_reward, reward_cutoff) )
@@ -497,14 +497,18 @@ void find_best_split(
       /* no cutoff is used here since the primary reason for finding this tree is to bound the reward of trees
          built using 'similar' splits */
       /* also record this tree as best so far */
+      printf("Looking for dummy split tree (main tree had depth=%d)...\n", depth);
       find_best_split(strategy, cache, node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
          best_actions, worst_actions, workspace, 0, reward_cutoff, tree_set);
       assert( *tree_set );
       dummy_split_reward = get_reward(node);
       dummy_split_reward_set = 1;
+      printf("Done\n");
       
       /* check reward does not exceed alleged upper bound ( + epsilon ) */
       printf("%g %g\n", dummy_split_reward, reward_ub);
+      if(!( !reward_ub_set || LEQ_EPSILON(dummy_split_reward, reward_ub) ))
+         print_tree(node, NULL);
       assert( !reward_ub_set || LEQ_EPSILON(dummy_split_reward, reward_ub) );
    
       optimal_tree_found = 0;

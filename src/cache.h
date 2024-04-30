@@ -21,7 +21,7 @@ int search_cache(
    int                   nelts,              /**< number of elts in set */
    const ELEMENT*        elts,               /**< the set */
    int                   depth,              /**< depth of tree */
-   NODE**                tree                /**< if in cache, *tree is optimal tree for set */
+   NODE*                 tree                /**< if in cache, tree is set to optimal tree for set */
    );
 
 /** add an optimal tree to cache */
