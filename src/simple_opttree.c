@@ -10,10 +10,9 @@
 #include "cache.h"
 #include <assert.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h> 
 
-#define VERBOSE  
+/* #define VERBOSE   */
 
 #ifdef VERYVERBOSE
 #define VERBOSE
@@ -314,6 +313,9 @@ void level_one_learning(
          /* get reward for this split */
          this_reward = best_left_reward + best_right_reward;
 
+         /* if( get_size(strategy, units) == 2814 ) */
+         /*    printf("reward for a split on %d is %g (cutoff is %g).\n", p, this_reward, reward_cutoff); */
+         
          assert( !reward_ub_set || LEQ_EPSILON(this_reward, reward_ub) );
 
          /* if best so far and safely above cutoff , update */
@@ -322,6 +324,9 @@ void level_one_learning(
             if( first_reward || this_reward > best_reward ) 
             {
                best_reward = this_reward;
+               /* if( get_size(strategy, units) == 2814 ) */
+               /*    printf("new best reward for a split on %d is %g.\n", p, this_reward); */
+
                record_split(node, p, splitval, best_reward);
                make_leaf(left_child, best_left_reward, best_left_action);
                make_leaf(right_child, best_right_reward, best_right_action);
@@ -398,7 +403,7 @@ void find_best_split(
 
    ELEMENT* elts;
    int nelts;
-   ELEMENT* sorted_elts;
+   ELEMENT* sorted_elts = NULL;
    int nsorted_elts;
 
    assert( node != NULL );
@@ -412,24 +417,31 @@ void find_best_split(
    assert( data_y != NULL );
    assert( units_ok(strategy, units, -1, data_x, num_rows, num_cols_x) );
 
-#ifdef VERBOSE
-   printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(strategy, units));
-#endif
+/* #ifdef VERBOSE */
+/*    printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(strategy, units)); */
+/* #endif */
 
-   elements(strategy, (CONST_UNITS) units, &elts, &nsorted_elts);
-   sorted_elts = (ELEMENT*) malloc(nsorted_elts*sizeof(ELEMENT));
-   memcpy(sorted_elts, elts, nsorted_elts*sizeof(ELEMENT));
-   qsort(sorted_elts, nsorted_elts, sizeof(ELEMENT), cmp);
-   if( search_cache( (const CACHE*) cache, nsorted_elts, sorted_elts, depth, node) )
+   if( use_cache(strategy) )
    {
-      printf("Found optimal tree for depth=%d with reward=%g for dataset of size %d in cache.\n", depth, get_reward(node), nsorted_elts);
-
-      best_reward = get_reward(node);
-      if( !reward_cutoff_set || GT_EPSILON(best_reward, reward_cutoff) )
-         *tree_set = 1;
-      else
-         *tree_set = 0;
-      return;
+      assert(cache != NULL);
+      
+      elements(strategy, (CONST_UNITS) units, &elts, &nsorted_elts);
+      sorted_elts = (ELEMENT*) malloc(nsorted_elts*sizeof(ELEMENT));
+      memcpy(sorted_elts, elts, nsorted_elts*sizeof(ELEMENT));
+      qsort(sorted_elts, nsorted_elts, sizeof(ELEMENT), cmp);
+      if( search_cache( (const CACHE*) cache, nsorted_elts, sorted_elts, depth, node) )
+      {
+#ifdef VERBOSE 
+         printf("Found optimal tree for depth=%d with reward=%g (cutoff is %d|%g) for dataset of size %d in cache.\n",
+            depth,  get_reward(node), reward_cutoff_set, reward_cutoff, nsorted_elts);
+#endif
+         best_reward = get_reward(node);
+         if( !reward_cutoff_set || GT_EPSILON(best_reward, reward_cutoff) )
+            *tree_set = 1;
+         else
+            *tree_set = 0;
+         return;
+      }
    }
 
    
@@ -447,7 +459,7 @@ void find_best_split(
          return;
       }
    }
-   
+
    /* determine whether the dataset is pure, i.e. whether each unit has same best action */
    pure = is_pure(strategy, units, best_actions);
 
@@ -467,7 +479,8 @@ void find_best_split(
          *tree_set = 0;
       else
       {
-         add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
+         if( use_cache(strategy) )
+            add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
          *tree_set = 1;
       }
       /* all done */
@@ -480,14 +493,16 @@ void find_best_split(
       level_one_learning(strategy, node, units, data_x, data_y,
          num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, reward_cutoff_set, reward_cutoff, tree_set,
          reward_ub_set, reward_ub); 
-
-      /* check reward does not exceed alleged upper bound ( + epsilon ) */
-
-      add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
       
+      /* check reward does not exceed alleged upper bound ( + epsilon ) */      
       if( *tree_set )
+      {
          assert( !reward_ub_set || LEQ_EPSILON(get_reward(node), reward_ub) );
 
+         if( use_cache(strategy) )
+            add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
+      }
+      
       return;
    }
 
@@ -497,18 +512,14 @@ void find_best_split(
       /* no cutoff is used here since the primary reason for finding this tree is to bound the reward of trees
          built using 'similar' splits */
       /* also record this tree as best so far */
-      printf("Looking for dummy split tree (main tree had depth=%d)...\n", depth);
+
       find_best_split(strategy, cache, node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
          best_actions, worst_actions, workspace, 0, reward_cutoff, tree_set);
       assert( *tree_set );
       dummy_split_reward = get_reward(node);
       dummy_split_reward_set = 1;
-      printf("Done\n");
       
       /* check reward does not exceed alleged upper bound ( + epsilon ) */
-      printf("%g %g\n", dummy_split_reward, reward_ub);
-      if(!( !reward_ub_set || LEQ_EPSILON(dummy_split_reward, reward_ub) ))
-         print_tree(node, NULL);
       assert( !reward_ub_set || LEQ_EPSILON(dummy_split_reward, reward_ub) );
    
       optimal_tree_found = 0;
@@ -521,13 +532,17 @@ void find_best_split(
           * use ">=" rather than"==" since should reduce numerical problems */
          if( reward_ub_set && EPSILON_GEQ(best_reward, reward_ub) )
          {
+            /* printf("dummy optimal etc computed:\n"); */
+            /* print_tree(node, NULL); */
+            /* printf("ENDS\n"); */
+
+            
             optimal_tree_found = 1;
             return;
          }
       }
    }
 
-   
    /* get left and right subtrees */
    get_children(node, &left_child, &right_child);
 
@@ -678,7 +693,8 @@ void find_best_split(
    {
       /* set node to best tree */
       retrieve_best_tree(workspace, node, depth);
-      add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
+      if( use_cache(strategy) )
+         add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
       *tree_set = 1;
    }
    else
@@ -686,8 +702,9 @@ void find_best_split(
       /* indicate that no acceptable tree found */
       *tree_set = 0;
    }
-
-   free(sorted_elts);
+   
+   if( use_cache(strategy) )
+      free(sorted_elts);
    
 #ifdef VERYVERBOSE
    printf("Best split for depth=%d tree for dataset of size %d is split value %g for covariate %d with reward %g.\n",
@@ -723,7 +740,7 @@ NODE* tree_search_simple(
    double reward_cutoff = 0.0; /* dummy value */
    int aborted;
 
-   CACHE* cache = make_cache();
+   CACHE* cache = NULL;
    
    /* Permitted: depth 0 trees, no covariates */
    /* Not permitted: no data, min_node_size < 1, number of actions < 1 */ 
@@ -755,6 +772,9 @@ NODE* tree_search_simple(
 
    assert( best_actions != NULL );
    assert( worst_actions != NULL );
+
+   if( use_cache(strategy) )
+      cache = make_cache();
    
    /* find the optimal tree */
    find_best_split(strategy, cache, tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,
@@ -768,6 +788,7 @@ NODE* tree_search_simple(
    free(worst_actions);
    free_workspace(strategy, workspace, depth, num_cols_x);
    free_units(strategy, units, num_cols_x);
+   if( use_cache(strategy) )
    free_cache(cache);
    
    /* remove any nodes below leaves, and merge leaves with the same action */

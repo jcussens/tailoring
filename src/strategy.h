@@ -84,6 +84,18 @@ void set_use_cutoffs(
    int                   val                 /**< 0 for no, 1 for yes */
    );
 
+/** return whether we wish to use the cache */
+int use_cache(
+   const STRATEGY*       strategy            /**< solving strategy */
+   );
+
+
+/** set whether we wish to use the cache */
+void set_use_cache(
+   STRATEGY*             strategy,           /**< solving strategy */
+   int                   val                 /**< 0 for no, 1 for yes */
+   );
+
 
 #ifdef __cplusplus
 }

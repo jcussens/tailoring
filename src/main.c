@@ -141,14 +141,14 @@ int main(
    
    int min_node_size = DEFAULT_MIN_NODE_SIZE;
 
-   int optargs[5];
+   int optargs[6];
    STRATEGY* strategy = get_unint_strategy();
    
    /* NODE** nodes; */
    /* int num_nodes; */
    /* int i; */
 
-   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, optargs, 4); 
+   status = process_commandline(argc, argv, &filename, &num_cols_y, &depth, optargs, 6); 
 
    assert( status == 0 || status == 1);
    if( status == 1 )
@@ -201,6 +201,9 @@ int main(
 
    /* default is to use cutoffs (to avoid considering some splits) */
    set_use_cutoffs(strategy, (optargs[4] == 0) ? 0 : 1);
+
+   /* default is to use cache (to avoid considering some splits) */
+   set_use_cache(strategy, (optargs[5] == 0) ? 0 : 1);
 
    if( num_rows > 0 )
    {
