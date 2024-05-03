@@ -4,13 +4,25 @@
 #include "cache.h"
 #include "tree.h"
 #include "assert.h"
+#include <limits.h>
 
 #define NSLOTS 100
 
+/* following macros adapted from https://c-faq.com/misc/bitsets.html */
+
+#define NBITS (CHAR_BIT * sizeof(int))       /**< number of bits in an 'int' */
+#define BITMASK(b) (1 << ((b) % NBITS))      /**< given b, sets only bth bit in a slot (all others zero) */
+#define BITSLOT(b) ((b) / NBITS)             /**< finds correct slot for an integer */
+#define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b)) /**< given integer b and bitset a, sets correct bit for b */
+#define BITCLEAR(a, b) ((a)[BITSLOT(b)] &= ~BITMASK(b)) /**< given integer b and bitset a, clears correct bit for b */
+#define BITTEST(a, b) ((a)[BITSLOT(b)] & BITMASK(b)) /**< given integer b and bitset a, test whether correct bit for b is set */
+#define BITNSLOTS(nb) ((nb + NBITS - 1) / NBITS) /**< compute number of (integer-sized) slots needed for 'universe' of size nb */
+
+
 struct entry
 {
-   int                   nelts;              /**< number of elts in set */
-   ELEMENT*              elts;               /**< the set */
+   int*                  key;                /**< bitset representation of set */
+   int                   nelts;              /**< number of elements in the set */
    int                   depth;              /**< depth of tree */
    NODE*                 tree;               /**< optimal tree for set */
 };
@@ -20,6 +32,7 @@ struct cache
 {
    ENTRY***              slots;              /** slots */
    int*                  nentries;           /** number of entries in each slot */
+   int                   nints;              /** number of ints required for a bitset representation */
 };
 
 /** get slot for given set and depth */
@@ -33,11 +46,12 @@ int get_slot(
    return (nelts+depth) % NSLOTS;
 }
 
-/** is this the entry for give set and depth? */
+/** is this the entry for given set and depth? */
 static
 int match(
-   int                   nelts,              /**< number of elts in set */
-   const ELEMENT*        elts,               /**< the set */
+   const int*            key,                /**< bitset key for set */
+   int                   nints,              /**< number of ints for a bitset */
+   int                   nelts,              /**< number of elts in the set */
    int                   depth,              /**< depth of tree */
    const ENTRY*          entry               /**< entry */
    )
@@ -47,8 +61,8 @@ int match(
    if( depth != entry->depth || nelts != entry->nelts )
       return 0;
 
-   for( i = 0; i < nelts; i++ )
-      if( elts[i] != entry->elts[i] )
+   for( i = 0; i < nints; i++ )
+      if( key[i] != entry->key[i] )
          return 0;
 
    return 1;
@@ -57,6 +71,7 @@ int match(
 /** create an entry */
 static
 ENTRY* make_entry(
+   const CACHE*          cache,              /**< cache */
    int                   nelts,              /**< number of elts in set */
    const ELEMENT*        elts,               /**< the set */
    int                   depth,              /**< depth of tree */
@@ -65,13 +80,16 @@ ENTRY* make_entry(
 {
    ENTRY* entry = (ENTRY*) malloc(sizeof(ENTRY));
    NODE* tree_cp = make_tree(depth);
-   ELEMENT* elts_cp = (ELEMENT*) malloc(nelts*sizeof(ELEMENT));
+   int* key = (int*) calloc(cache->nints, sizeof(int));
+   int i;
+   
+   for( i = 0; i < nelts; i++)
+      BITSET(key,elts[i]);
    
    tree_copy(tree, tree_cp);
-   memcpy(elts_cp, elts, nelts*sizeof(ELEMENT));
 
+   entry->key = key;
    entry->nelts = nelts;
-   entry->elts = elts_cp;
    entry->depth = depth;
    entry->tree = tree_cp;
 
@@ -84,7 +102,7 @@ void free_entry(
    ENTRY* entry
    )
 {
-   free(entry->elts);
+   free(entry->key);
    tree_free(entry->tree);
    free(entry);
 }
@@ -100,15 +118,24 @@ int search_cache(
 {
    int slot = get_slot(nelts, elts, depth);
    int i;
+   int* key = (int*) calloc(cache->nints, sizeof(int));
+   int result = 0;
+   
+   for( i = 0; i < nelts; i++)
+      BITSET(key,elts[i]);
+   
    for( i = 0; i < cache->nentries[slot]; i++ )
    {
-      if( match(nelts, elts, depth, (const ENTRY*) cache->slots[slot][i]) )
+      if( match((const int*) key, cache->nints, nelts, depth, (const ENTRY*) cache->slots[slot][i]) )
       {
          tree_copy(cache->slots[slot][i]->tree,tree);
-         return 1;
+         result = 1;
+         break;
       }
    }
-   return 0;
+
+   free(key);
+   return result;
 }
 
 
@@ -122,7 +149,7 @@ void add_to_cache(
 )
 {
    int slot = get_slot(nelts, elts, depth);
-   ENTRY* entry = make_entry(nelts, elts, depth, tree);
+   ENTRY* entry = make_entry(cache, nelts, elts, depth, tree);
    int idx = cache->nentries[slot];
 
    assert(cache != NULL);
@@ -148,14 +175,15 @@ void add_to_cache(
 
 /** make cache */
 CACHE* make_cache(
-   void
+   int                   num_rows            /**< number of units */
    )
 {
    CACHE* cache = (CACHE*) malloc(sizeof(CACHE));
    
    cache->slots = (ENTRY***) malloc(NSLOTS * sizeof(ENTRY**));
    cache->nentries = (int*) calloc(NSLOTS, sizeof(int));
-
+   cache->nints = BITNSLOTS(num_rows);
+   
    return cache;
 }
 

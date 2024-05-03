@@ -28,17 +28,6 @@
 #define EPSILON_GEQ(A,B) (A) + EPSILON >= (B)
 #define GT_EPSILON(A,B) (A) > (B) + EPSILON
 
-static
-int cmp(
-   const void* elt1,
-   const void* elt2
-   )
-{
-   assert(elt1 != NULL);
-   assert(elt2 != NULL);
-   
-   return (int) (*(ELEMENT*)elt1 - *(ELEMENT*)elt2);
-}
 
 /** given a set of elements, compute an upper bound on the improvement on the reward for any set of units A
  * by adding these elements to A
@@ -403,9 +392,10 @@ void find_best_split(
 
    ELEMENT* elts;
    int nelts;
-   ELEMENT* sorted_elts = NULL;
-   int nsorted_elts;
+   ELEMENT* mainelts;
+   int nmainelts;
 
+   
    assert( node != NULL );
    assert( depth >= 0 );
    assert( units != NULL);
@@ -425,15 +415,12 @@ void find_best_split(
    {
       assert(cache != NULL);
       
-      elements(strategy, (CONST_UNITS) units, &elts, &nsorted_elts);
-      sorted_elts = (ELEMENT*) malloc(nsorted_elts*sizeof(ELEMENT));
-      memcpy(sorted_elts, elts, nsorted_elts*sizeof(ELEMENT));
-      qsort(sorted_elts, nsorted_elts, sizeof(ELEMENT), cmp);
-      if( search_cache( (const CACHE*) cache, nsorted_elts, sorted_elts, depth, node) )
+      elements(strategy, (CONST_UNITS) units, &mainelts, &nmainelts);
+      if( search_cache( (const CACHE*) cache, nmainelts, mainelts, depth, node) )
       {
 #ifdef VERBOSE 
          printf("Found optimal tree for depth=%d with reward=%g (cutoff is %d|%g) for dataset of size %d in cache.\n",
-            depth,  get_reward(node), reward_cutoff_set, reward_cutoff, nsorted_elts);
+            depth,  get_reward(node), reward_cutoff_set, reward_cutoff, nmainelts);
 #endif
          best_reward = get_reward(node);
          if( !reward_cutoff_set || GT_EPSILON(best_reward, reward_cutoff) )
@@ -480,7 +467,7 @@ void find_best_split(
       else
       {
          if( use_cache(strategy) )
-            add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
+            add_to_cache(cache, nmainelts, mainelts, depth, node);
          *tree_set = 1;
       }
       /* all done */
@@ -500,7 +487,7 @@ void find_best_split(
          assert( !reward_ub_set || LEQ_EPSILON(get_reward(node), reward_ub) );
 
          if( use_cache(strategy) )
-            add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
+            add_to_cache(cache, nmainelts, mainelts, depth, node);
       }
       
       return;
@@ -694,7 +681,7 @@ void find_best_split(
       /* set node to best tree */
       retrieve_best_tree(workspace, node, depth);
       if( use_cache(strategy) )
-         add_to_cache(cache, nsorted_elts, sorted_elts, depth, node);
+         add_to_cache(cache, nmainelts, mainelts, depth, node);
       *tree_set = 1;
    }
    else
@@ -702,9 +689,6 @@ void find_best_split(
       /* indicate that no acceptable tree found */
       *tree_set = 0;
    }
-   
-   if( use_cache(strategy) )
-      free(sorted_elts);
    
 #ifdef VERYVERBOSE
    printf("Best split for depth=%d tree for dataset of size %d is split value %g for covariate %d with reward %g.\n",
@@ -774,7 +758,7 @@ NODE* tree_search_simple(
    assert( worst_actions != NULL );
 
    if( use_cache(strategy) )
-      cache = make_cache();
+      cache = make_cache(num_rows);
    
    /* find the optimal tree */
    find_best_split(strategy, cache, tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,

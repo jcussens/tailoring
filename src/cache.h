@@ -14,6 +14,10 @@ extern "C" {
 struct cache;
 typedef struct cache CACHE;
 
+/** get the number of ints required to represent a set of units */
+int getnints(
+   const CACHE*          cache               /**< cache */
+   );
 
 /** search cache for an optimal tree */
 int search_cache(
@@ -35,7 +39,7 @@ void add_to_cache(
 
 /** make cache */
 CACHE* make_cache(
-   void
+   int                   num_rows            /**< number of units */
    );
 
 /** free cache */
