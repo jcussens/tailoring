@@ -197,7 +197,7 @@ void initialise_units(
    )
 {
    DISPATCH(initialise_units, ((const SORTED_SET**) units, p, depth, num_cols_x, workspace, (SORTED_SET***) left_units, (SORTED_SET***) right_units),
-      ((const SIMPLE_SET*) units, p, depth, num_cols_x, workspace, (SIMPLE_SET**) left_units, (SIMPLE_SET**) right_units))
+      (strategy, (const SIMPLE_SET*) units, p, depth, num_cols_x, workspace, (SIMPLE_SET**) left_units, (SIMPLE_SET**) right_units))
 }
 
 /** given that left_set and right_set are sorted according to covariate p, find next split (if any)  and associated split value
@@ -206,6 +206,7 @@ void initialise_units(
  */
 int next_split(
    const STRATEGY*       strategy,           /**< tree-building strategy */
+   CONST_UNITS           units,              /**< input set */
    UNITS                 left_units,         /**< units on the left */
    UNITS                 right_units,        /**< units on the right */ 
    int                   p,                  /**< covariate to split on */
@@ -213,11 +214,12 @@ int next_split(
    int                   num_cols_x,         /**< number of covariates */
    double*               splitval,           /**< (pointer to) found value to split on */
    ELEMENT**             elts,               /**< (pointer to) elements moved */
-   int*                  nelts               /**< (pointer to) number of elements moved */
+   int*                  nelts,              /**< (pointer to) number of elements moved */
+   int                   splitcount          /**< number of previous splits */
    )
 {
-   DISPATCH(next_split, ((SORTED_SET**) left_units, (SORTED_SET**) right_units, p, data_xp, num_cols_x, splitval, elts, nelts),
-      ((SIMPLE_SET*) left_units, (SIMPLE_SET*) right_units, p, data_xp, num_cols_x, splitval, elts, nelts))
+   DISPATCH(next_split, (strategy, (SORTED_SET**) left_units, (SORTED_SET**) right_units, p, data_xp, num_cols_x, splitval, elts, nelts),
+      (strategy, (const SIMPLE_SET*) units, (SIMPLE_SET*) left_units, (SIMPLE_SET*) right_units, p, data_xp, num_cols_x, splitval, elts, nelts, splitcount))
 }
 
 /** find units with same covariate value starting from a given index */

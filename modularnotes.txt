@@ -255,3 +255,7 @@ Mon 29 Apr 07:09:48 BST 2024
 
 with current uncommitted code get the wrong tree with IFLS depth=1 if
 finding reward is turned off.
+
+Fri  3 May 09:49:18 BST 2024
+
+good results with caching, created depth 4 tree for IFLS in 7m26s

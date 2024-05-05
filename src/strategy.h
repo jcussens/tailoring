@@ -96,6 +96,17 @@ void set_use_cache(
    int                   val                 /**< 0 for no, 1 for yes */
    );
 
+/** return whether we wish to exploit binary variables */
+int exploit_binaryvars(
+   const STRATEGY*       strategy            /**< solving strategy */
+   );
+
+/** set whether we wish to exploit binary variables */
+void set_exploit_binaryvars(
+   STRATEGY*             strategy,           /**< solving strategy */
+   int                   val                 /**< 0 for no, 1 for yes */
+   );
+
 
 #ifdef __cplusplus
 }

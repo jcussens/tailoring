@@ -130,6 +130,7 @@ void initialise_units(
  */
 int next_split(
    const STRATEGY*       strategy,           /**< tree-building strategy */
+   CONST_UNITS           units,              /**< input set */
    UNITS                 left_units,         /**< units on the left */
    UNITS                 right_units,        /**< units on the right */ 
    int                   p,                  /**< covariate to split on */
@@ -137,8 +138,8 @@ int next_split(
    int                   num_cols_x,         /**< number of covariates */
    double*               splitval,           /**< (pointer to) found value to split on */
    ELEMENT**             elts,               /**< (pointer to) elements moved */
-   int*                  nelts               /**< (pointer to) number of elements moved */
-
+   int*                  nelts,              /**< (pointer to) number of elements moved */
+   int                   splitcount          /**< number of previous splits */
    );
 
 /** find units with same covariate value starting from a given index */

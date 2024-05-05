@@ -5,6 +5,7 @@
 #include "units.h"
 #include "workspace.h"
 #include "simple_set.h"
+#include "strategy.h"
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -429,9 +430,12 @@ void simple_set_find_best_action(
 
 /** given that left_set and right_set are sorted according to covariate p, find next split (if any)  and associated split value
  * if there is a split, then both left_set and right_set are updated accordingly.
+ * If splitting on a binary variable then a different approach is taken
  * @return 1 if there is a next split, otherwise 0
  */
 int simple_set_next_split(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
+   const SIMPLE_SET*     simple_set,         /**< input set */
    SIMPLE_SET*           left_set,           /**< left set sorted on covariate p */
    SIMPLE_SET*           right_set,          /**< right set sorted on covariate p */ 
    int                   p,                  /**< covariate to split on */
@@ -439,7 +443,8 @@ int simple_set_next_split(
    int                   num_cols_x,         /**< number of covariates */
    double*               splitval,           /**< (pointer to) found value to split on */
    ELEMENT**             elts,               /**< (pointer to) elements moved */
-   int*                  nelts               /**< (pointer to) number of elements moved */
+   int*                  nelts,              /**< (pointer to) number of elements moved */
+   int                   splitcount          /**< number of previous splits */
    )
 {
    int leftend;
@@ -451,8 +456,52 @@ int simple_set_next_split(
    assert(num_cols_x > 0);
    assert(splitval != NULL);
 
-   *nelts = 0;
+   if( exploit_binaryvars(strategy) && simple_set->nkeyvals[p] == 2 )
+   {
+      int i;
+      KEY* keys = simple_set->keys[p];
+      
+      assert( splitcount == 0 || splitcount == 1 );
+
+      /* since can only be one split for a binary variable, just return if it's been done */
+      if( splitcount == 1 )
+         return 0;
+
+      /* check left and right set initialised as expected */
+      assert(left_set->n == 0);
+      assert(left_set->start == 0);
+      assert(left_set->elements != NULL);
+      assert(right_set->n == 0);
+      assert(right_set->start == 0);
+      assert(right_set->elements != NULL);
+      
+      /* just put lower key value on left and higher on right */
+      for( i = simple_set->start; i < simple_set->start + simple_set->n; i++)
+      {
+         ELEMENT element = simple_set->elements[i];
+         
+         if( keys[element] == 0 )
+            left_set->elements[(left_set->n)++] = element;
+         else
+            right_set->elements[(right_set->n)++] = element;
+      }
+
+      *nelts = left_set->n;
+      *elts = left_set->elements;
+
+      if( *nelts > 0 )
+      {
+         *splitval = data_xp[left_set->elements[0]];
+         return 1;
+      }
+      else
+      {
+         return 0;
+      }
+   }
    
+   *nelts = 0;
+
    /* nothing to move from right to left */
    if( right_set->n == 0 )
       return 0;
@@ -555,6 +604,7 @@ KEY* get_key(
  *  right_simple_set is a copy of the simple_set sorted on covariate p
 */
 void simple_set_initialise_units(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
    const SIMPLE_SET*     simple_set,         /**< input set */
    int                   p,                  /**< splitting covariate */
    int                   depth,              /**< depth of associated node */
@@ -578,12 +628,21 @@ void simple_set_initialise_units(
    left->n = 0;
    left->start = 0;
 
-   /* make right a copy of input, but with elements ordered according to covariate p */
-   right->n = simple_set->n;
    right->start = 0;
-   sort_units(simple_set->elements + simple_set->start, simple_set->n, simple_set->keys[p], simple_set->nkeyvals[p],
-      ((SIMPLE_SET*) get_tmpunits(workspace))->elements, get_tmp2(workspace), right->elements);
 
+   if( exploit_binaryvars(strategy) && simple_set->nkeyvals[p] == 2 )
+   {
+      /* do basically nothing */
+      right->n = 0;
+   }
+   else
+   {
+      right->n = simple_set->n;
+
+      /* make right a copy of input, but with elements ordered according to covariate p */
+      sort_units(simple_set->elements + simple_set->start, simple_set->n, simple_set->keys[p], simple_set->nkeyvals[p],
+         ((SIMPLE_SET*) get_tmpunits(workspace))->elements, get_tmp2(workspace), right->elements);
+   }
    *left_simple_set = left;
    *right_simple_set = right;
 }

@@ -485,6 +485,7 @@ void sorted_set_elements(
  * Return 1 if a split found, else 0
  */
 int sorted_set_next_split(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
    SORTED_SET**          left_sorted_sets,   /**< left sorted sets, one for each covariate */
    SORTED_SET**          right_sorted_sets,  /**< right sorted sets, one for each covariate */ 
    int                   p,                  /**< covariate to split on */

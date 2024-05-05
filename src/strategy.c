@@ -24,6 +24,7 @@ struct strategy
    int                   use_last_rewards;   /**< whether to use last rewards */
    int                   use_cutoffs;        /**< whether to use cutoffs */
    int                   use_cache;          /**< whether to use the cache */
+   int                   exploit_binaryvars; /**< whether to exploit binary vars */
 };
 
 /** return an uninitialised strategy */
@@ -38,6 +39,7 @@ STRATEGY* get_unint_strategy(
    strategy->use_last_rewards = -1;
    strategy->use_cutoffs = -1;
    strategy->use_cache = -1;
+   strategy->exploit_binaryvars = -1;
    return strategy;
 }
    
@@ -175,5 +177,22 @@ void set_use_cache(
    )
 {
    strategy->use_cache = val;
+}
+
+/** return whether we wish to exploit binary variables */
+int exploit_binaryvars(
+   const STRATEGY*       strategy            /**< solving strategy */
+   )
+{
+   return strategy->exploit_binaryvars;
+}
+
+/** set whether we wish to exploit binary variables */
+void set_exploit_binaryvars(
+   STRATEGY*             strategy,           /**< solving strategy */
+   int                   val                 /**< 0 for no, 1 for yes */
+   )
+{
+   strategy->exploit_binaryvars = val;
 }
 

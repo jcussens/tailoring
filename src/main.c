@@ -205,6 +205,9 @@ int main(
    /* default is to use cache (to avoid considering some splits) */
    set_use_cache(strategy, (optargs[5] == 0) ? 0 : 1);
 
+   /* set exploit binary variables */
+   set_exploit_binaryvars(strategy, 1);
+   
    if( num_rows > 0 )
    {
       tree = tree_search_simple(strategy, depth, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y, &reward);

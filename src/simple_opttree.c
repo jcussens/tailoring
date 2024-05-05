@@ -68,6 +68,8 @@ void update_left_rewards(
    )
 {
    int i;
+
+   const double* data_y1 = data_y + num_rows;
    
    for( i = 0; i < nelts; i++ )
    {
@@ -77,7 +79,7 @@ void update_left_rewards(
       if( num_cols_y == 2 )
       {
         left_rewards[0] += data_y[elt];
-        left_rewards[1] += data_y[num_rows+elt];
+        left_rewards[1] += data_y1[elt];
       }
       else
       {
@@ -550,6 +552,8 @@ void find_best_split(
       double last_reward = 0.0;  /* dummy value */
       int have_last_reward = 0;
 
+      int nsplits = 0;
+      
       if( dummy_split_reward_set )
       {
          /* we can view the reward for the dummy split as a split just before first split */
@@ -568,7 +572,7 @@ void find_best_split(
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data 
        * elts, a set of size nelts, are the elements moved from right to left
        */
-      while( !optimal_tree_found && next_split(strategy, left_units, right_units, p, data_xp, num_cols_x, &splitval, &elts, &nelts) )
+      while( !optimal_tree_found && next_split(strategy, units, left_units, right_units, p, data_xp, num_cols_x, &splitval, &elts, &nelts, nsplits++) )
       {
 
          int left_reward_cutoff_set = 0;
