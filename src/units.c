@@ -11,6 +11,7 @@ extern "C" {
 #include "sorted_set.h"
 #include "simple_set.h"
 #include "strategy.h"
+#include <assert.h>
 
 #define IFUSESORTED if( using_sorted_sets(strategy) )  
 #define DISPATCH_NOUNITS(F,...) IFUSESORTED  \
@@ -180,7 +181,7 @@ void shallow_initialise_units(
    )
 {
    DISPATCH(shallow_initialise_units, ((const SORTED_SET**) units, p, num_cols_x, workspace, (SORTED_SET***) right_units),
-      ((const SIMPLE_SET*) units, p, num_cols_x, workspace, (SIMPLE_SET**) right_units))
+      (strategy, (const SIMPLE_SET*) units, p, num_cols_x, workspace, (SIMPLE_SET**) right_units))
 }
 
 
@@ -231,10 +232,12 @@ int next_shallow_split(
    const double*         data_xp,            /**< values for covariate to split on */
    double*               splitval,           /**< (pointer to) found value to split on */
    ELEMENT**             elts,               /**< (pointer to) the elements moved */
-   int*                  nelts               /**< (pointer to) number of elements moved */
+   int*                  nelts,              /**< (pointer to) number of elements moved */
+   int                   splitcount          /**< number of previous splits */
    )
 {
-   DISPATCH_CONSTUNITS(next_shallow_split, p, start, data_xp, splitval, elts, nelts)
+   DISPATCH(next_shallow_split, ((const SORTED_SET**) units, p, start, data_xp, splitval, elts, nelts),
+      (strategy, (const SIMPLE_SET*) units, p, start, data_xp, splitval, elts, nelts, splitcount))
 }
 
 /** return array of elements and size of array for a set of units */
@@ -246,6 +249,35 @@ void elements(
    )
 {
    DISPATCH_CONSTUNITS(elements, elts, nelts)
+}
+
+int is_binary(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
+   CONST_UNITS           units,              /**< units */
+   int                   p                   /**< covariate */
+   )
+{
+   /* should not be called unless using simple sets */
+   assert( !using_sorted_sets(strategy) );
+
+   return (nkeyvals((const SIMPLE_SET*) units, p) == 2);
+}
+
+void update_left_rewards_from_full(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
+   CONST_UNITS           units,              /**< units */
+   int                   p,                  /**< covariate to split on */
+   double*               left_rewards,       /**< rewards for each action for a 'left' set of units */
+   const double*         data_y,             /**< data_y[d*num_rows+elt] is the reward for action d for unit elt */
+   int                   num_rows,           /**< number of units in full dataset */
+   int                   num_cols_y          /**< number of actions */
+   )
+{
+   /* should not be called unless using simple sets */
+   assert( !using_sorted_sets(strategy) );
+   
+   return simple_set_update_left_rewards_from_full(
+      (const SIMPLE_SET*) units, p, left_rewards, data_y, num_rows, num_cols_y);
 }
 
 

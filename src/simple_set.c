@@ -456,10 +456,10 @@ int simple_set_next_split(
    assert(num_cols_x > 0);
    assert(splitval != NULL);
 
-   if( exploit_binaryvars(strategy) && simple_set->nkeyvals[p] == 2 )
+   if( exploit_binaryvars(strategy) && (simple_set->nkeyvals[p] == 2) )
    {
       int i;
-      KEY* keys = simple_set->keys[p];
+      const KEY* keys = simple_set->keys[p];
       
       assert( splitcount == 0 || splitcount == 1 );
 
@@ -650,6 +650,7 @@ void simple_set_initialise_units(
 
 /** initialise so that right_simple_set is a copy of the input set and we are ready to look for depth=1 splits using covariate p */
 void simple_set_shallow_initialise_units(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
    const SIMPLE_SET*     simple_set,         /**< input set */
    int                   p,                  /**< splitting covariate */
    int                   num_cols_x,         /**< number of covariates */
@@ -658,7 +659,13 @@ void simple_set_shallow_initialise_units(
    )
 {
 
-   SIMPLE_SET* right = NULL;
+   SIMPLE_SET* right;
+
+   if( exploit_binaryvars(strategy) && simple_set->nkeyvals[p] == 2 )
+   {
+      /* do nothing */
+      return;
+   }
 
    right = (SIMPLE_SET*) get_right_sorted_sets(workspace,1);
 
@@ -773,17 +780,28 @@ void simple_set_shallow_free_units(
 
 /** find units with same covariate value starting from a given index */
 int simple_set_next_shallow_split(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
    const SIMPLE_SET*     right_set,          /**< set */
    int                   p,                  /**< covariate to split on */
    int                   start,              /**< starting index */
    const double*         data_xp,            /**< values for covariate to split on */
    double*               splitval,           /**< (pointer to) found value to split on */
    ELEMENT**             elts,               /**< (pointer to) the elements moved */
-   int*                  nelts               /**< (pointer to) number of elements moved */
+   int*                  nelts,              /**< (pointer to) number of elements moved */
+   int                   splitcount          /**< number of previous splits */
+
    )
 {
 
-   int idx = right_set->start + start;
+   int idx;
+
+   if( exploit_binaryvars(strategy) && (right_set->nkeyvals[p] == 2) )
+   {
+      /* do nothing: left rewards will be computed directly from full dataset */
+      return (splitcount == 0);
+   }
+
+   idx = right_set->start + start;
    
    /* nothing to move from right to left */
    if( !(idx < right_set->start + right_set->n) )
@@ -844,4 +862,46 @@ int nkeyvals(
    )
 {
    return simple_set->nkeyvals[i];
+}
+
+void simple_set_update_left_rewards_from_full(
+   const SIMPLE_SET*     simple_set,         /**< units */
+   int                   p,                  /**< covariate to split on */
+   double*               left_rewards,       /**< rewards for each action for a 'left' set of units */
+   const double*         data_y,             /**< data_y[d*num_rows+elt] is the reward for action d for unit elt */
+   int                   num_rows,           /**< number of units in full dataset */
+   int                   num_cols_y          /**< number of actions */
+   )
+{
+
+   int i;
+   const KEY* keys = simple_set->keys[p];
+   ELEMENT elt;
+   
+   if( num_cols_y == 2 )
+   {
+      const double* data_y1 = data_y + num_rows;
+      for( i = simple_set->start; i < simple_set->start + simple_set->n; i++)
+      {
+         elt = simple_set->elements[i];
+         
+         if( keys[elt] == 0 )
+         {
+            left_rewards[0] += data_y[elt];
+            left_rewards[1] += data_y1[elt];
+         }
+      }
+   }
+   else
+   {
+      int d;
+      for( i = simple_set->start; i < simple_set->start + simple_set->n; i++)
+      {
+         elt = simple_set->elements[i];
+         
+         if( keys[elt] == 0 )
+            for( d = 0; d < num_cols_y; d++ )
+               left_rewards[d] += data_y[d*num_rows+elt];
+      }
+   }
 }

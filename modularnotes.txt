@@ -259,3 +259,18 @@ finding reward is turned off.
 Fri  3 May 09:49:18 BST 2024
 
 good results with caching, created depth 4 tree for IFLS in 7m26s
+
+Mon  6 May 08:29:20 BST 2024
+
+Current approch with level one learning
+
+1) Find no split reward for each action
+2) For each variable, for each split
+   find those moved from right to left
+   update left rewards (one for each action) by adding
+   find best left reward
+   find right reward for each action by subtracting and find best one
+
+If right_units are ordered then easy to return pointer to moved
+elements, if not ordered then more expensive, but we only want left
+rewards, so perhaps don't compute elts and nelts

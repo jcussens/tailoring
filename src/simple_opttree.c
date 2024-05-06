@@ -69,22 +69,25 @@ void update_left_rewards(
 {
    int i;
 
-   const double* data_y1 = data_y + num_rows;
-   
-   for( i = 0; i < nelts; i++ )
+   if( num_cols_y == 2 )
    {
-      int elt = elts[i];
-      int d;
-      
-      if( num_cols_y == 2 )
+      const double* data_y1 = data_y + num_rows;
+   
+      for( i = 0; i < nelts; i++ )
       {
-        left_rewards[0] += data_y[elt];
-        left_rewards[1] += data_y1[elt];
+         int elt = elts[i];
+         left_rewards[0] += data_y[elt];
+         left_rewards[1] += data_y1[elt];
       }
-      else
+   }
+   else
+   {
+      int d;
+      for( i = 0; i < nelts; i++ )
       {
-        for( d = 0; d < num_cols_y; d++ )
-          left_rewards[d] += data_y[d*num_rows+elt];
+         int elt = elts[i];
+         for( d = 0; d < num_cols_y; d++ )
+            left_rewards[d] += data_y[d*num_rows+elt];
       }
    }
 }
@@ -285,27 +288,39 @@ void level_one_learning(
       /* initialise the index which will specify the current split */
       int idx = 0;
 
+      int nsplits = 0;
+
       /* initialise so that right_units is a copy of units 
-         ready for splitting on covariate p */
+         ready for splitting on covariate p,
+         or do nothing if p is binary and we are exploiting that
+      */
       shallow_initialise_units(strategy, units, p, num_cols_x, workspace, &right_units);
 
-      assert( units_ok(strategy, (CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
+      /* assert( units_ok(strategy, (CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) ); */
 
       /* consider each split (x[p] <= splitval, x[p] > splitval) of the data 
-         elts[0] ... elts[nelts-1] are the units moved from right to left */
-      while( next_shallow_split(strategy, (CONST_UNITS) right_units, p, idx, data_xp, &splitval, &elts, &nelts) )
+         elts[0] ... elts[nelts-1] are the units moved from right to left 
+         or do nothing if p is binary and we are exploiting that
+      */
+      while( next_shallow_split(strategy, (CONST_UNITS) right_units, p, idx, data_xp, &splitval, &elts, &nelts, nsplits++) )
       {
          double this_reward;
-         
-         update_left_rewards(left_rewards, elts, nelts, data_y, num_rows, num_cols_y);
+
+         if( exploit_binaryvars(strategy) && is_binary(strategy, units, p) )
+         {
+            /* in this case 'shallow_initialise_units' and 'next_shallow_split' will have done nothing
+             * since we can here compute left_rewards directly from full dataset units */
+            update_left_rewards_from_full(strategy, units, p, left_rewards, data_y, num_rows, num_cols_y);
+         }
+         else
+         {
+            update_left_rewards(left_rewards, elts, nelts, data_y, num_rows, num_cols_y);
+         }
          find_best_left_action(left_rewards, num_cols_y, &best_left_reward, &best_left_action);
          find_best_right_action(left_rewards, nosplit_rewards, num_cols_y, &best_right_reward, &best_right_action);
 
          /* get reward for this split */
          this_reward = best_left_reward + best_right_reward;
-
-         /* if( get_size(strategy, units) == 2814 ) */
-         /*    printf("reward for a split on %d is %g (cutoff is %g).\n", p, this_reward, reward_cutoff); */
          
          assert( !reward_ub_set || LEQ_EPSILON(this_reward, reward_ub) );
 

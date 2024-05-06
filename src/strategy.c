@@ -184,7 +184,8 @@ int exploit_binaryvars(
    const STRATEGY*       strategy            /**< solving strategy */
    )
 {
-   return strategy->exploit_binaryvars;
+   /* only possible with simple sets */
+   return (strategy->datatype == SIMPLE_SET_TYPE && strategy->exploit_binaryvars);
 }
 
 /** set whether we wish to exploit binary variables */

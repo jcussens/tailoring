@@ -151,7 +151,8 @@ int next_shallow_split(
    const double*         data_xp,            /**< values for covariate to split on */
    double*               splitval,           /**< (pointer to) found value to split on */
    ELEMENT**             elts,               /**< (pointer to) the elements moved */
-   int*                  nelts               /**< (pointer to) number of elements moved */
+   int*                  nelts,              /**< (pointer to) number of elements moved */
+   int                   splitcount          /**< number of previous splits */
    );
 
 /** return array of elements and size of array for a set of units */
@@ -160,6 +161,23 @@ void elements(
    CONST_UNITS           units,              /**< units */
    ELEMENT**             elts,               /**< (pointer to) elements */
    int*                  nelts               /**< (pointer to) number of elements */
+   );
+
+/** is a covariate binary ? */
+int is_binary(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
+   CONST_UNITS           units,              /**< units */
+   int                   p                   /**< covariate */
+   );
+   
+void update_left_rewards_from_full(
+   const STRATEGY*       strategy,           /**< tree-building strategy */
+   CONST_UNITS           units,              /**< units */
+   int                   p,                  /**< covariate to split on */
+   double*               left_rewards,       /**< rewards for each action for a 'left' set of units */
+   const double*         data_y,             /**< data_y[d*num_rows+elt] is the reward for action d for unit elt */
+   int                   num_rows,           /**< number of units in full dataset */
+   int                   num_cols_y          /**< number of actions */
    );
 
 
