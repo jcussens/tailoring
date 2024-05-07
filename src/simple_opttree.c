@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h> 
 
-/* #define VERBOSE   */
+/* #define VERYVERBOSE    */
 
 #ifdef VERYVERBOSE
 #define VERBOSE
@@ -308,9 +308,12 @@ void level_one_learning(
 
          if( exploit_binaryvars(strategy) && is_binary(strategy, units, p) )
          {
+            int split_exists;
             /* in this case 'shallow_initialise_units' and 'next_shallow_split' will have done nothing
              * since we can here compute left_rewards directly from full dataset units */
-            update_left_rewards_from_full(strategy, units, p, left_rewards, data_y, num_rows, num_cols_y);
+            split_exists = update_left_rewards_from_full(strategy, units, p, left_rewards, data_xp, data_y, num_rows, num_cols_y, &splitval);
+            if( !split_exists )
+               continue;
          }
          else
          {
@@ -330,9 +333,6 @@ void level_one_learning(
             if( first_reward || this_reward > best_reward ) 
             {
                best_reward = this_reward;
-               /* if( get_size(strategy, units) == 2814 ) */
-               /*    printf("new best reward for a split on %d is %g.\n", p, this_reward); */
-
                record_split(node, p, splitval, best_reward);
                make_leaf(left_child, best_left_reward, best_left_action);
                make_leaf(right_child, best_right_reward, best_right_action);

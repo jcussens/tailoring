@@ -263,21 +263,23 @@ int is_binary(
    return (nkeyvals((const SIMPLE_SET*) units, p) == 2);
 }
 
-void update_left_rewards_from_full(
+int update_left_rewards_from_full(
    const STRATEGY*       strategy,           /**< tree-building strategy */
    CONST_UNITS           units,              /**< units */
    int                   p,                  /**< covariate to split on */
    double*               left_rewards,       /**< rewards for each action for a 'left' set of units */
+   const double*         data_xp,            /**< values for covariate to split on */
    const double*         data_y,             /**< data_y[d*num_rows+elt] is the reward for action d for unit elt */
    int                   num_rows,           /**< number of units in full dataset */
-   int                   num_cols_y          /**< number of actions */
+   int                   num_cols_y,         /**< number of actions */
+   double*               splitval            /**< (pointer to) found value to split on */
    )
 {
    /* should not be called unless using simple sets */
    assert( !using_sorted_sets(strategy) );
    
    return simple_set_update_left_rewards_from_full(
-      (const SIMPLE_SET*) units, p, left_rewards, data_y, num_rows, num_cols_y);
+      (const SIMPLE_SET*) units, p, left_rewards, data_xp, data_y, num_rows, num_cols_y, splitval);
 }
 
 

@@ -661,21 +661,18 @@ void simple_set_shallow_initialise_units(
 
    SIMPLE_SET* right;
 
-   if( exploit_binaryvars(strategy) && simple_set->nkeyvals[p] == 2 )
-   {
-      /* do nothing */
-      return;
-   }
-
    right = (SIMPLE_SET*) get_right_sorted_sets(workspace,1);
 
    assert( right != NULL );
 
-   /* make right a copy of input, but with elements ordered according to covariate p */
-   right->n = simple_set->n;
-   right->start = 0;
-   sort_units(simple_set->elements + simple_set->start, simple_set->n, simple_set->keys[p], simple_set->nkeyvals[p],
-      ((SIMPLE_SET*) get_tmpunits(workspace))->elements, get_tmp2(workspace), right->elements);
+   if( !(exploit_binaryvars(strategy) && simple_set->nkeyvals[p] == 2) )
+   {
+      /* make right a copy of input, but with elements ordered according to covariate p */
+      right->n = simple_set->n;
+      right->start = 0;
+      sort_units(simple_set->elements + simple_set->start, simple_set->n, simple_set->keys[p], simple_set->nkeyvals[p],
+         ((SIMPLE_SET*) get_tmpunits(workspace))->elements, get_tmp2(workspace), right->elements);
+   }
 
    *right_simple_set = right;
 }
@@ -789,7 +786,6 @@ int simple_set_next_shallow_split(
    ELEMENT**             elts,               /**< (pointer to) the elements moved */
    int*                  nelts,              /**< (pointer to) number of elements moved */
    int                   splitcount          /**< number of previous splits */
-
    )
 {
 
@@ -864,19 +860,27 @@ int nkeyvals(
    return simple_set->nkeyvals[i];
 }
 
-void simple_set_update_left_rewards_from_full(
+/** update left rewards using single split on given covariate, return whether there is,
+ * in fact, a split
+ */
+int simple_set_update_left_rewards_from_full(
    const SIMPLE_SET*     simple_set,         /**< units */
    int                   p,                  /**< covariate to split on */
    double*               left_rewards,       /**< rewards for each action for a 'left' set of units */
+   const double*         data_xp,            /**< values for covariate to split on */
    const double*         data_y,             /**< data_y[d*num_rows+elt] is the reward for action d for unit elt */
    int                   num_rows,           /**< number of units in full dataset */
-   int                   num_cols_y          /**< number of actions */
+   int                   num_cols_y,         /**< number of actions */
+   double*               splitval            /**< (pointer to) found value to split on */
    )
 {
 
    int i;
    const KEY* keys = simple_set->keys[p];
    ELEMENT elt;
+   int foundkey0 = 0;
+   int foundkey1 = 0;
+   int firstkey0 = -1;
    
    if( num_cols_y == 2 )
    {
@@ -889,6 +893,15 @@ void simple_set_update_left_rewards_from_full(
          {
             left_rewards[0] += data_y[elt];
             left_rewards[1] += data_y1[elt];
+            if( foundkey0 == 0 )
+            {
+               foundkey0 = 1;
+               firstkey0 = i;
+            }
+         }
+         else
+         {
+            foundkey1 = 1;
          }
       }
    }
@@ -900,8 +913,29 @@ void simple_set_update_left_rewards_from_full(
          elt = simple_set->elements[i];
          
          if( keys[elt] == 0 )
+         {
             for( d = 0; d < num_cols_y; d++ )
                left_rewards[d] += data_y[d*num_rows+elt];
+            if( foundkey0 == 0 )
+            {
+               foundkey0 = 1;
+               firstkey0 = i;
+            }
+         }
+         else
+         {
+            foundkey1 = 1;
+         }
       }
+   }
+
+   if( foundkey0 && foundkey1 )
+   {
+      *splitval = data_xp[simple_set->elements[firstkey0]];
+      return 1;
+   }
+   else
+   {
+      return 0;
    }
 }
