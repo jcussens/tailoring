@@ -885,14 +885,16 @@ int simple_set_update_left_rewards_from_full(
    if( num_cols_y == 2 )
    {
       const double* data_y1 = data_y + num_rows;
+      double left_rewards0 = 0.0;
+      double left_rewards1 = 0.0;
       for( i = simple_set->start; i < simple_set->start + simple_set->n; i++)
       {
          elt = simple_set->elements[i];
          
          if( keys[elt] == 0 )
          {
-            left_rewards[0] += data_y[elt];
-            left_rewards[1] += data_y1[elt];
+            left_rewards0 += data_y[elt];
+            left_rewards1 += data_y1[elt];
             if( foundkey0 == 0 )
             {
                foundkey0 = 1;
@@ -904,6 +906,8 @@ int simple_set_update_left_rewards_from_full(
             foundkey1 = 1;
          }
       }
+      left_rewards[0] += left_rewards0;
+      left_rewards[1] += left_rewards1;
    }
    else
    {
