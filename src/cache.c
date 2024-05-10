@@ -7,7 +7,7 @@
 #include <limits.h>
 #include <stdint.h>
 
-#define NSLOTS 100
+#define NSLOTS 1000
 #define BLOCKSIZE 5
 
 /* following macros adapted from https://c-faq.com/misc/bitsets.html */
@@ -38,16 +38,30 @@ struct cache
    int                   nints;              /** number of uint32_t ints required for a bitset representation */
 };
 
-/** get slot for given set and depth */
+
+/** get hashval (for slot index) from bitset representation and depth */
 static
-int get_slot(
-   int                   nelts,              /**< number of elts in set */
-   const ELEMENT*        elts,               /**< the set */
+int get_hash(
+   const uint32_t*       key,                /**< bitset representation of set */
+   int                   nints,              /**< number of uint_32 ints in bitset representation */
    int                   depth               /**< depth of tree */
    )
 {
-   return (nelts+depth) % NSLOTS;
+   int i;
+   uint32_t hashval = (uint32_t) 0xd37e9a1ce2148403ULL;
+   int slot;
+   
+   for( i = 0; i < nints; i++ )
+      hashval = (hashval + key[i]) * (uint32_t) 0xd37e9a1ce2148403ULL;
+   
+   slot = ((uint32_t) (hashval+depth)) % NSLOTS;
+   
+   assert( slot >= 0);
+   assert( slot < NSLOTS);
+
+   return slot;
 }
+
 
 /** is this the entry for given set and depth? */
 static
@@ -60,6 +74,12 @@ int match(
    )
 {
    int i;
+
+   assert( key != NULL);
+   assert( nints > 0 );
+   assert( nelts >= 0 );
+   assert( depth >= 0 );
+   assert( entry != NULL );
    
    if( depth != entry->depth || nelts != entry->nelts )
       return 0;
@@ -119,14 +139,19 @@ int search_cache(
    NODE*                 tree                /**< if in cache, tree is set to optimal tree for set */
    )
 {
-   int slot = get_slot(nelts, elts, depth);
+   int slot;
    int i;
    uint32_t* key = (uint32_t*) calloc(cache->nints, sizeof(uint32_t));
    int result = 0;
-   
+
+   /* get bitset representation */
    for( i = 0; i < nelts; i++)
       BITSET(key,elts[i]);
+
+   /* use hash function to get slot */
+   slot = get_hash((const uint32_t*) key, cache->nints, depth);
    
+   /* search for set in the slot */
    for( i = 0; i < cache->nentries[slot]; i++ )
    {
       if( match((const uint32_t*) key, cache->nints, nelts, depth, (const ENTRY*) cache->slots[slot][i]) )
@@ -151,9 +176,9 @@ void add_to_cache(
    const NODE*           tree                /**< optimal tree for set */
 )
 {
-   int slot = get_slot(nelts, elts, depth);
    ENTRY* entry = make_entry(cache, nelts, elts, depth, tree);
-
+   int slot = get_hash((const uint32_t*) entry->key, cache->nints, depth);
+   
    assert(cache != NULL);
    assert(nelts >= 0);
    assert(elts != NULL);
