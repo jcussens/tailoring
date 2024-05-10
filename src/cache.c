@@ -5,6 +5,7 @@
 #include "tree.h"
 #include "assert.h"
 #include <limits.h>
+#include <stdint.h>
 
 #define NSLOTS 100
 
@@ -21,7 +22,7 @@
 
 struct entry
 {
-   int*                  key;                /**< bitset representation of set */
+   uint32_t*             key;                /**< bitset representation of set */
    int                   nelts;              /**< number of elements in the set */
    int                   depth;              /**< depth of tree */
    NODE*                 tree;               /**< optimal tree for set */
@@ -49,7 +50,7 @@ int get_slot(
 /** is this the entry for given set and depth? */
 static
 int match(
-   const int*            key,                /**< bitset key for set */
+   const uint32_t*       key,                /**< bitset key for set */
    int                   nints,              /**< number of ints for a bitset */
    int                   nelts,              /**< number of elts in the set */
    int                   depth,              /**< depth of tree */
@@ -80,7 +81,7 @@ ENTRY* make_entry(
 {
    ENTRY* entry = (ENTRY*) malloc(sizeof(ENTRY));
    NODE* tree_cp = make_tree(depth);
-   int* key = (int*) calloc(cache->nints, sizeof(int));
+   uint32_t* key = (uint32_t*) calloc(cache->nints, sizeof(uint32_t));
    int i;
    
    for( i = 0; i < nelts; i++)
@@ -118,7 +119,7 @@ int search_cache(
 {
    int slot = get_slot(nelts, elts, depth);
    int i;
-   int* key = (int*) calloc(cache->nints, sizeof(int));
+   uint32_t* key = (uint32_t*) calloc(cache->nints, sizeof(uint32_t));
    int result = 0;
    
    for( i = 0; i < nelts; i++)
@@ -126,7 +127,7 @@ int search_cache(
    
    for( i = 0; i < cache->nentries[slot]; i++ )
    {
-      if( match((const int*) key, cache->nints, nelts, depth, (const ENTRY*) cache->slots[slot][i]) )
+      if( match((const uint32_t*) key, cache->nints, nelts, depth, (const ENTRY*) cache->slots[slot][i]) )
       {
          tree_copy(cache->slots[slot][i]->tree,tree);
          result = 1;
