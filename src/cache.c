@@ -8,16 +8,17 @@
 #include <stdint.h>
 
 #define NSLOTS 100
+#define BLOCKSIZE 5
 
 /* following macros adapted from https://c-faq.com/misc/bitsets.html */
 
-#define NBITS (CHAR_BIT * sizeof(int))       /**< number of bits in an 'int' */
-#define BITMASK(b) (1 << ((b) % NBITS))      /**< given b, sets only bth bit in a slot (all others zero) */
-#define BITSLOT(b) ((b) / NBITS)             /**< finds correct slot for an integer */
-#define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b)) /**< given integer b and bitset a, sets correct bit for b */
-#define BITCLEAR(a, b) ((a)[BITSLOT(b)] &= ~BITMASK(b)) /**< given integer b and bitset a, clears correct bit for b */
-#define BITTEST(a, b) ((a)[BITSLOT(b)] & BITMASK(b)) /**< given integer b and bitset a, test whether correct bit for b is set */
-#define BITNSLOTS(nb) ((nb + NBITS - 1) / NBITS) /**< compute number of (integer-sized) slots needed for 'universe' of size nb */
+#define NBITS (CHAR_BIT * sizeof(uint32_t))       /**< number of bits in a uint32_t int - will be 32 */
+#define BITMASK(b) (1 << ((b) % NBITS))           /**< given b, sets only bth bit in a slot (all others zero) */
+#define BITSLOT(b) ((b) / NBITS)                  /**< finds correct slot for an integer */
+#define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b))     /**< given integer b and bitset a, sets correct bit for b */
+#define BITCLEAR(a, b) ((a)[BITSLOT(b)] &= ~BITMASK(b))  /**< given integer b and bitset a, clears correct bit for b */
+#define BITTEST(a, b) ((a)[BITSLOT(b)] & BITMASK(b))     /**< given integer b and bitset a, test whether correct bit for b is set */
+#define BITNSLOTS(nb) ((nb + NBITS - 1) / NBITS)         /**< compute number of uint32_t ints needed for 'universe' of size nb */
 
 
 struct entry
@@ -33,7 +34,8 @@ struct cache
 {
    ENTRY***              slots;              /** slots */
    int*                  nentries;           /** number of entries in each slot */
-   int                   nints;              /** number of ints required for a bitset representation */
+   int*                  sizes;              /** available space for each slot */
+   int                   nints;              /** number of uint32_t ints required for a bitset representation */
 };
 
 /** get slot for given set and depth */
@@ -151,7 +153,6 @@ void add_to_cache(
 {
    int slot = get_slot(nelts, elts, depth);
    ENTRY* entry = make_entry(cache, nelts, elts, depth, tree);
-   int idx = cache->nentries[slot];
 
    assert(cache != NULL);
    assert(nelts >= 0);
@@ -162,16 +163,14 @@ void add_to_cache(
    assert(slot >= 0);
    assert(slot < NSLOTS);
    assert(entry != NULL);
-   assert(idx >= 0);
 
-   if( idx == 0 )
-      cache->slots[slot] = (ENTRY**) malloc(sizeof(ENTRY*));
-   else
-      cache->slots[slot] = (ENTRY**) realloc(cache->slots[slot], (idx+1)*sizeof(ENTRY*));
-
-   assert(cache->slots[slot] != NULL);
-   cache->slots[slot][idx] = entry;
-   (cache->nentries[slot])++;
+   if( cache->nentries[slot] == cache->sizes[slot] )
+   {
+      /* need more space */
+      cache->sizes[slot] += BLOCKSIZE;
+      cache->slots[slot] = (ENTRY**) realloc(cache->slots[slot], (cache->sizes[slot])*sizeof(ENTRY*));
+   }
+   cache->slots[slot][(cache->nentries[slot])++] = entry;
 }
 
 /** make cache */
@@ -179,11 +178,20 @@ CACHE* make_cache(
    int                   num_rows            /**< number of units */
    )
 {
+   int slot;
    CACHE* cache = (CACHE*) malloc(sizeof(CACHE));
    
    cache->slots = (ENTRY***) malloc(NSLOTS * sizeof(ENTRY**));
    cache->nentries = (int*) calloc(NSLOTS, sizeof(int));
+   cache->sizes = (int*) malloc(NSLOTS * sizeof(int));
    cache->nints = BITNSLOTS(num_rows);
+
+   /* assign initial space for BLOCKSIZE entries in each slot */
+   for( slot = 0; slot < NSLOTS; slot++ )
+   {
+      cache->slots[slot] = (ENTRY**) malloc(BLOCKSIZE * sizeof(ENTRY*));
+      cache->sizes[slot] = BLOCKSIZE;
+   }
    
    return cache;
 }
@@ -202,11 +210,11 @@ void free_cache(
       {
          free_entry(cache->slots[slot][i]);
       }
-      if( cache->nentries[slot] > 0 )
-         free(cache->slots[slot]);
+      free(cache->slots[slot]);
    }
    free(cache->slots);
    free(cache->nentries);
+   free(cache->sizes);
    free(cache);
 }
    
