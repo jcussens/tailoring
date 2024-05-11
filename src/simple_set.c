@@ -887,7 +887,8 @@ int simple_set_update_left_rewards_from_full(
       const double* data_y1 = data_y + num_rows;
       double left_rewards0 = 0.0;
       double left_rewards1 = 0.0;
-      for( i = simple_set->start; i < simple_set->start + simple_set->n; i++)
+      int end = simple_set->start + simple_set->n;
+      for( i = simple_set->start; i < end; i++)
       {
          elt = simple_set->elements[i];
          
