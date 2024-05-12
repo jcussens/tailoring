@@ -324,3 +324,36 @@ Here's the perf report from the depth 4 tree:
    0.07%  fpt      fpt                [.] simple_set_next_shallow_split
 
 So would make sense to improve cache handling.
+
+Sat 11 May 10:56:52 BST 2024
+
+Have:
+
+Need to supply at least a filename and the number of actions.
+Usage: fpt FILENAME NUM_OF_ACTIONS [DEPTH] [DATA_REP] [COMPUTE_UBS] [COMPUTE_DUMMY] [USE_LAST_REWARDS] [USE_CUTOFFS] [USE_CACHE] [EXPLOIT_BINARY]
+Default value of DEPTH is 3, for DATA_REP, 0 means delayed sorting, 1 means policytree style, any other value (the default) means use data to decide.
+All other optional arguments are 0 (off) or 1 (on), with 1 being the default.
+
+and:
+
+(base) uw20605@IT079795:~/repos/tailoring$ time ./fpt untracked/fakedata.txt 2 2 1 0 0 1 0 0 0
+policy_tree object
+Tree depth:   2
+Actions:  1: "control" 2: "treated"
+Variable splits:
+split_variable: "X1"  split_value: 0.06
+  split_variable: "X2"  split_value: 1.02
+    * action: 2
+    * action: 1
+  split_variable: "X2"  split_value: -1.26
+    * action: 2
+    * action: 1
+Reward: 356.805
+Git commit is 054de04.
+
+real	0m2.980s
+user	0m2.977s
+sys	0m0.004s
+
+Other combinations (eg having all 6 optional flags set to 1) take
+about 8-9 seconds, so looks like just using last-rewards is what matters.

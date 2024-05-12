@@ -63,7 +63,7 @@ int process_commandline(
    char**                filename,           /**< *filename will be the name of the file with the data */
    int*                  num_cols_y,         /**< *num_cols_y will be number of actions */
    int*                  depth,              /**< *depth will be required depth of tree */
-   int*                  optargs,            /**< for values from command line */
+   int*                  optargs,            /**< for optional arguments supplied on command line */
    int                   noptargs            /**< number of values for optargs */
    )
 {
@@ -72,6 +72,11 @@ int process_commandline(
    if( argc < 3 )
    {
       printf("Need to supply at least a filename and the number of actions.\n");
+
+      printf("Usage: fpt FILENAME NUM_OF_ACTIONS [DEPTH] [DATA_REP] [COMPUTE_UBS] [COMPUTE_DUMMY] [USE_LAST_REWARDS] [USE_CUTOFFS] [USE_CACHE] [EXPLOIT_BINARY]\n");
+      printf("Default value of DEPTH is 3, for DATA_REP, 0 means delayed sorting, 1 means policytree style, any other value (the default) means use data to decide.\n");
+      printf("All other optional arguments are 0 (off) or 1 (on), with 1 being the default.\n");
+
       return 1;
    }
 

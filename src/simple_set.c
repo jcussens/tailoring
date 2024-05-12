@@ -92,8 +92,9 @@ void counting_sort_radix(
    /* get count for each key value */
    for(i = 0; i < n; i++ )
    {
-      tmp2[i] = (key[a[i]]/exp)%10;
-      count[tmp2[i]]++;
+      int idx = (key[a[i]]/exp)%10;
+      tmp2[i] = idx;
+      count[idx]++;
    }
 
    /* alter so that c[i] is number of key vals <= i */ 
