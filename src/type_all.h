@@ -9,10 +9,6 @@
 extern "C" {
 #endif
 
-/* #define USE_SORTED_SET  */
-/* #define USE_SIMPLE_SET */
-/* #define PRINTING_ALLOWED */
-
 #include "versiongit.h"
 
 struct workspace;
