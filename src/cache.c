@@ -130,7 +130,9 @@ void free_entry(
    free(entry);
 }
 
-/** search cache for an optimal tree */
+/** search the cache for an optimal tree of given depth for the given set 
+ * @return 1 if tree is in the cache, else 0
+ */
 int search_cache(
    const CACHE*          cache,              /**< cache */
    int                   nelts,              /**< number of elts in set */
@@ -167,7 +169,7 @@ int search_cache(
 }
 
 
-/** add an optimal tree to cache */
+/** add an optimal tree of given depth for the given set to the cache */
 void add_to_cache(
    CACHE*                cache,              /**< cache */
    int                   nelts,              /**< number of elts in set */
@@ -198,7 +200,9 @@ void add_to_cache(
    cache->slots[slot][(cache->nentries[slot])++] = entry;
 }
 
-/** make cache */
+/** make (an empty) cache 
+ * @return an empty cache
+ */
 CACHE* make_cache(
    int                   num_rows            /**< number of units */
    )
@@ -221,7 +225,7 @@ CACHE* make_cache(
    return cache;
 }
 
-/** free cache */
+/** free the cache */
 void free_cache(
    CACHE*                cache               /**< cache */
    )

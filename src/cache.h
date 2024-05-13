@@ -14,21 +14,18 @@ extern "C" {
 struct cache;
 typedef struct cache CACHE;
 
-/** get the number of ints required to represent a set of units */
-int getnints(
-   const CACHE*          cache               /**< cache */
-   );
-
-/** search cache for an optimal tree */
+/** search the cache for an optimal tree of given depth for the given set 
+ * @return 1 if tree is in the cache, else 0
+ */
 int search_cache(
    const CACHE*          cache,              /**< cache */
    int                   nelts,              /**< number of elts in set */
    const ELEMENT*        elts,               /**< the set */
    int                   depth,              /**< depth of tree */
-   NODE*                 tree                /**< if in cache, tree is set to optimal tree for set */
+   NODE*                 tree                /**< if optimal tree is in cache, tree is set to be that optimal tree */
    );
 
-/** add an optimal tree to cache */
+/** add an optimal tree of given depth for the given set to the cache */
 void add_to_cache(
    CACHE*                cache,              /**< cache */
    int                   nelts,              /**< number of elts in set */
@@ -37,12 +34,14 @@ void add_to_cache(
    const NODE*           tree                /**< optimal tree for set */
    );
 
-/** make cache */
+/** make (an empty) cache 
+ * @return an empty cache
+ */
 CACHE* make_cache(
    int                   num_rows            /**< number of units */
    );
 
-/** free cache */
+/** free the cache */
 void free_cache(
    CACHE*                cache               /**< cache */
    );
