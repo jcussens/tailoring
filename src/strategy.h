@@ -32,6 +32,7 @@ void use_simple_sets(
    STRATEGY*             strategy            /**< solving strategy */
    );
 
+/** decides dataset representation based on characteristics of input data */
 void decide_datatype(
    STRATEGY*             strategy,           /**< solving strategy */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */

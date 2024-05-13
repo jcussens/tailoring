@@ -13,37 +13,37 @@ extern "C" {
 #include "strategy.h"
 #include <assert.h>
 
-#define IFUSESORTED if( using_sorted_sets(strategy) )  
+#define IFUSESORTED if( using_sorted_sets(strategy) )  /**< used in dispatch macros */
 #define DISPATCH_NOUNITS(F,...) IFUSESORTED  \
    { return sorted_set_ ## F(__VA_ARGS__); } \
-   else {return simple_set_ ## F(__VA_ARGS__); }
+   else {return simple_set_ ## F(__VA_ARGS__); } /**< dispatch macro */
 #define DISPATCH_UNITS(F,...) IFUSESORTED  \
    { return sorted_set_ ## F((SORTED_SET**) units, __VA_ARGS__); } \
-   else {return simple_set_ ## F((SIMPLE_SET*) units, __VA_ARGS__); }
+   else {return simple_set_ ## F((SIMPLE_SET*) units, __VA_ARGS__); } /**< dispatch macro */
 #define DISPATCH_UNITS_ONLY(F,...) IFUSESORTED  \
    { return sorted_set_ ## F((SORTED_SET**) units); } \
-   else {return simple_set_ ## F((SIMPLE_SET*) units); }
+   else {return simple_set_ ## F((SIMPLE_SET*) units); } /**< dispatch macro */
 #define DISPATCH_CONSTUNITS(F,...) IFUSESORTED  \
    { return sorted_set_ ## F((const SORTED_SET**) units, __VA_ARGS__); } \
-   else {return simple_set_ ## F((const SIMPLE_SET*) units, __VA_ARGS__); }
+   else {return simple_set_ ## F((const SIMPLE_SET*) units, __VA_ARGS__); } /**< dispatch macro */
 #define DISPATCH_CONSTUNITS_ONLY(F,...) IFUSESORTED  \
    { return sorted_set_ ## F((const SORTED_SET**) units); } \
-   else {return simple_set_ ## F((const SIMPLE_SET*) units); }
+   else {return simple_set_ ## F((const SIMPLE_SET*) units); } /**< dispatch macro */
 #define DISPATCH(F,A,B) IFUSESORTED \
    { return sorted_set_ ## F A; } \
-   else {return simple_set_ ## F B; } 
+   else {return simple_set_ ## F B; } /**< dispatch macro */
 #define DISPATCH_NOUNITS_CAST(R,F,...) IFUSESORTED  \
    { return (R) sorted_set_ ## F(__VA_ARGS__); } \
-   else {return (R) simple_set_ ## F(__VA_ARGS__); }
+   else {return (R) simple_set_ ## F(__VA_ARGS__); } /**< dispatch macro */
 #define DISPATCH_UNITS_CAST(R,F,...) IFUSESORTED                   \
    { return (R) sorted_set_ ## F((SORTED_SET**) units, __VA_ARGS__); }   \
-   else {return (R) simple_set_ ## F((SIMPLE_SET*) units, __VA_ARGS__); }
+   else {return (R) simple_set_ ## F((SIMPLE_SET*) units, __VA_ARGS__); } /**< dispatch macro */
 #define DISPATCH_CONSTUNITS_CAST(R,F,...) IFUSESORTED                   \
    { return (R) sorted_set_ ## F((const SORTED_SET**) units, __VA_ARGS__); }   \
-   else {return (R) simple_set_ ## F((const SIMPLE_SET*) units, __VA_ARGS__); } 
+   else {return (R) simple_set_ ## F((const SIMPLE_SET*) units, __VA_ARGS__); } /**< dispatch macro */
 #define DISPATCH_CAST(R,F,A,B) IFUSESORTED \
    { return (R) sorted_set_ ## F A; } \
-   else {return (R) simple_set_ ## F B; } 
+   else {return (R) simple_set_ ## F B; } /**< dispatch macro */
 
 
 /** make unit set from covariate data */
@@ -263,6 +263,9 @@ int is_binary(
    return (nkeyvals((const SIMPLE_SET*) units, p) == 2);
 }
 
+/** update left rewards using single split on given covariate, return whether there is,
+ * in fact, a split
+ */
 int update_left_rewards_from_full(
    const STRATEGY*       strategy,           /**< tree-building strategy */
    CONST_UNITS           units,              /**< units */

@@ -14,16 +14,16 @@ extern "C" {
 struct workspace;
 typedef struct workspace WORKSPACE;  /**< Work space structure */
 
-typedef void* UNITS;
-typedef const void* CONST_UNITS; 
+typedef void* UNITS;                 /**< Datasets independent of how represented */
+typedef const void* CONST_UNITS;     /**< Constant datasets independent of how represented */
 
 struct node;
 typedef struct node NODE;  /**< Policy tree structure */
 
 struct strategy;
-typedef struct strategy STRATEGY;
+typedef struct strategy STRATEGY;  /**< Records solving strategy */
 
-typedef unsigned int ELEMENT;
+typedef unsigned int ELEMENT;      /**< A member of a set of UNITS */
 
 #ifdef __cplusplus
 }

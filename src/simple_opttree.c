@@ -22,11 +22,11 @@
 #include <stdio.h>
 #endif
 
-#define EPSILON 1e-09
-#define LEQ_EPSILON(A,B) (A) <= (B) + EPSILON
-#define EPSILON_LEQ(A,B) (A) + EPSILON <= (B)
-#define EPSILON_GEQ(A,B) (A) + EPSILON >= (B)
-#define GT_EPSILON(A,B) (A) > (B) + EPSILON
+#define EPSILON 1e-09                          /**< small number to deal with rounding errors */
+#define LEQ_EPSILON(A,B) (A) <= (B) + EPSILON  /**< A <= B + epsilon */
+#define EPSILON_LEQ(A,B) (A) + EPSILON <= (B)  /**< A + epsilon <= B */
+#define EPSILON_GEQ(A,B) (A) + EPSILON >= (B)  /**< A + epslion >= B */
+#define GT_EPSILON(A,B) (A) > (B) + EPSILON    /**< A > B + epsilon */
 
 
 /** given a set of elements, compute an upper bound on the improvement on the reward for any set of units A
@@ -56,7 +56,7 @@ double get_reward_improvement_ub(
 
 
 
-/**< update the total reward for each action for a set of 'left' units due to new units being moved into this 'left' set */
+/** update the total reward for each action for a set of 'left' units due to new units being moved into this 'left' set */
 static
 void update_left_rewards(
    double*               left_rewards,       /**< rewards for each action for a 'left' set of units */

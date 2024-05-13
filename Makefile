@@ -26,3 +26,7 @@ $(SRCDIR)/%.o:	$(SRCDIR)/%.c
 clean :
 	rm fpt $(OBJECTS)
 
+.PHONY : doc
+doc :
+	doxygen
+

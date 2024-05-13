@@ -7,14 +7,16 @@
 #include "simple_set.h"
 #include "stdlib.h"
 
+/** values for representations of datasets */
 enum datatype
 {
    SORTED_SET_TYPE = 0,
    SIMPLE_SET_TYPE = 1,
    UNDECIDED_TYPE = 2
 };
-typedef enum datatype DATATYPE;
-   
+typedef enum datatype DATATYPE;   /**< values for representations of datasets */
+
+/** Records solving strategy */
 struct strategy
 {
    DATATYPE              datatype;           /**< type for data (currently either
@@ -67,6 +69,7 @@ void use_simple_sets(
    strategy->datatype = SIMPLE_SET_TYPE;
 }
 
+/** decides dataset representation based on characteristics of input data */
 void decide_datatype(
    STRATEGY*             strategy,           /**< solving strategy */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */

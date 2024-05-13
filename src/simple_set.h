@@ -1,5 +1,5 @@
 /** @file simple_set.h
- *  @brief Prototypes for functions manipulating sets of units, using 'simple_set' approach
+ *  @brief Implements a set of units as a single array
  *  @author James Cussens
  */
 #ifdef __cplusplus

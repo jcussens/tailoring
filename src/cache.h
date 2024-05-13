@@ -12,7 +12,8 @@ extern "C" {
 #endif
 
 struct cache;
-typedef struct cache CACHE;
+typedef struct cache CACHE; /**< cache for caching optimal trees for given depths and datasets */
+
 
 /** search the cache for an optimal tree of given depth for the given set 
  * @return 1 if tree is in the cache, else 0

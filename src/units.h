@@ -1,5 +1,5 @@
 /** @file units.h
- *  @brief Prototypes for functions manipulating sets of units, independent of how those sets are implemented
+ *  @brief Dispatches to appropriate data type for units
  *  @author James Cussens
  */
 #ifndef __UNITS_H__
@@ -169,7 +169,10 @@ int is_binary(
    CONST_UNITS           units,              /**< units */
    int                   p                   /**< covariate */
    );
-   
+
+/** update left rewards using single split on given covariate, return whether there is,
+ * in fact, a split
+ */
 int update_left_rewards_from_full(
    const STRATEGY*       strategy,           /**< tree-building strategy */
    CONST_UNITS           units,              /**< units */

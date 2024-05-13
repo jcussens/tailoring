@@ -1,14 +1,20 @@
+/** @file cache.c
+ *  @brief Functions for the cache
+ *  @author James Cussens
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "cache.h"
-#include "tree.h"
-#include "assert.h"
+#include <assert.h>
 #include <limits.h>
 #include <stdint.h>
 
-#define NSLOTS 1000
-#define BLOCKSIZE 5
+#include "cache.h"
+#include "tree.h"
+
+#define NSLOTS 1000   /**< number of slots in the cache */
+#define BLOCKSIZE 5   /**< initial size of each slot and amount by which slots are extended when necessary */
 
 /* following macros adapted from https://c-faq.com/misc/bitsets.html */
 
@@ -20,7 +26,7 @@
 #define BITTEST(a, b) ((a)[BITSLOT(b)] & BITMASK(b))     /**< given integer b and bitset a, test whether correct bit for b is set */
 #define BITNSLOTS(nb) ((nb + NBITS - 1) / NBITS)         /**< compute number of uint32_t ints needed for 'universe' of size nb */
 
-
+/** an entry in the cache */
 struct entry
 {
    uint32_t*             key;                /**< bitset representation of set */
@@ -28,14 +34,15 @@ struct entry
    int                   depth;              /**< depth of tree */
    NODE*                 tree;               /**< optimal tree for set */
 };
-typedef struct entry ENTRY;
+typedef struct entry ENTRY; /**< an entry in the cache */
 
+/** cache for caching optimal trees for given depths and datasets */
 struct cache
 {
-   ENTRY***              slots;              /** slots */
-   int*                  nentries;           /** number of entries in each slot */
-   int*                  sizes;              /** available space for each slot */
-   int                   nints;              /** number of uint32_t ints required for a bitset representation */
+   ENTRY***              slots;              /**< slots */
+   int*                  nentries;           /**< number of entries in each slot */
+   int*                  sizes;              /**< available space for each slot */
+   int                   nints;              /**< number of uint32_t ints required for a bitset representation */
 };
 
 

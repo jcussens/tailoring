@@ -17,7 +17,7 @@
 
 #define MAXKEYVALS 30                        /**< maximum number of key values to use counting sort (otherwise use radix sort) */
 
-typedef int KEY;
+typedef int KEY; /**< key type for ordering elements in a simple set */
 
 /** 
  * simple set

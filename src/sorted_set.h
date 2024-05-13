@@ -1,5 +1,5 @@
-/** @file units.h
- *  @brief Prototypes for functions manipulating sets of units, using 'sorted_sets' approach
+/** @file sorted_set.h
+ *  @brief Implements a set of units with an array for each covariate
  *  @author James Cussens
  */
 #ifdef __cplusplus
