@@ -21,6 +21,7 @@
 #define EPSILON_GEQ(A,B) (A) + EPSILON >= (B)  /**< A + epslion >= B */
 #define GT_EPSILON(A,B) (A) > (B) + EPSILON    /**< A > B + epsilon */
 
+#define CACHE_MAXSIZE 1000000
 
 /** given a set of elements, compute an upper bound on the improvement on the reward for any set of units A
  * by adding these elements to A
@@ -777,7 +778,7 @@ NODE* tree_search_simple(
 
    /* create cache, if using */
    if( use_cache(strategy) )
-      cache = make_cache(num_rows);
+      cache = make_cache(num_rows, CACHE_MAXSIZE);
    
    /* find the optimal tree */
    find_best_split(strategy, verbosity, cache, tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,

@@ -39,7 +39,8 @@ void add_to_cache(
  * @return an empty cache
  */
 CACHE* make_cache(
-   int                   num_rows            /**< number of units */
+   int                   num_rows,           /**< number of units */
+   int                   maxsize             /**< maximum number of entries to store in cache */
    );
 
 /** free the cache */

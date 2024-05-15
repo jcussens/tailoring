@@ -13,8 +13,9 @@
 #include "cache.h"
 #include "tree.h"
 
-#define NSLOTS 1000   /**< number of slots in the cache */
+#define NSLOTS 10000   /**< number of slots in the cache */
 #define BLOCKSIZE 5   /**< initial size of each slot and amount by which slots are extended when necessary */
+
 
 /* following macros adapted from https://c-faq.com/misc/bitsets.html */
 
@@ -43,6 +44,8 @@ struct cache
    int*                  nentries;           /**< number of entries in each slot */
    int*                  sizes;              /**< available space for each slot */
    int                   nints;              /**< number of uint32_t ints required for a bitset representation */
+   int                   ntotalentries;      /**< total number of entries */
+   int                   maxsize;            /**< maximum number of entries allowed in the cache */
 };
 
 
@@ -176,7 +179,8 @@ int search_cache(
 }
 
 
-/** add an optimal tree of given depth for the given set to the cache */
+/** add an optimal tree of given depth for the given set to the cache 
+(unless maximal number of entries in cache already reached) */
 void add_to_cache(
    CACHE*                cache,              /**< cache */
    int                   nelts,              /**< number of elts in set */
@@ -185,14 +189,20 @@ void add_to_cache(
    const NODE*           tree                /**< optimal tree for set */
 )
 {
-   ENTRY* entry = make_entry(cache, nelts, elts, depth, tree);
-   int slot = get_hash((const uint32_t*) entry->key, cache->nints, depth);
+   ENTRY* entry;
+   int slot;
    
    assert(cache != NULL);
    assert(nelts >= 0);
    assert(elts != NULL);
    assert(depth >= 0);
    assert(tree != NULL);
+
+   if( cache->ntotalentries == cache->maxsize )
+      return;
+
+   entry = make_entry(cache, nelts, elts, depth, tree);
+   slot = get_hash((const uint32_t*) entry->key, cache->nints, depth);
 
    assert(slot >= 0);
    assert(slot < NSLOTS);
@@ -205,13 +215,15 @@ void add_to_cache(
       cache->slots[slot] = (ENTRY**) realloc(cache->slots[slot], (cache->sizes[slot])*sizeof(ENTRY*));
    }
    cache->slots[slot][(cache->nentries[slot])++] = entry;
+   cache->ntotalentries++;
 }
 
 /** make (an empty) cache 
  * @return an empty cache
  */
 CACHE* make_cache(
-   int                   num_rows            /**< number of units */
+   int                   num_rows,           /**< number of units */
+   int                   maxsize             /**< maximum number of entries to store in cache */
    )
 {
    int slot;
@@ -221,7 +233,9 @@ CACHE* make_cache(
    cache->nentries = (int*) calloc(NSLOTS, sizeof(int));
    cache->sizes = (int*) malloc(NSLOTS * sizeof(int));
    cache->nints = BITNSLOTS(num_rows);
-
+   cache->ntotalentries = 0;
+   cache->maxsize = maxsize;
+   
    /* assign initial space for BLOCKSIZE entries in each slot */
    for( slot = 0; slot < NSLOTS; slot++ )
    {

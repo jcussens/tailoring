@@ -11,9 +11,9 @@ compare <- function(s, n, p, actions, depth, nvals)
         cf <- grf::causal_forest(X, Y, W)
         gamma <- double_robust_scores(cf)
 
-        colnames(X) <- as.character(1:p)
-        dat <-cbind(X,gamma)
-        write.table(dat,file="",row.names=FALSE)
+        ## colnames(X) <- as.character(1:p)
+        ## dat <-cbind(X,gamma)
+        ## write.table(dat,file="",row.names=FALSE)
 
         times <- list()
         policies <- vector("list",3)
