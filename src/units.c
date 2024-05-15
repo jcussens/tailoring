@@ -20,18 +20,27 @@ extern "C" {
 #define DISPATCH_UNITS(F,...) IFUSESORTED  \
    { return sorted_set_ ## F((SORTED_SET**) units, __VA_ARGS__); } \
    else {return simple_set_ ## F((SIMPLE_SET*) units, __VA_ARGS__); } /**< dispatch macro */
+#define DISPATCH_UNITS_NORETURN(F,...) IFUSESORTED  \
+   { sorted_set_ ## F((SORTED_SET**) units, __VA_ARGS__); } \
+   else { simple_set_ ## F((SIMPLE_SET*) units, __VA_ARGS__); } /**< dispatch macro */
 #define DISPATCH_UNITS_ONLY(F,...) IFUSESORTED  \
    { return sorted_set_ ## F((SORTED_SET**) units); } \
    else {return simple_set_ ## F((SIMPLE_SET*) units); } /**< dispatch macro */
 #define DISPATCH_CONSTUNITS(F,...) IFUSESORTED  \
    { return sorted_set_ ## F((const SORTED_SET**) units, __VA_ARGS__); } \
    else {return simple_set_ ## F((const SIMPLE_SET*) units, __VA_ARGS__); } /**< dispatch macro */
+#define DISPATCH_CONSTUNITS_NORETURN(F,...) IFUSESORTED  \
+   { sorted_set_ ## F((const SORTED_SET**) units, __VA_ARGS__); } \
+   else { simple_set_ ## F((const SIMPLE_SET*) units, __VA_ARGS__); } /**< dispatch macro */
 #define DISPATCH_CONSTUNITS_ONLY(F,...) IFUSESORTED  \
    { return sorted_set_ ## F((const SORTED_SET**) units); } \
    else {return simple_set_ ## F((const SIMPLE_SET*) units); } /**< dispatch macro */
 #define DISPATCH(F,A,B) IFUSESORTED \
    { return sorted_set_ ## F A; } \
    else {return simple_set_ ## F B; } /**< dispatch macro */
+#define DISPATCH_NORETURN(F,A,B) IFUSESORTED \
+   { sorted_set_ ## F A; } \
+   else { simple_set_ ## F B; } /**< dispatch macro */
 #define DISPATCH_NOUNITS_CAST(R,F,...) IFUSESORTED  \
    { return (R) sorted_set_ ## F(__VA_ARGS__); } \
    else {return (R) simple_set_ ## F(__VA_ARGS__); } /**< dispatch macro */
@@ -64,7 +73,7 @@ void free_units(
    int                   num_cols_x          /**< number of covariates */
    )
 {
-   DISPATCH_UNITS(free_units, num_cols_x)
+   DISPATCH_UNITS_NORETURN(free_units, num_cols_x)
 }
 
 /** make a 'shallow' copy of units, these copies should be freed by calling shallow_free_units */
@@ -84,7 +93,7 @@ void shallow_free_units(
    int                   num_cols_x          /**< number of covariates */
    )
 {
-   DISPATCH_UNITS(shallow_free_units, num_cols_x)
+   DISPATCH_UNITS_NORETURN(shallow_free_units, num_cols_x)
 }
 
 /** for debugging only: check that a non-empty collection of sorted sets represent the same underlying set and that each is appropriately sorted 
@@ -143,7 +152,7 @@ void find_nosplit_rewards(
    double*               nosplit_rewards     /**< space for computed no split rewards */
    )
 {
-   DISPATCH_CONSTUNITS(find_nosplit_rewards, num_cols_y, data_y, num_rows, nosplit_rewards)
+   DISPATCH_CONSTUNITS_NORETURN(find_nosplit_rewards, num_cols_y, data_y, num_rows, nosplit_rewards)
 }
 
 /** find best action and its associated reward for a set of units */
@@ -158,7 +167,7 @@ void find_best_action(
    int*                  best_action         /**< (pointer to) best action */
    )
 {
-   DISPATCH_CONSTUNITS(find_best_action, data_y, num_rows, num_cols_y, workspace, best_reward, best_action)
+   DISPATCH_CONSTUNITS_NORETURN(find_best_action, data_y, num_rows, num_cols_y, workspace, best_reward, best_action)
 }
 
 /** get number of units in a set of units */
@@ -180,7 +189,7 @@ void shallow_initialise_units(
    UNITS*                right_units         /**< pointer to output right units */
    )
 {
-   DISPATCH(shallow_initialise_units, ((const SORTED_SET**) units, p, num_cols_x, workspace, (SORTED_SET***) right_units),
+   DISPATCH_NORETURN(shallow_initialise_units, ((const SORTED_SET**) units, p, num_cols_x, workspace, (SORTED_SET***) right_units),
       (strategy, (const SIMPLE_SET*) units, p, num_cols_x, workspace, (SIMPLE_SET**) right_units))
 }
 
@@ -197,7 +206,7 @@ void initialise_units(
    UNITS*                right_units         /**< pointer to output right units */
    )
 {
-   DISPATCH(initialise_units, ((const SORTED_SET**) units, p, depth, num_cols_x, workspace, (SORTED_SET***) left_units, (SORTED_SET***) right_units),
+   DISPATCH_NORETURN(initialise_units, ((const SORTED_SET**) units, p, depth, num_cols_x, workspace, (SORTED_SET***) left_units, (SORTED_SET***) right_units),
       (strategy, (const SIMPLE_SET*) units, p, depth, num_cols_x, workspace, (SIMPLE_SET**) left_units, (SIMPLE_SET**) right_units))
 }
 
@@ -248,7 +257,7 @@ void elements(
    int*                  nelts               /**< (pointer to) number of elements */
    )
 {
-   DISPATCH_CONSTUNITS(elements, elts, nelts)
+   DISPATCH_CONSTUNITS_NORETURN(elements, elts, nelts)
 }
 
 int is_binary(

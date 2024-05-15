@@ -13,7 +13,6 @@ Rcpp::List tree_search_rcpp(
    const Rcpp::NumericMatrix& Y,
    int                   depth,
    int                   min_node_size,
-   int                   verbosity,
    int                   datatype,
    int                   find_reward_ub,
    int                   find_dummy_split_reward,
@@ -29,6 +28,9 @@ Rcpp::List tree_search_rcpp(
    double reward;
    STRATEGY* strategy = get_unint_strategy();
 
+   /* no output during solving allowed when using R */
+   int verbosity = 0;
+   
    /* either accept the user's choice of dataset representation or decide based on nature of input data */
    if( datatype == 0 )
       use_simple_sets(strategy);

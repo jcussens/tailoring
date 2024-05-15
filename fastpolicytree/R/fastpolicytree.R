@@ -10,12 +10,18 @@
 #' @param Gamma The rewards for each action. Dimension \eqn{N*d} where \eqn{d} is the number of actions.
 #' @param depth The depth of the fitted tree. Default is 3.
 #' @param min.node.size An integer indicating the smallest terminal node size permitted. Default is 1.
+#' @param strategy.datatype If set to 0 policytree style sorted sets are used to represent datasets during solving. If set to 1 then unsorted sets are used which are sorted 'on demand'. If set to to 2 then the choice of representation is decided automatically. Default is 2 (choice is automatically made).
+#' @param strategy.find.reward.ub If TRUE upper bounds on rewards are computed. Default is FALSE
+#' @param strategy.find.dummy.split.reward If TRUE then the reward for a dummy split (where the left split has no datapoints) is computed. Default is FALSE.
+#' @param strategy.use.last.rewards If TRUE an upper bound on the reward for a split is computed from the reward for the most recent split value for the current covariate. Default is TRUE
+#' @param strategy.use.cutoffs If TRUE then tree finding is aborted if it can be deduced that the reward for the tree is beaten by some existing tree. Default is TRUE
+#' @param strategy.use.cache If TRUE a cache of optimal trees for (sub-)datasets is used. Default is TRUE
+#' @param strategy.exploitbinaryvars If TRUE then covariates with only 2 values are treated specially. Default is TRUE
 #' 
 #' @return A policy_tree object.
 #'
 #' @export
 fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1,
-                           verbosity = 0,
                            strategy.datatype  = 2,
                            strategy.find.reward.ub = FALSE,
                            strategy.find.dummy.split.reward = FALSE,
@@ -66,7 +72,7 @@ fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1,
   }
 
   result <- tree_search_rcpp(as.matrix(X), as.matrix(Gamma), depth, min.node.size,
-                             verbosity, strategy.datatype,
+                             strategy.datatype,
                            as.integer(strategy.find.reward.ub),
                            as.integer(strategy.find.dummy.split.reward),
                            as.integer(strategy.use.last.rewards),

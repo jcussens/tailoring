@@ -10,8 +10,10 @@
 #include "cache.h"
 #include <assert.h>
 #include <stdlib.h>
-#include <string.h> 
+#include <string.h>
+#ifdef PRINTING_ALLOWED
 #include <stdio.h>
+#endif
 
 #define EPSILON 1e-09                          /**< small number to deal with rounding errors */
 #define LEQ_EPSILON(A,B) (A) <= (B) + EPSILON  /**< A <= B + epsilon */
@@ -230,8 +232,10 @@ void level_one_learning(
    int best_left_action;
    int best_right_action;
 
+#ifdef PRINTING_ALLOWED
    double bestsplitval;
    int bestp;
+#endif
 
    UNITS right_units;
    int optimal_tree_found;
@@ -327,9 +331,10 @@ void level_one_learning(
                make_leaf(left_child, best_left_reward, best_left_action);
                make_leaf(right_child, best_right_reward, best_right_action);
                *tree_set = 1;
+#ifdef PRINTING_ALLOWED
                bestsplitval = splitval;
                bestp = p;
-
+#endif
                first_reward = 0;
 
                /* if this reward is best possible, just stop searching */
@@ -345,10 +350,11 @@ void level_one_learning(
          idx += nelts;
       }
    }
-
+#ifdef PRINTING_ALLOWED
    if( verbosity > 1 )
       printf("Best split for depth=1 tree is split value %g for covariate %d with reward %g.\n",
          bestsplitval, bestp, best_reward);
+#endif
 }
 
 /** on return, `node` will be the root of an optimal tree of depth `depth` for the data
@@ -414,9 +420,11 @@ void find_best_split(
    assert( data_y != NULL );
    assert( units_ok(strategy, units, -1, data_x, num_rows, num_cols_x) );
 
+#ifdef PRINTING_ALLOWED
    if( verbosity > 1 )
       printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(strategy, units)); 
-
+#endif
+   
    if( use_cache(strategy) )
    {
       assert(cache != NULL);
@@ -424,10 +432,11 @@ void find_best_split(
       elements(strategy, (CONST_UNITS) units, &mainelts, &nmainelts);
       if( search_cache( (const CACHE*) cache, nmainelts, mainelts, depth, node) )
       {
+#ifdef PRINTING_ALLOWED
          if( verbosity > 0 )
             printf("Found optimal tree for depth=%d with reward=%g (cutoff is %d|%g) for dataset of size %d in cache.\n",
                depth,  get_reward(node), reward_cutoff_set, reward_cutoff, nmainelts);
-
+#endif
          best_reward = get_reward(node);
          if( !reward_cutoff_set || GT_EPSILON(best_reward, reward_cutoff) )
             *tree_set = 1;
@@ -606,10 +615,11 @@ void find_best_split(
          /* elements((CONST_UNITS) right_units, &elts, &nelts); */
          /* if( dummy_split_reward + get_reward_improvement_ub(elts, nelts, num_rows, data_y, best_actions, worst_actions) <= best_reward ) */
          /*    break; */
-         
+
+#ifdef PRINTING_ALLOWED
          if( verbosity > 1 )
             printf("Working on split value %g for covariate %d.\n", splitval, p);
-         
+#endif
          /* find optimal tree for left data set */
          find_best_split(strategy, verbosity, cache, left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, left_reward_cutoff_set, left_reward_cutoff, &left_tree_set);
@@ -696,10 +706,12 @@ void find_best_split(
       /* indicate that no acceptable tree found */
       *tree_set = 0;
    }
-   
+
+#ifdef PRINTING_ALLOWED
    if( verbosity > 0 )
       printf("Best split for depth=%d tree for dataset of size %d is split value %g for covariate %d with reward %g.\n",
          depth, get_size(strategy, units), get_value(node), get_index(node), get_reward(node));
+#endif
 }
 
 
