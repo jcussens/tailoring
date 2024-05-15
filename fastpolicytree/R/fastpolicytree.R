@@ -14,7 +14,16 @@
 #' @return A policy_tree object.
 #'
 #' @export
-fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1) {
+fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1,
+                           verbosity = 0,
+                           strategy.datatype  = 2,
+                           strategy.find.reward.ub = FALSE,
+                           strategy.find.dummy.split.reward = FALSE,
+                           strategy.use.last.rewards = TRUE,
+                           strategy.use.cutoffs = TRUE,
+                           strategy.use.cache = TRUE,
+                           strategy.exploitbinaryvars = TRUE
+                           ) {
   n.features <- ncol(X)
   n.actions <- ncol(Gamma)
   n.obs <- nrow(X)
@@ -56,7 +65,15 @@ fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1) {
     columns <- make.names(1:ncol(X))
   }
 
-  result <- tree_search_rcpp(as.matrix(X), as.matrix(Gamma), depth, min.node.size)
+  result <- tree_search_rcpp(as.matrix(X), as.matrix(Gamma), depth, min.node.size,
+                             verbosity, strategy.datatype,
+                           as.integer(strategy.find.reward.ub),
+                           as.integer(strategy.find.dummy.split.reward),
+                           as.integer(strategy.use.last.rewards),
+                           as.integer(strategy.use.cutoffs),
+                           as.integer(strategy.use.cache),
+                           as.integer(strategy.exploitbinaryvars))
+  
   tree <- list(nodes = result[[1]])
 
   tree[["_tree_array"]] <- result[[2]]

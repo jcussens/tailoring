@@ -12,7 +12,15 @@ Rcpp::List tree_search_rcpp(
    const Rcpp::NumericMatrix& X,
    const Rcpp::NumericMatrix& Y,
    int                   depth,
-   int                   min_node_size
+   int                   min_node_size,
+   int                   verbosity,
+   int                   datatype,
+   int                   find_reward_ub,
+   int                   find_dummy_split_reward,
+   int                   use_last_rewards,
+   int                   use_cutoffs,
+   int                   use_cache,
+   int                   exploit_binaryvars
    )
 {
    int num_rows = X.rows();
@@ -21,30 +29,33 @@ Rcpp::List tree_search_rcpp(
    double reward;
    STRATEGY* strategy = get_unint_strategy();
 
-   // currently strategy is not controlled by user
+   /* either accept the user's choice of dataset representation or decide based on nature of input data */
+   if( datatype == 0 )
+      use_simple_sets(strategy);
+   else if( datatype == 1 )
+      use_sorted_sets(strategy);
+   else
+      decide_datatype(strategy, X.begin(), num_rows, num_cols_x);
 
-   // use data to decide on representation of units
-   decide_datatype(strategy, X.begin(), num_rows, num_cols_x);
+   /* whether to reward upper bounds */
+   set_find_reward_ub(strategy, find_reward_ub);
 
-   /* default is not to compute reward upper bounds */
-   set_find_reward_ub(strategy, 0);
+   /* whether to compute dummy split rewards */
+   set_find_dummy_split_reward(strategy, find_dummy_split_reward);
 
-   /* default is not to compute dummy split rewards */
-   set_find_dummy_split_reward(strategy, 0);
+   /* whether to use last rewards (to avoid considering some splits) */
+   set_use_last_rewards(strategy, use_last_rewards);
 
-   /* default is to use last rewards (to avoid considering some splits) */
-   set_use_last_rewards(strategy, 1);
+   /* whether to use cutoffs (to avoid considering some splits) */
+   set_use_cutoffs(strategy, use_cutoffs);
 
-   /* default is to use cutoffs (to avoid considering some splits) */
-   set_use_cutoffs(strategy, 1);
+   /* whether to use cache (to avoid considering some splits) */
+   set_use_cache(strategy, use_cache);
 
-   /* default is to use cache (to avoid considering some splits) */
-   set_use_cache(strategy, 1);
+   /* whether to exploit binary variables */
+   set_exploit_binaryvars(strategy, exploit_binaryvars);
 
-   /* set exploit binary variables */
-   set_exploit_binaryvars(strategy, 1);
-
-   NODE* root = tree_search_simple((const STRATEGY*) strategy, depth, min_node_size, X.begin(), Y.begin(),
+   NODE* root = tree_search_simple((const STRATEGY*) strategy, verbosity, depth, min_node_size, X.begin(), Y.begin(),
 				   num_rows, num_cols_x, num_cols_y, &reward);
    int num_nodes;
    NODE** treenodes = breadth_first_nodes(root, depth, &num_nodes);

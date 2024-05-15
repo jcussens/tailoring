@@ -357,3 +357,111 @@ sys	0m0.004s
 
 Other combinations (eg having all 6 optional flags set to 1) take
 about 8-9 seconds, so looks like just using last-rewards is what matters.
+
+Mon 13 May 20:36:44 BST 2024
+
+Have a bug where we are not getting an optimal tree, but one just less
+than optimal:
+
+(base) uw20605@IT079795:~/repos/tailoring$ Rscript R/test_getstats.R 4 100 20 2 5
+policytree
+policy_tree object 
+Tree depth:  5 
+Actions:  1: control 2: treated 
+Variable splits: 
+(1) split_variable: X3  split_value: 1 
+  (2) split_variable: X1  split_value: 1 
+    (4) split_variable: X2  split_value: 1 
+      (8) split_variable: X6  split_value: 1 
+        (16) * action: 2 
+        (17) split_variable: X5  split_value: 1 
+          (24) * action: 2 
+          (25) * action: 1 
+      (9) * action: 2 
+    (5) split_variable: X5  split_value: 1 
+      (10) split_variable: X4  split_value: 1 
+        (18) split_variable: X9  split_value: 1 
+          (26) * action: 1 
+          (27) * action: 2 
+        (19) * action: 2 
+      (11) * action: 2 
+  (3) split_variable: X8  split_value: 1 
+    (6) split_variable: X1  split_value: 1 
+      (12) split_variable: X16  split_value: 1 
+        (20) * action: 2 
+        (21) split_variable: X5  split_value: 1 
+          (28) * action: 1 
+          (29) * action: 2 
+      (13) * action: 2 
+    (7) split_variable: X14  split_value: 1 
+      (14) split_variable: X11  split_value: 1 
+        (22) * action: 2 
+        (23) split_variable: X10  split_value: 1 
+          (30) * action: 2 
+          (31) * action: 1 
+      (15) * action: 2 
+[1] 346.6806
+fastpolicytree
+policy_tree object 
+Tree depth:  5 
+Actions:  1: control 2: treated 
+Variable splits: 
+(1) split_variable: X1  split_value: 1 
+  (2) split_variable: X2  split_value: 1 
+    (4) split_variable: X3  split_value: 1 
+      (8) split_variable: X4  split_value: 1 
+        (12) split_variable: X6  split_value: 1 
+          (18) * action: 2 
+          (19) * action: 1 
+        (13) split_variable: X12  split_value: 1 
+          (20) * action: 1 
+          (21) * action: 2 
+      (9) split_variable: X6  split_value: 1 
+        (14) * action: 2 
+        (15) split_variable: X8  split_value: 1 
+          (22) * action: 1 
+          (23) * action: 2 
+    (5) * action: 2 
+  (3) split_variable: X2  split_value: 1 
+    (6) split_variable: X3  split_value: 1 
+      (10) split_variable: X4  split_value: 1 
+        (16) split_variable: X9  split_value: 1 
+          (24) * action: 1 
+          (25) * action: 2 
+        (17) * action: 2 
+      (11) * action: 2 
+    (7) * action: 2 
+[1] 346.1949
+
+But when we do:
+(base) uw20605@IT079795:~/repos/tailoring$ ./fpt tmpdat.txt 2 5
+policy_tree object
+Tree depth:   5
+Actions:  1: "control" 2: "treated"
+Variable splits:
+split_variable: "1"  split_value: 1
+  split_variable: "2"  split_value: 1
+    split_variable: "3"  split_value: 1
+      split_variable: "5"  split_value: 1
+        * action: 2
+        split_variable: "6"  split_value: 1
+          * action: 2
+          * action: 1
+      split_variable: "5"  split_value: 1
+        split_variable: "12"  split_value: 1
+          * action: 2
+          * action: 1
+        * action: 2
+    * action: 2
+  split_variable: "3"  split_value: 1
+    split_variable: "4"  split_value: 1
+      split_variable: "19"  split_value: 1
+        * action: 1
+        * action: 2
+      * action: 2
+    * action: 2
+Reward: 346.681
+Git commit is ccaac04.
+
+which is correct. Perhaps the combination of flags in R version is
+causing a problem.

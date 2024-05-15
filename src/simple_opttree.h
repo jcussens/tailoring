@@ -17,6 +17,7 @@ extern "C" {
  */
 NODE* tree_search_simple(
    const STRATEGY*        strategy,           /**< tree-building strategy */
+   int                    verbosity,          /**< verbosity of output */
    int                    depth,              /**< (maximum) depth of returned tree */
    int                    min_node_size,      /**< smallest terminal node size */
    const double*          data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */

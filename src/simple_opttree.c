@@ -11,16 +11,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h> 
-
-/* #define VERYVERBOSE    */
-
-#ifdef VERYVERBOSE
-#define VERBOSE
-#endif
-
-#ifdef VERBOSE
 #include <stdio.h>
-#endif
 
 #define EPSILON 1e-09                          /**< small number to deal with rounding errors */
 #define LEQ_EPSILON(A,B) (A) <= (B) + EPSILON  /**< A <= B + epsilon */
@@ -205,6 +196,7 @@ void store_best_worst_actions(
 static
 void level_one_learning(
    const STRATEGY*       strategy,           /**< tree-building strategy */
+   int                   verbosity,          /**< verbosity of output */
    NODE*                 node,               /**< uninitialised tree to be populated with optimal tree */
    CONST_UNITS           units,              /**< the units */
    const double*         data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
@@ -238,10 +230,8 @@ void level_one_learning(
    int best_left_action;
    int best_right_action;
 
-#ifdef VERYVERBOSE
    double bestsplitval;
    int bestp;
-#endif
 
    UNITS right_units;
    int optimal_tree_found;
@@ -337,10 +327,9 @@ void level_one_learning(
                make_leaf(left_child, best_left_reward, best_left_action);
                make_leaf(right_child, best_right_reward, best_right_action);
                *tree_set = 1;
-#ifdef VERYVERBOSE
                bestsplitval = splitval;
                bestp = p;
-#endif
+
                first_reward = 0;
 
                /* if this reward is best possible, just stop searching */
@@ -356,10 +345,10 @@ void level_one_learning(
          idx += nelts;
       }
    }
-#ifdef VERYVERBOSE
-   printf("Best split for depth=1 tree is split value %g for covariate %d with reward %g.\n",
-      bestsplitval, bestp, best_reward);
-#endif
+
+   if( verbosity > 1 )
+      printf("Best split for depth=1 tree is split value %g for covariate %d with reward %g.\n",
+         bestsplitval, bestp, best_reward);
 }
 
 /** on return, `node` will be the root of an optimal tree of depth `depth` for the data
@@ -368,6 +357,7 @@ void level_one_learning(
 static
 void find_best_split(
    const STRATEGY*       strategy,           /**< tree-building strategy */
+   int                   verbosity,          /**< verbosity of output */
    CACHE*                cache,              /**< cache */
    NODE*                 node,               /**< uninitialised tree to be populated with optimal tree */
    int                   depth,              /**< depth of tree */
@@ -424,9 +414,8 @@ void find_best_split(
    assert( data_y != NULL );
    assert( units_ok(strategy, units, -1, data_x, num_rows, num_cols_x) );
 
-/* #ifdef VERBOSE */
-/*    printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(strategy, units)); */
-/* #endif */
+   if( verbosity > 1 )
+      printf("Looking for an optimal depth=%d tree for a dataset of size %d.\n", depth, get_size(strategy, units)); 
 
    if( use_cache(strategy) )
    {
@@ -435,10 +424,10 @@ void find_best_split(
       elements(strategy, (CONST_UNITS) units, &mainelts, &nmainelts);
       if( search_cache( (const CACHE*) cache, nmainelts, mainelts, depth, node) )
       {
-#ifdef VERBOSE 
-         printf("Found optimal tree for depth=%d with reward=%g (cutoff is %d|%g) for dataset of size %d in cache.\n",
-            depth,  get_reward(node), reward_cutoff_set, reward_cutoff, nmainelts);
-#endif
+         if( verbosity > 0 )
+            printf("Found optimal tree for depth=%d with reward=%g (cutoff is %d|%g) for dataset of size %d in cache.\n",
+               depth,  get_reward(node), reward_cutoff_set, reward_cutoff, nmainelts);
+
          best_reward = get_reward(node);
          if( !reward_cutoff_set || GT_EPSILON(best_reward, reward_cutoff) )
             *tree_set = 1;
@@ -494,7 +483,7 @@ void find_best_split(
    /* use specialised routine if only one split allowed */
    if( depth == 1 )
    {
-      level_one_learning(strategy, node, units, data_x, data_y,
+      level_one_learning(strategy, verbosity, node, units, data_x, data_y,
          num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, reward_cutoff_set, reward_cutoff, tree_set,
          reward_ub_set, reward_ub); 
       
@@ -517,7 +506,7 @@ void find_best_split(
          built using 'similar' splits */
       /* also record this tree as best so far */
 
-      find_best_split(strategy, cache, node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
+      find_best_split(strategy, verbosity, cache, node, depth-1, units, min_node_size, data_x, data_y, num_rows, num_cols_x, num_cols_y,
          best_actions, worst_actions, workspace, 0, reward_cutoff, tree_set);
       assert( *tree_set );
       dummy_split_reward = get_reward(node);
@@ -618,12 +607,11 @@ void find_best_split(
          /* if( dummy_split_reward + get_reward_improvement_ub(elts, nelts, num_rows, data_y, best_actions, worst_actions) <= best_reward ) */
          /*    break; */
          
-#ifdef VERYVERBOSE
-         printf("Working on split value %g for covariate %d.\n", splitval, p);
-#endif
+         if( verbosity > 1 )
+            printf("Working on split value %g for covariate %d.\n", splitval, p);
          
          /* find optimal tree for left data set */
-         find_best_split(strategy, cache, left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
+         find_best_split(strategy, verbosity, cache, left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, left_reward_cutoff_set, left_reward_cutoff, &left_tree_set);
 
          /* no tree from this split */
@@ -648,7 +636,7 @@ void find_best_split(
          }
          
          /* find optimal tree for right data set */
-         find_best_split(strategy, cache, right_child, depth-1, (CONST_UNITS) right_units, min_node_size, data_x, data_y,
+         find_best_split(strategy, verbosity, cache, right_child, depth-1, (CONST_UNITS) right_units, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, 
             right_reward_cutoff_set, right_reward_cutoff, &right_tree_set); 
 
@@ -709,11 +697,9 @@ void find_best_split(
       *tree_set = 0;
    }
    
-#ifdef VERYVERBOSE
-   printf("Best split for depth=%d tree for dataset of size %d is split value %g for covariate %d with reward %g.\n",
-      depth, get_size(strategy, units), get_value(node), get_index(node), get_reward(node));
-#endif
-
+   if( verbosity > 0 )
+      printf("Best split for depth=%d tree for dataset of size %d is split value %g for covariate %d with reward %g.\n",
+         depth, get_size(strategy, units), get_value(node), get_index(node), get_reward(node));
 }
 
 
@@ -723,6 +709,7 @@ void find_best_split(
  */
 NODE* tree_search_simple(
    const STRATEGY*        strategy,           /**< tree-building strategy */
+   int                    verbosity,          /**< verbosity of output */
    int                    depth,              /**< (maximum) depth of returned tree */
    int                    min_node_size,      /**< smallest terminal node size */
    const double*          data_x,             /**< covariates, data_x+(j*num_rows) points to values for covariate j */
@@ -776,11 +763,12 @@ NODE* tree_search_simple(
    assert( best_actions != NULL );
    assert( worst_actions != NULL );
 
+   /* create cache, if using */
    if( use_cache(strategy) )
       cache = make_cache(num_rows);
    
    /* find the optimal tree */
-   find_best_split(strategy, cache, tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,
+   find_best_split(strategy, verbosity, cache, tree, depth, (CONST_UNITS) units, min_node_size, data_x, data_y,
       num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, 
       reward_cutoff_set, reward_cutoff, &aborted); 
 
