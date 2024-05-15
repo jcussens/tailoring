@@ -604,11 +604,20 @@ void find_best_split(
          assert( units_ok(strategy, (CONST_UNITS) left_units, p, data_x, num_rows, num_cols_x) );
          assert( units_ok(strategy, (CONST_UNITS) right_units, p, data_x, num_rows, num_cols_x) );
 
+#ifdef PRINTING_ALLOWED
+         if( verbosity > 1 )
+            printf("Working on split value %g for covariate %d.\n", splitval, p);
+#endif
+
          if( use_last_rewards(strategy) && have_last_reward )
          {
             cum_reward_improvement_ub += get_reward_improvement_ub(elts, nelts, num_rows, data_y, best_actions, worst_actions);
             if( last_reward + cum_reward_improvement_ub <= best_reward )
             {
+#ifdef PRINTING_ALLOWED
+               if( verbosity > 1 )
+                  printf("Split aborted.\n");
+#endif
                continue;
             }
          }
@@ -620,10 +629,6 @@ void find_best_split(
          /* if( dummy_split_reward + get_reward_improvement_ub(elts, nelts, num_rows, data_y, best_actions, worst_actions) <= best_reward ) */
          /*    break; */
 
-#ifdef PRINTING_ALLOWED
-         if( verbosity > 1 )
-            printf("Working on split value %g for covariate %d.\n", splitval, p);
-#endif
          /* find optimal tree for left data set */
          find_best_split(strategy, verbosity, cache, left_child, depth-1, (CONST_UNITS) left_units, min_node_size, data_x, data_y,
             num_rows, num_cols_x, num_cols_y, best_actions, worst_actions, workspace, left_reward_cutoff_set, left_reward_cutoff, &left_tree_set);
@@ -631,7 +636,10 @@ void find_best_split(
          /* no tree from this split */
          if( !left_tree_set )
          {
-            /* printf("left tree aborted\n"); */
+#ifdef PRINTING_ALLOWED
+         if( verbosity > 1 )
+            printf("left tree aborted\n"); 
+#endif
             continue;
          }
 
@@ -657,7 +665,10 @@ void find_best_split(
          /* no tree from this split */
          if( !right_tree_set )
          {
-            /* printf("right tree aborted\n"); */
+#ifdef PRINTING_ALLOWED
+            if( verbosity > 1 )
+               printf("right tree aborted\n"); 
+#endif
             continue;
          }
 

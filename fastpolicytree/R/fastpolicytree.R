@@ -14,7 +14,7 @@
 #' @param strategy.find.reward.ub If TRUE upper bounds on rewards are computed. Default is FALSE
 #' @param strategy.find.dummy.split.reward If TRUE then the reward for a dummy split (where the left split has no datapoints) is computed. Default is FALSE.
 #' @param strategy.use.last.rewards If TRUE an upper bound on the reward for a split is computed from the reward for the most recent split value for the current covariate. Default is TRUE
-#' @param strategy.use.cutoffs If TRUE then tree finding is aborted if it can be deduced that the reward for the tree is beaten by some existing tree. Default is TRUE
+#' @param strategy.use.cutoffs If TRUE then tree finding is aborted if it can be deduced that the reward for the tree is beaten by some existing tree. Default is FALSE
 #' @param strategy.use.cache If TRUE a cache of optimal trees for (sub-)datasets is used. Default is TRUE
 #' @param strategy.exploitbinaryvars If TRUE then covariates with only 2 values are treated specially. Default is TRUE
 #' 
@@ -26,7 +26,7 @@ fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1,
                            strategy.find.reward.ub = FALSE,
                            strategy.find.dummy.split.reward = FALSE,
                            strategy.use.last.rewards = TRUE,
-                           strategy.use.cutoffs = TRUE,
+                           strategy.use.cutoffs = FALSE,
                            strategy.use.cache = TRUE,
                            strategy.exploitbinaryvars = TRUE
                            ) {
@@ -35,6 +35,7 @@ fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1,
   n.obs <- nrow(X)
   valid.classes <- c("matrix", "data.frame")
 
+  
   if (!inherits(X, valid.classes) || !inherits(Gamma, valid.classes)) {
     stop(paste("Currently the only supported data input types are:",
                "`matrix`, `data.frame`"))
@@ -60,7 +61,10 @@ fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1,
   if (as.integer(min.node.size) != min.node.size || min.node.size < 1) {
     stop("min.node.size should be an integer greater than or equal to 1.")
   }
+  if( as.integer(strategy.datatype) != strategy.datatype || strategy.datatype < 0 || strategy.datatype > 2 )
+      stop("strategy.datatype should be either 0, 1 or 2.")
 
+  
   action.names <- colnames(Gamma)
   if (is.null(action.names)) {
     action.names <- as.character(1:ncol(Gamma))
