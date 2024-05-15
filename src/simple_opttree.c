@@ -457,7 +457,10 @@ void find_best_split(
       /* if no chance of exceeding the cutoff (upper bound on reward is safetly <= cutoff) , just abort */
       if( reward_cutoff_set && EPSILON_LEQ(reward_ub, reward_cutoff) )
       {
-         /* printf("size=%d, depth=%d, best_possible=%g, cutoff=%g\n", get_size(strategy, units), depth, reward_ub, reward_cutoff);  */
+#ifdef PRINTING_ALLOWED
+         if( verbosity > 1 )
+            printf("Cutoff: size=%d, depth=%d, best_possible=%g, cutoff=%g\n", get_size(strategy, units), depth, reward_ub, reward_cutoff);
+#endif
          *tree_set = 0;
          return;
       }

@@ -465,3 +465,37 @@ Git commit is ccaac04.
 
 which is correct. Perhaps the combination of flags in R version is
 causing a problem.
+
+Wed 15 May 16:18:41 BST 2024
+
+sudo perf record ./fpt untracked/fakedata.txt 2 --depth 2
+
+  36.26%  fpt      fpt                   [.] find_best_split
+  24.99%  fpt      libc.so.6             [.] __memmove_avx_unaligned_erms
+  20.59%  fpt      fpt                   [.] sorted_set_next_shallow_split
+   4.47%  fpt      fpt                   [.] sorted_set_next_split
+   3.56%  fpt      fpt                   [.] sorted_set_find_nosplit_rewards
+   3.06%  fpt      fpt                   [.] next_shallow_split
+   1.81%  fpt      fpt                   [.] sorted_set_get_reward_ub
+   1.22%  fpt      fpt                   [.] search_cache
+   0.76%  fpt      fpt                   [.] using_sorted_sets
+   0.73%  fpt      fpt                   [.] add_to_cache
+   0.65%  fpt      fpt                   [.] exploit_binaryvars
+
+sudo perf record ./fpt untracked/fakedata.txt 2 --depth 2 --use_cutoffs 0
+
+  30.30%  fpt      libc.so.6          [.] __memmove_avx_unaligned_erms
+  27.16%  fpt      fpt                [.] find_best_split
+  16.55%  fpt      fpt                [.] sorted_set_next_shallow_split
+  11.87%  fpt      fpt                [.] sorted_set_next_split
+   2.61%  fpt      fpt                [.] sorted_set_find_nosplit_rewards
+   2.61%  fpt      fpt                [.] next_shallow_split
+   1.29%  fpt      fpt                [.] sorted_set_get_reward_ub
+   1.11%  fpt      fpt                [.] add_to_cache
+   0.88%  fpt      fpt                [.] search_cache
+   0.82%  fpt      libc.so.6          [.] __vfscanf_internal
+   0.67%  fpt      fpt                [.] exploit_binaryvars
+   0.60%  fpt      fpt                [.] simple_set_make_units
+   0.58%  fpt      fpt                [.] using_sorted_sets
+   0.56%  fpt      fpt                [.] sorted_set_make_units
+   0.54%  fpt      libc.so.6          [.] __GI_____strtod_l_internal
