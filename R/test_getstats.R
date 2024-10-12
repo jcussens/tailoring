@@ -1,5 +1,7 @@
 library(fastpolicytree)
+library(sparsepolicytree)
 library(policytree)
+#Sys.setenv(RAYON_NUM_THREADS=1)
 
 compare <- function(s, n, p, actions, depth, nvals)
 {
@@ -18,12 +20,14 @@ compare <- function(s, n, p, actions, depth, nvals)
         times <- list()
         policies <- vector("list",3)
         trees <- vector("list",3)
-        for (method in 1:2)
+        for (method in 1:3)
         {
             if (method == 1 )
                 time <- system.time(tree <- policy_tree(X, gamma, depth))
-            else
+            else if ( method == 2 )
                 time <- system.time(tree <- fastpolicytree(X, gamma, depth))
+            else
+                time <- system.time(tree <- sparse_policy_tree(X, gamma, depth))
             time <- as.vector(time)[3]
             policy <- predict(tree, X)
             times  <- c(times,time)
@@ -49,14 +53,14 @@ compare <- function(s, n, p, actions, depth, nvals)
             quit("no")
         }
 
-        cat(s, n, p, actions, depth, times[[1]], times[[2]], "\n")
+        cat(s, n, p, actions, depth, times[[1]], times[[2]], times[[3]], "\n")
     }
 
 nseeds  <- 20
 n <- 500
 p  <- 30
 nactions  <- 2
-depth  <- 3
+depth  <- 4
 nvals  <- 2
 
 args = commandArgs(trailingOnly = TRUE)
