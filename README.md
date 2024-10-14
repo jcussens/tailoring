@@ -21,7 +21,7 @@ package. As an example, the R script below finds optimal policy trees from
 synthetic data with 500 datapoints, 30 binary covariates and rewards
 for 2 actions. Depth 4 trees are found using policytree,
 fastpolicytree and also
-[sparsepolicytree](https://github.com/beniaminogreen/sparsepolicytree) package.
+the [sparsepolicytree](https://github.com/beniaminogreen/sparsepolicytree) package.
 
 ``` r
 library(fastpolicytree)
