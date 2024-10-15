@@ -66,8 +66,8 @@ for (s in 1:nseeds)
     compare(s, n, p, nactions, depth, nvals)
 ```
 
-Running this code on a 15 Gb RAM, 2.7GHz CPU laptop produces the
-following output:
+Running this code on a 15 Gb RAM, 2.7GHz CPU laptop using Version 1.0
+of fastpolicytree produces the following output:
 
 ```
 1 500 30 2 4 137.829 0.861 278.163 
@@ -149,6 +149,13 @@ The development of `fastpolicytree` was supported by UK MRC project
   [Tailoring health policies to improve outcomes using machine
   learning, causal inference and operations research
   methods](https://gtr.ukri.org/projects?ref=MR%2FT04487X%2F1)
+
+The following people worked on the "Tailoring ..." project
+
+- [Noémi Kreif (PI)](https://sop.washington.edu/people/noemi-kreif/)
+- [James Cussens](https://jcussens.github.io/)
+- [Julia Hatamyar](https://www.york.ac.uk/che/staff/research/julia-hatamyar./)
+- [Vishalie Shah](https://www.york.ac.uk/che/staff/students/vishalie-shah/)
 
 # Licence, etc
 
