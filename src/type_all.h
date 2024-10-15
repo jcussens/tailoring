@@ -9,7 +9,12 @@
 extern "C" {
 #endif
 
-#include "versiongit.h"
+#if defined __has_include
+#  if __has_include ("versiongit.h")
+#    include "versiongit.h"
+#  endif
+#endif
+
 
 struct workspace;
 typedef struct workspace WORKSPACE;  /**< Work space structure */

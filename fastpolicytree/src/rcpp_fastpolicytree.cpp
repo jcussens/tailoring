@@ -117,7 +117,11 @@ Rcpp::List tree_search_rcpp(
 // [[Rcpp::export]]
 Rcpp::CharacterVector githash_rcpp()
 {
+#ifdef GITHASH
    return CharacterVector::create(GITHASH);
+#else
+   return CharacterVector::create("unknown");
+#endif
 }
    
 

@@ -316,8 +316,11 @@ int main(
       printf("Did not build tree since no data supplied.\n");
    }
 
+#ifdef GITHASH
    printf("Git commit is " GITHASH ".\n");
-      
+#else
+   printf("Git commit is unknown.\n");
+#endif
    /* nodes = breadth_first_nodes(tree, depth, &num_nodes); */
    /* for( i = 0; i < num_nodes; i++ ) */
    /* { */
