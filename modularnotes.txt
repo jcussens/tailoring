@@ -517,4 +517,6 @@ but no man pages found and also get:
 Error in tree_search_rcpp(as.matrix(X), as.matrix(Gamma), depth, min.node.size,  : 
   could not find function "tree_search_rcpp"
 
-so perhaps wrapper code is missing, ie stuff produced by compileAttributes()
+so perhaps wrapper code is missing, ie stuff produced by
+compileAttributes()
+Yes, R/RcppExports.R and src/RcppExports.cpp are not in repo
