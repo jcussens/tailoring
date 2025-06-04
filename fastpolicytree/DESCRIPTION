@@ -2,11 +2,18 @@ Package: fastpolicytree
 Type: Package
 Title: Constructs policy trees from covariate and reward data
 Version: 1.0
-Date: 2024-03-20
-Author: James Cussens [aut, cre]
-Maintainer: James Cussens <james.cussens@bristol.ac.uk>
+Authors@R: c(
+    person("James", "Cussens", role = c("aut", "cre"),
+    email = "james.cussens@bristol.ac.uk",
+    comment = c(ORCID = "0000-0002-1363-2336")),
+    person("Julia", "Hatamyar", role = "ctb", email = "julia.hatamyar@york.ac.uk"),
+    person("University of Bristol", role = "cph"),
+    person("MRC", role = "fnd")
+    )
 Description: Constructs optimal policy trees from covariate and reward data.
-License: GPL (>= 2)
+URL: https://github.com/jcussens/tailoring
+Suggests: policytree
+License: `use_gpl3_license()`
 Imports: Rcpp (>= 1.0.7)
 LinkingTo: Rcpp
 RoxygenNote: 7.3.1

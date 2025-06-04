@@ -21,6 +21,10 @@
 #' @return A policy_tree object.
 #'
 #' @export
+
+## This R code was produced by copying and editing the file policy_tree.R from
+## the policytree package
+
 fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1,
                            strategy.datatype  = 2,
                            strategy.find.reward.ub = FALSE,
