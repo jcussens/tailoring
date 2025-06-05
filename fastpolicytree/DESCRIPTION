@@ -14,7 +14,7 @@ Authors@R: c(
 Description: Constructs optimal policy trees from covariate and reward data.
 URL: https://github.com/jcussens/tailoring
 Suggests: policytree
-License: `use_gpl3_license()`
 Imports: Rcpp (>= 1.0.7)
 LinkingTo: Rcpp
 RoxygenNote: 7.3.1
+License: GPL (>= 3)
