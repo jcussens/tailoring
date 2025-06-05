@@ -7,6 +7,7 @@ Authors@R: c(
     email = "james.cussens@bristol.ac.uk",
     comment = c(ORCID = "0000-0002-1363-2336")),
     person("Julia", "Hatamyar", role = "ctb", email = "julia.hatamyar@york.ac.uk"),
+    person("Vishalie", "Shah", role = "ctb", email = "vishalieshah@gmail.com"),		
     person("University of Bristol", role = "cph"),
     person("MRC", role = "fnd")
     )
