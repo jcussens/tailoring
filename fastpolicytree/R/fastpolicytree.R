@@ -20,12 +20,33 @@
 #' 
 #' @return A policy_tree object.
 #'
+#' @examples
+#' X <-  data.frame(
+#'  X1=c(-0.32, 0.16, 0.34, 1.24, 0.22, 0.45, 1.48, 0.65,-0.93,-1.11),
+#'  X2=c(-0.58, 0.90,-0.22, 1.54,-0.57,-1.08,-1.42,-1.98,-0.02, 0.05),
+#'  X3=c(0.70,-1.49, 0.36,-0.05,-0.14, 1.57,-0.18,-1.98,-1.77,-1.25),
+#'  X4=c(0.21, 0.34, 0.60,-0.05,-0.66,-0.69, 0.52, 0.31,-0.03, 1.09),
+#'  X5=c(0.16, 0.96,-1.07,-0.97, 2.02,-0.43,-0.79,-2.08, 1.21, 0.39))
+#' Gamma  <- data.frame(
+#'  control=c(0.8502363,-1.4950411,1.9608062,0.7487925,2.9718517,
+#'   0.8952429,-0.2563680,5.9945581,-1.8485703,-1.2840477),
+#'  treat=c(-2.91607259,-2.25464535, 0.28214637,-0.17284650,-0.09480810,
+#'   1.48786125,2.08600119,-2.05283394,0.72903608,-0.04416392))
+#' tree3  <- fastpolicytree(X,Gamma)
+#' tree3
+#' tree2  <- fastpolicytree(X,Gamma,depth=2)
+#' tree2
+#' # to get a human-readable display of the trees use the
+#' # policytree package...
+#' #library(policytree)
+#' #print(tree3)
+#' #print(tree2)
 #' @export
 
 ## This R code was produced by copying and editing the file policy_tree.R from
 ## the policytree package
 
-fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1,
+fastpolicytree <- function(X, Gamma, depth = 3, min.node.size = 1,
                            strategy.datatype  = 2,
                            strategy.find.reward.ub = FALSE,
                            strategy.find.dummy.split.reward = FALSE,
@@ -60,7 +81,7 @@ fastpolicytree <- function(X, Gamma, depth = 2, min.node.size = 1,
     stop("`depth` cannot be negative.")
   }
   if (n.obs != nrow(Gamma)) {
-    stop("X and Gamma does not have the same number of rows")
+    stop("X and Gamma do not have the same number of rows")
   }
   if (as.integer(min.node.size) != min.node.size || min.node.size < 1) {
     stop("min.node.size should be an integer greater than or equal to 1.")

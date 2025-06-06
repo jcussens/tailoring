@@ -1,6 +1,6 @@
 Package: fastpolicytree
 Type: Package
-Title: Constructs policy trees from covariate and reward data
+Title: Constructs Policy Trees from Covariate and Reward Data
 Version: 1.0
 Authors@R: c(
     person("James", "Cussens", role = c("aut", "cre"),
