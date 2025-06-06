@@ -16,5 +16,6 @@ URL: https://github.com/jcussens/tailoring
 Suggests: policytree
 Imports: Rcpp (>= 1.0.7)
 LinkingTo: Rcpp
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
+Encoding: UTF-8
 License: GPL (>= 3)
