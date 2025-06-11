@@ -9,9 +9,9 @@ covariate and reward data. It aims to do the same job as the
 We provide various R packages of Version 1.0 of the software
 (corresponding to commit `83f025e` in this repo):
 
-- [Source package](v1.0/fastpolicytree_1.0.tar.gz)
-- [Windows binary package](v1.0/fastpolicytree_1.0.tgz)
-- [MacOS binary package](v1.0/fastpolicytree_1.0.zip)
+- [Source package](https://jcussens.github.io/fastpolicytree/v1.0/fastpolicytree_1.0.tar.gz)
+- [Windows binary package](https://jcussens.github.io/fastpolicytree/v1.0/fastpolicytree_1.0.tgz)
+- [MacOS binary package](https://jcussens.github.io/fastpolicytree/v1.0/fastpolicytree_1.0.zip)
 
 ## Using the R package
 
