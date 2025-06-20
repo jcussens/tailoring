@@ -13,9 +13,9 @@ Authors@R: c(
     )
 Description: Constructs optimal policy trees which provide a rule-based treatment prescription policy.
  Input is covariate and reward data, where, typically, the rewards will be doubly robust reward estimates.
- This package aims to construct optimal policy trees more quickly than the existing policytree package and
+ This package aims to construct optimal policy trees more quickly than the existing 'policytree' package and
  is intended to be used alongside that package.
- For more details see Cussens, Hatamyar, Shah and Kreif (2025) <arXiv:2506.15435>.
+ For more details see Cussens, Hatamyar, Shah and Kreif (2025) <doi:10.48550/arXiv.2506.15435>.
 URL: https://github.com/jcussens/tailoring
 Suggests: policytree
 Imports: Rcpp (>= 1.0.7)
