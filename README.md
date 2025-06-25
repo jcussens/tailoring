@@ -4,14 +4,9 @@ This repo provides R/C code for constructing optimal policy trees from
 covariate and reward data. It aims to do the same job as the
 `policytree` package but to do so more quickly.
 
-# R packages
+# R package
 
-We provide various R packages of Version 1.0 of the software
-(corresponding to commit `83f025e` in this repo):
-
-- [Source package](https://jcussens.github.io/fastpolicytree/v1.0/fastpolicytree_1.0.tar.gz)
-- [Windows binary package](https://jcussens.github.io/fastpolicytree/v1.0/fastpolicytree_1.0.tgz)
-- [MacOS binary package](https://jcussens.github.io/fastpolicytree/v1.0/fastpolicytree_1.0.zip)
+Version 1.0 of the software (corresponding to commit `9ba0be2` in this repo) is [available on CRAN](https://cran.r-project.org/package=fastpolicytree).
 
 ## Using the R package
 
