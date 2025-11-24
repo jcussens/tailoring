@@ -221,11 +221,15 @@ goal is to find $f^{*}_{d,N}$.
 Abbreviate $R(f^{*}_{d,N},N)$ to $R^{*}_{d,N}$, so $R^{*}_{d,N}$ is the
 best possible reward---the reward resulting from using the best tree
 $f^{*}_{d,N}$---for a given $d$ and $N$. We have the basic recursion for
-$d>0$ $$\label{eq:basicrecursion}
+$d>0$
+\begin{equation}\label{eq:basicrecursion}
   R^{*}_{d,N}
-  = \max_{s \in S}   R^{*}_{d-1,s_{L}(N)} + R^{*}_{d-1,s_{R}(N)}$$ The
-base case is: $$\label{eq:base}
-    R^{*}_{0,N} =  \max_{a \in A} \sum_{i \in N}  r(i,a)$$
+  = \max_{s \in S}   R^{*}_{d-1,s_{L}(N)} + R^{*}_{d-1,s_{R}(N)}
+  \end{equation}. The
+base case is:
+\being{equation}\label{eq:base}
+    R^{*}_{0,N} =  \max_{a \in A} \sum_{i \in N}  r(i,a)
+    \end{equation}
 (\autoref{eq:basicrecursion}) and
 (\autoref{eq:base}) lead
 to a simple algorithm for finding $f^{*}_{d,N}$: compute
