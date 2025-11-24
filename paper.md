@@ -231,7 +231,7 @@ base case is:
     R^{*}_{0,N} =  \max_{a \in A} \sum_{i \in N}  r(i,a)
     \end{equation}
 (\autoref{eq:basicrecursion}) and
-(\autoref{eq:base}) lead
+[](\autoref{eq:base}) lead
 to a simple algorithm for finding $f^{*}_{d,N}$: compute
 $R^{*}_{d-1,s_{L}(N)} +
 R^{*}_{d-1,s_{R}(N)}$ by recursion for each split $s \in S$ and record
@@ -366,9 +366,9 @@ otherwise Method 1 is used.
 
 ### Caching
 
-Consider the two partially constructed policy trees displayed in
-Fig [\[fig:cacheex\]](#fig:cacheex){reference-type="ref"
-reference="fig:cacheex"}. The left-hand tree illustrates the situation
+![Two partially constructed policy trees which have the same tree to find at position X. Units satisfying an inequality at a tree node are sent to its left branch, and those not satisfying it are sent right.\label{fig:cacheex}](trees.png)
+
+Consider the two partially constructed policy trees displayed in \autoref{fig:cacheex}. The left-hand tree illustrates the situation
 where we are looking for an optimal tree with top-level split
 $x_{1} \leq 2.4$ and are looking for an optimal tree with split
 $x_{2} \leq 3.7$ for those units satisfying $x_{1} \leq 2.4$. The
