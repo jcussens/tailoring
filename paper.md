@@ -1,34 +1,3 @@
----
-title: 'Fast Learning of Optimal Policy Trees'
-tags:
-  - policy trees
-  - discrete optimisation
-authors:
-  - name: James Cussens
-    corresponding: true
-    orcid: 0000-0002-1363-2336
-    affiliation: 1
-  - name: Julia Hatamyar
-    orcid: 0000-0003-4145-1265
-    affiliation: 2
-  - name: Vishalie Shah
-    affiliation: 3
-  - given-names: Noemi Kreif
-    affiliation: 4
-affiliations:
- - name: University of Bristol, UK
-   index: 1
- - name: University of York, UK
-   index: 2
- - name: IQVIA
-   index: 3
- - name: University of Washington, USA
-   index: 4
-date: 24 November 2025
-bibliography: paper.bib
-
----
-
 Introduction
 ============
 
@@ -117,60 +86,64 @@ improvement in the overall objective function can be achieved.
 Our implementation
 ==================
 
-Our implementation is available as an package called . Its goal is
-simply to learn policy trees more quickly than the existing package. We
-start with an account of the tree-building approach found in .
+Our implementation is available as an `R` package called
+`fastpolicytree`. Its goal is simply to learn policy trees more quickly
+than the existing `policytree` `R` package. We start with an account of
+the tree-building approach found in `policytree`.
 
- {#sec:pt}
+`policytree` {#sec:pt}
+------------
 
-The function provided by , finds an optimal policy tree (of a given
-maximal depth) for any given subset of the covariate and reward data. It
-does this via a recursive algorithm. Given any subset of the data and
-depth limit $d$ as input, considers every possible split (each split
-determined by a choice of covariate and covariate splitting value) thus
-creating a 'left' subset of the data and a 'right' subset. Once an
-optimal policy tree for both the left and right subsets have been found
-(via recursion with depth limit $d-1$), we then know the best possible
-reward for the given split. Since all splits are considered, this allows
-the algorithm to determine the optimal policy tree for its input.
+The `tree_search()` function provided by `policytree`, finds an optimal
+policy tree (of a given maximal depth) for any given subset of the
+covariate and reward data. It does this via a recursive algorithm. Given
+any subset of the data and depth limit $d$ as input, `tree_search()`
+considers every possible split (each split determined by a choice of
+covariate and covariate splitting value) thus creating a 'left' subset
+of the data and a 'right' subset. Once an optimal policy tree for both
+the left and right subsets have been found (via recursion with depth
+limit $d-1$), we then know the best possible reward for the given split.
+Since all splits are considered, this allows the algorithm to determine
+the optimal policy tree for its input.
 
-A key issue is how these subsets are implemented. In each subset is
-stored as $p$ sorted sets where $p$ is the number of covariates. The
-sorted set for covariate $j$ has (the indices) of the datapoints in the
-subset sorted according to their values on covariate $j$. A major
-advantage of this approach is that when generating successive splits for
-covariate $j$ one can quickly find the datapoints to move from the
-'right' to the 'left'. A disadvantage is that each such move requires
-updating $p$ sorted sets.
+A key issue is how these subsets are implemented. In `policytree` each
+subset is stored as $p$ sorted sets where $p$ is the number of
+covariates. The sorted set for covariate $j$ has (the indices) of the
+datapoints in the subset sorted according to their values on covariate
+$j$. A major advantage of this approach is that when generating
+successive splits for covariate $j$ one can quickly find the datapoints
+to move from the 'right' to the 'left'. A disadvantage is that each such
+move requires updating $p$ sorted sets.
 
 @Sverdrup2020-yj state that each sorted set is implemented as a binary
 search tree which would allow datapoints to be added and removed in time
-$O(\log n)$, where $n$ is the size of the set. However, actually
-implements sorted sets as a sorted vector. The container data type
-[@flatset] is used, which does allow faster iteration through the set
-than using a tree but, addition and removal are slower. To find where a
-new element should be inserted into a flat set takes $O(\log n)$ time,
-but then it is also necessary to shift elements to make room for the new
-element---which takes $O(n)$ time. Examining using the Linux tool we
-find that it spends roughly 25%--30% of its time shifting elements. Note
-that has an important optimisation when looking for depth $d=1$ trees.
-In this case, there is no need to maintain $p$ sorted sets (since there
-will be no further splits) and so a faster method is used.
+$O(\log n)$, where $n$ is the size of the set. However, `policytree`
+actually implements sorted sets as a sorted vector. The `Boost`
+container data type `flat_set` [@flatset] is used, which does allow
+faster iteration through the set than using a tree but, addition and
+removal are slower. To find where a new element should be inserted into
+a flat set takes $O(\log n)$ time, but then it is also necessary to
+shift elements to make room for the new element---which takes $O(n)$
+time. Examining `policytree` using the Linux `perf` tool we find that it
+spends roughly 25%--30% of its time shifting elements. Note that
+`policytree` has an important optimisation when looking for depth $d=1$
+trees. In this case, there is no need to maintain $p$ sorted sets (since
+there will be no further splits) and so a faster method is used.
 
 Discrete optimisation {#sec:do}
 ---------------------
 
-Before describing how is implemented it will be useful to explain some
-general principles of *discrete optimisation*. A discrete optimisation
-task is to find the optimal member of some finite set, so exact policy
-tree learning is such a task. Typically the set is very large so simply
-inspecting each member of the set (*brute-force search*) is
-impracticable. Instead methods which exploit the structure of the
-problem are used. The recursive approach taken by does exploit the tree
-structure of policy trees by breaking the problem down into smaller
-subproblems which can be solved independently: finding the trees which
-are optimal for the subsets on the two side of a split can be done
-independently.
+Before describing how `fastpolicytree` is implemented it will be useful
+to explain some general principles of *discrete optimisation*. A
+discrete optimisation task is to find the optimal member of some finite
+set, so exact policy tree learning is such a task. Typically the set is
+very large so simply inspecting each member of the set (*brute-force
+search*) is impracticable. Instead methods which exploit the structure
+of the problem are used. The recursive approach taken by `policytree`
+does exploit the tree structure of policy trees by breaking the problem
+down into smaller subproblems which can be solved independently: finding
+the trees which are optimal for the subsets on the two side of a split
+can be done independently.
 
 A key technique in discrete optimisation is the use of *bounds*. Suppose
 that at some point in the search for an optimal policy tree we are about
@@ -185,21 +158,22 @@ bounds is to be able to compute them reasonably quickly and for the
 bounds to be reasonably 'tight'---not too far from the (unknown) value
 being bounded.
 
- {#sec:fpt}
+`fastpolicytree` {#sec:fpt}
+----------------
 
-To explain it is useful to formalise the policy tree learning problem
-and introduce some notation. We are considering the problem of finding
-an optimal policy tree for a set of *units*, where a unit is a
-collection of covariate values together with a reward for each possible
-action. Let $N$ be the set $\{1,\dots,n\}$ of units. Let $A$ be the set
-of available actions. Let ${\cal F}_d$ represent the set of functions
-$f:N \rightarrow A$ representable by a policy tree of depth $d$. $f(i)$
-assigns an action to unit $i$, so it is an *action assignment function*.
-Let $S$ be the set of splits available, each split $s \in S$ being
-defined by a choice of covariate $j$ and a value $v$ for that covariate,
-so each $s \in S$ is determined by a pair $s=(j,v)$. Let $x_{ij}$ be the
-value of covariate $j$ for unit $i$. If a unit $i$ is such that
-$x_{ij} \leq v$ then we say the unit is sent left by the split
+To explain `fastpolicytree` it is useful to formalise the policy tree
+learning problem and introduce some notation. We are considering the
+problem of finding an optimal policy tree for a set of *units*, where a
+unit is a collection of covariate values together with a reward for each
+possible action. Let $N$ be the set $\{1,\dots,n\}$ of units. Let $A$ be
+the set of available actions. Let ${\cal F}_d$ represent the set of
+functions $f:N \rightarrow A$ representable by a policy tree of depth
+$d$. $f(i)$ assigns an action to unit $i$, so it is an *action
+assignment function*. Let $S$ be the set of splits available, each split
+$s \in S$ being defined by a choice of covariate $j$ and a value $v$ for
+that covariate, so each $s \in S$ is determined by a pair $s=(j,v)$. Let
+$x_{ij}$ be the value of covariate $j$ for unit $i$. If a unit $i$ is
+such that $x_{ij} \leq v$ then we say the unit is sent left by the split
 $s=(j,v)$, otherwise it is sent right.
 
 Let $s_{L}(N)$ (resp. $s_{R}(N)$) be the units sent left (resp. right)
@@ -229,7 +203,7 @@ $R^{*}_{d-1,s_{L}(N)} +
 R^{*}_{d-1,s_{R}(N)}$ by recursion for each split $s \in S$ and record
 which has the highest reward. By recording the maximising split during
 the recursive computation we can recover the policy tree which produces
-this maximal reward. This is the algorithm used by .
+this maximal reward. This is the algorithm used by `policytree`.
 
 ### Using bounds {#sec:usingbounds}
 
@@ -294,7 +268,7 @@ is non-negative and so the inequality asserts that there is a tree
 (namely $f^{*}_{d,N_{2}\setminus N_{3}}$) which has a strictly higher
 reward for $N_2$ than the optimal tree for $N_2$.
 
-uses the bounds
+`fastpolicytree` uses the bounds
 ([\[eq:simpleleft\]](#eq:simpleleft){reference-type="ref"
 reference="eq:simpleleft"}) and
 ([\[eq:simpleright\]](#eq:simpleright){reference-type="ref"
@@ -320,31 +294,32 @@ we already have $R^{*}_{d-1,N_{1}} + R^{*}_{d-1,N_{2}}$ the RHS of
 ([\[eq:usingbound\]](#eq:usingbound){reference-type="ref"
 reference="eq:usingbound"}) provides a cheaply computable upper bound on
 $R^{*}_{d-1,N_{1}\dot\cup N_{3}} + R^{*}_{d-1,N_{2}\setminus N_{3}}$.
-computes and stores $\max_{a \in A} r(i,a)$ and $\min_{a \in A} r(i,a)$
-for every unit $i$ before starting the search for an optimal policy
-tree, so $\sum_{i \in
+`fastpolicytree` computes and stores $\max_{a \in A} r(i,a)$ and
+$\min_{a \in A} r(i,a)$ for every unit $i$ before starting the search
+for an optimal policy tree, so $\sum_{i \in
   N_{3}} \max_{a \in A} r(i,a)   - \min_{a \in A} r(i,a)$ is quick to
 compute. If the current incumbent for set $N$ and depth $d$ has a reward
-above this upper bound then does not waste time computing
-$R^{*}_{d-1,N_{1}\dot\cup N_{3}} +
+above this upper bound then `fastpolicytree` does not waste time
+computing $R^{*}_{d-1,N_{1}\dot\cup N_{3}} +
 R^{*}_{d-1,N_{2}\setminus N_{3}}$ since we know it cannot be an optimal
 reward.
 
 ### Alternative set implementation {#sec:altset}
 
-implements sets of units in two ways. Method 1 is the sorted vector (one
-for each covariate) approach taken by , although this is implemented as
-a struct rather than using the library. Method 2 uses a single set
-rather than a set for each covariate. Just before iterating over splits
-for covariate $j$ this set is sorted according to the values of
-covariate $j$. An advantage of this approach is that moving a unit from
-right to left (as we increase the splitting value of covariate $j$) is
-quick and does not require another $p-1$ sorted sets to be updated. The
-disadvantage, of course, is the sorting mentioned above. If the number
-of distinct values of a covariate is below a certain threshold
-(currently 30) then *counting sort* is used for sorting, otherwise
-*radix sort* is used. See @cormen90:_introd_algor for a description of
-these two sorting algorithms.
+`fastpolicytree` implements sets of units in two ways. Method 1 is the
+sorted vector (one for each covariate) approach taken by `policytree`,
+although this is implemented as a `C` struct rather than using the
+`Boost` `C++` library. Method 2 uses a single set rather than a set for
+each covariate. Just before iterating over splits for covariate $j$ this
+set is sorted according to the values of covariate $j$. An advantage of
+this approach is that moving a unit from right to left (as we increase
+the splitting value of covariate $j$) is quick and does not require
+another $p-1$ sorted sets to be updated. The disadvantage, of course, is
+the sorting mentioned above. If the number of distinct values of a
+covariate is below a certain threshold (currently 30) then *counting
+sort* is used for sorting, otherwise *radix sort* is used. See
+@cormen90:_introd_algor for a description of these two sorting
+algorithms.
 
 If, when using Method 2, a covariate is found to have only 2 distinct
 values in the data (such as would be the case for a binary variable)
@@ -370,17 +345,17 @@ $x_{2} \leq 3.7$. Since X is at the same depth $d$ in both cases it
 follows that the optimal policy tree is the same ($f^{*}_{d,N}$) in both
 cases.
 
-For each set of units $N$ and depth $d$, once has found the optimal
-policy tree $f^{*}_{d,N}$, it is stored in a cache (unless the cache has
-got too big, at present the cache is limited to have at most 1,000,000
-trees). If at a later point the algorithm is required to find
-$f^{*}_{d,N}$ again, it is simply retrieved from the cache.
+For each set of units $N$ and depth $d$, once `fastpolicytree` has found
+the optimal policy tree $f^{*}_{d,N}$, it is stored in a cache (unless
+the cache has got too big, at present the cache is limited to have at
+most 1,000,000 trees). If at a later point the algorithm is required to
+find $f^{*}_{d,N}$ again, it is simply retrieved from the cache.
 
 ### Miscellaneous optimisations
 
-The previous three sections give the main optimisations found in : using
-bounds, allowing for a different implementation of sets and caching.
-There are also some other optimisations:
+The previous three sections give the main optimisations found in
+`fastpolicytree`: using bounds, allowing for a different implementation
+of sets and caching. There are also some other optimisations:
 
 Perfect trees
 
@@ -393,14 +368,14 @@ Perfect trees
 
 Pre-allocating memory
 
-:   During the course of its search for an optimal tree, constructs many
-    set of units $N$, many (mostly temporary) policy trees and some
-    other temporary arrays of values. Allocating memory for such data
-    structures can be expensive, so allocates the necessary memory once
-    at the start of the search and frees it at the end. So rather than
-    allocating memory to store a new tree, pre-allocated space is used
-    and the new tree overwrites any tree previously stored in that
-    space.
+:   During the course of its search for an optimal tree,
+    `fastpolicytree` constructs many set of units $N$, many (mostly
+    temporary) policy trees and some other temporary arrays of values.
+    Allocating memory for such data structures can be expensive, so
+    `fastpolicytree` allocates the necessary memory once at the start of
+    the search and frees it at the end. So rather than allocating memory
+    to store a new tree, pre-allocated space is used and the new tree
+    overwrites any tree previously stored in that space.
 
 Simulation study
 ================
@@ -448,7 +423,7 @@ $\Gamma_{iw}$ by following the procedure used by @Athey2021-uo and
 which generates estimates of heterogeneous treatment effects (via the
 CATE function) that can be used (along with estimates of the outcome and
 treatment models) to construct $\Gamma_{iw}$, as follows:
-$$\Gamma_{iw} = \hat{\mu}_{w}(X_i) + \frac{Y_i-\hat{\mu}_{w}(X_i)}{\hat{e}_{w}(X_i)}\cdot \mathbb{1}\{W_i=w\},$$
+$$\Gamma_{iw} = \hat{\mu}_{w}(X_i) + \frac{Y_i-\hat{\mu}_{w}(X_i)}{\hat{e}_{w}(X_i)}\cdot \mathbbm{1}\{W_i=w\},$$
 where $\hat{\mu}_{w}(X_i)$ is the estimated counterfactual response
 surface for each $i$ under each treatment $w$, and $\hat{e}_{w}(X_i)$ is
 the estimated probability that $i$ is assigned to treatment $w$. These
@@ -456,9 +431,9 @@ parameters are estimated by fitting a causal forest, which is a causal
 adaption of the random forest prediction algorithm [@Athey2019-qf].
 
 We compare our implementation of policy trees to those used in
-@Zhou_2023 and @Athey2021-uo (i.e. [^1] developed by @Sverdrup2020-yj).
-Our simulation procedure for each DGP can be described in the following
-steps:
+@Zhou_2023 and @Athey2021-uo (i.e. `policytree`[^1] developed by
+@Sverdrup2020-yj). Our simulation procedure for each DGP can be
+described in the following steps:
 
 1.  For each repetition:
 
@@ -486,16 +461,18 @@ steps:
 Results
 =======
 
-Comparison to with default parameters
--------------------------------------
+Comparison to `policytree` with default parameters
+--------------------------------------------------
 
-In this section we compare to where has all its parameters set to
-default values, except tree depth (where appropriate). When is run in
-this way both it and find an optimal policy tree for the given depth. We
-have checked that the rewards of the trees found by and are identical in
-all our simulations. It follows that the time taken to produce an
-optimal policy tree is the only quantity of interest. Our timing results
-are presented in Table [1](#tab:ptdefault){reference-type="ref"
+In this section we compare `policytree` to `fastpolicytree` where
+`policytree` has all its parameters set to default values, except tree
+depth (where appropriate). When `policytree` is run in this way both it
+and `fastpolicytree` find an optimal policy tree for the given depth. We
+have checked that the rewards of the trees found by `policytree` and
+`fastpolicytree` are identical in all our simulations. It follows that
+the time taken to produce an optimal policy tree is the only quantity of
+interest. Our timing results are presented in
+Table [1](#tab:ptdefault){reference-type="ref"
 reference="tab:ptdefault"}
 
 ::: {#tab:ptdefault}
@@ -591,35 +568,38 @@ reference="tab:ptdefault"}
   : Simulation results *(continued)*
 :::
 
-In all cases performs orders of magnitudes more quickly, with the
-difference becoming more pronounced for deeper trees. The difference in
-performance is particularly large when using discrete covariates. For
-example for the $(N=10000,p=60,\mathrm{Acts}=2,\mathrm{Depth}=3)$
-configuration on discrete covariates, takes 45.177 minutes (on average)
-whereas takes 5.245 seconds. This is a 517% speed-up.
+In all cases `fastpolicytree` performs orders of magnitudes more
+quickly, with the difference becoming more pronounced for deeper trees.
+The difference in performance is particularly large when using discrete
+covariates. For example for the
+$(N=10000,p=60,\mathrm{Acts}=2,\mathrm{Depth}=3)$ configuration on
+discrete covariates, `policytree` takes 45.177 minutes (on average)
+whereas `fastpolicytree` takes 5.245 seconds. This is a 517% speed-up.
 
-The performance improvement on continuous data is less dramatic, but
-still good. For example, a depth-three tree learned from 10 continuous
-covariates where N=2000 with 3 treatment actions takes over 12 hours
-using the package. With , the time reduces to 37.9 minutes, roughly 20
-times faster.[^2]
+The `fastpolicytree` performance improvement on continuous data is less
+dramatic, but still good. For example, a depth-three tree learned from
+10 continuous covariates where N=2000 with 3 treatment actions takes
+over 12 hours using the `policytree` package. With `fastpolicytree`, the
+time reduces to 37.9 minutes, roughly 20 times faster.[^2]
 
 Using split steps
 -----------------
 
-We now turn to a comparison between our and a proposed technique to
-reduce the runtime of the original package. Increasing the optional
-approximation parameter, , decreases the number of possible splits to
-consider during the tree search. The authors of demonstrate that
-increasing this parameter for learning trees with continuous covariates
-can greatly improve the runtime compared to the default value of 1.
-However, less is known about the potential loss in accuracy of the
-estimated policy rewards due to bias in the learned trees occurring when
-samples are skipped (i.e., trees are no longer guaranteed *optimal*). As
-in the first simulation study, we compare the runtimes of the two
-packages, however for the package we set the parameter equal to 10. We
-report the runtimes and also the root mean squared error (RMSE) between
-the and estimated policy values, i.e.:
+We now turn to a comparison between our `fastpolicytree` and a proposed
+technique to reduce the runtime of the original `policytree` package.
+Increasing the optional approximation parameter, `split.step`, decreases
+the number of possible splits to consider during the tree search. The
+authors of `policytree` demonstrate that increasing this parameter for
+learning trees with continuous covariates can greatly improve the
+runtime compared to the default `split.step` value of 1. However, less
+is known about the potential loss in accuracy of the estimated policy
+rewards due to bias in the learned trees occurring when samples are
+skipped (i.e., trees are no longer guaranteed *optimal*). As in the
+first simulation study, we compare the runtimes of the two packages,
+however for the `policytree` package we set the `split.step` parameter
+equal to 10. We report the runtimes and also the root mean squared error
+(RMSE) between the `fastpolicytree` and `policytree` estimated policy
+values, i.e.:
 $$RMSE = \sqrt{\frac{1}{nsim}\sum(\mathbb{E}[\Gamma_{iw}(\pi_{FPT}(X_i))] - \mathbb{E}[\Gamma_{iw}(\pi_{PT}(X_i))])^2}$$
 
   -------- ---- ------ ---------- ------------ ------------ ------------ ------------ ------------ -------
@@ -633,49 +613,54 @@ $$RMSE = \sqrt{\frac{1}{nsim}\sum(\mathbb{E}[\Gamma_{iw}(\pi_{FPT}(X_i))] - \mat
   100000    30    20       2       continuous   41.501 hrs   7.777 hrs    9.358 hrs    2.546 hrs    0.000
   -------- ---- ------ ---------- ------------ ------------ ------------ ------------ ------------ -------
 
-  : Simulation results: splitstep (Continuous covariate data)
+  : Simulation results: splitstep `policytree` (Continuous covariate
+  data)
 
 *Note:* Results are averaged across 100 repetitions. The splitting step
-is set to 10 for all Athey versions. Reward RMSE is calculted as the
-square root of the mean squared difference between FPT and rewards.
+is set to 10 for all Athey `policytree` versions. Reward RMSE is
+calculted as the square root of the mean squared difference between FPT
+and `policytree` rewards.
 
-Even with the parameter increased, the runtimes are an improvement over
-the original package version in larger samples. For $N=100,000$ with 30
-continuous covariates and 20 actions, a depth two tree learned using is
-roughly three times faster. For smaller samples the runtimes are
-similar, but there is a loss in accuracy between the two versions,
-indicating that using may be preferable when accuracy in the predicted
-reward is desirable. We depict this graphically in Figure
+Even with the `split.step` parameter increased, the `fastpolicytree`
+runtimes are an improvement over the original package version in larger
+samples. For $N=100,000$ with 30 continuous covariates and 20 actions, a
+depth two tree learned using `fastpolicytree` is roughly three times
+faster. For smaller samples the runtimes are similar, but there is a
+loss in accuracy between the two versions, indicating that using
+`fastpolicytree` may be preferable when accuracy in the predicted reward
+is desirable. We depict this graphically in Figure
 [1](#fig:splitstep_errors){reference-type="ref"
 reference="fig:splitstep_errors"}, which shows the distribution of
-absolute errors between and with parameter increased.
+absolute errors between `fastpolicytree` and `policytree` with
+`split.step` parameter increased.
 
 ![splitstep: Distribution of
 Errors](splitstep_errors_Aug2025.pdf "fig:"){#fig:splitstep_errors
 width="\\linewidth"} [\[fig:splitstep\_errors\]]{#fig:splitstep_errors
 label="fig:splitstep_errors"} *Note:* Results are across 100 repetitions
 of the continuous simulations. The splitting step is set to 10 for all
-Athey versions. Absolute error is calculated as difference between FPT
-and rewards.
+Athey `policytree` versions. Absolute error is calculated as difference
+between FPT and `policytree` rewards.
 
 Conclusion and Future Work
 ==========================
 
-In this paper, we describe an algorithm, , for learning optimal policy
-trees that exploits a number of optimisations to improve run times
-significantly when compared to . We have performed a large number of
-benchmarking experiments to support the claim of improved running time.
-With this faster algorithm it is possible to learn optimal policy trees
-of greater depth, thus helping practitioners find better policies by
-accounting for more individual characteristics in the treatment
-allocation procedure.
+In this paper, we describe an algorithm, `fastpolicytree`, for learning
+optimal policy trees that exploits a number of optimisations to improve
+run times significantly when compared to `policytree`. We have performed
+a large number of benchmarking experiments to support the claim of
+improved running time. With this faster algorithm it is possible to
+learn optimal policy trees of greater depth, thus helping practitioners
+find better policies by accounting for more individual characteristics
+in the treatment allocation procedure.
 
-The methods employed by (the use of bounds, caching, etc) are standard
-ones in discrete optimisation although they have been specialised for
-the particular problem at hand. As well as algorithmic improvements, our
-implementation work also makes a difference according to covariate type.
-Discrete covariates can take advantage of our 'Method 2' set
-implementation (see Section [2.3.2](#sec:altset){reference-type="ref"
+The methods employed by `fastpolicytree` (the use of bounds, caching,
+etc) are standard ones in discrete optimisation although they have been
+specialised for the particular problem at hand. As well as algorithmic
+improvements, our implementation work also makes a difference according
+to covariate type. Discrete covariates can take advantage of our
+'Method 2' set implementation (see
+Section [2.3.2](#sec:altset){reference-type="ref"
 reference="sec:altset"}) which explains the particular good runtimes we
 have for them.
 
@@ -690,18 +675,21 @@ and describe STreeD (Separable Trees with Dynamic programming), a method
 which has good results for both (cost-sensitive) classification trees
 and policy trees.
 
-The package is available on CRAN at:
+The `fastpolicytree` `R` package is available on CRAN at:
 <https://cran.r-project.org/package=fastpolicytree>. The code is written
-in with some 'wrapper' code written in . It is also possible to create a
-standalone Linux executable (if one has a compiler installed). The
-package contains a single function: , which is intended as a direct
-replacement for the function provided by the package. The function has
-additional arguments which can be used to alter its standard approach to
-finding optimal policy trees, but a user can safely leave these at their
-default values. The function lacks the argument that the function has,
-since we focus on finding only optimal trees (for a given depth). The
-package has many useful functions in addition to . We have not
-replicated these in the package, so in practice it makes sense to have
+in `C` with some 'wrapper' code written in `R`. It is also possible to
+create a standalone Linux executable (if one has a `C` compiler
+installed). The `R` package contains a single function:
+`fastpolicytree()`, which is intended as a direct replacement for the
+`policy_tree()` function provided by the `policytree` `R` package. The
+`fastpolicytree()` function has additional arguments which can be used
+to alter its standard approach to finding optimal policy trees, but a
+user can safely leave these at their default values. The
+`fastpolicytree()` function lacks the `split.step` argument that the
+`policy_tree()` function has, since we focus on finding only optimal
+trees (for a given depth). The `policytree` `R` package has many useful
+functions in addition to `policy_tree()`. We have not replicated these
+in the `fastpolicytree` package, so in practice it makes sense to have
 both packages available.
 
 Acknowledgments {#acknowledgments .unnumbered}
