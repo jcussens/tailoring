@@ -454,7 +454,7 @@ $\Gamma_{iw}$ by following the procedure used by @Athey2021-uo and
 which generates estimates of heterogeneous treatment effects (via the
 CATE function) that can be used (along with estimates of the outcome and
 treatment models) to construct $\Gamma_{iw}$, as follows:
-$$\Gamma_{iw} = \hat{\mu}_{w}(X_i) + \frac{Y_i-\hat{\mu}_{w}(X_i)}{\hat{e}_{w}(X_i)}\cdot \mathbbm{1}\{W_i=w\},$$
+$$\Gamma_{iw} = \hat{\mu}_{w}(X_i) + \frac{Y_i-\hat{\mu}_{w}(X_i)}{\hat{e}_{w}(X_i)}\cdot \mathbb{1}\{W_i=w\},$$
 where $\hat{\mu}_{w}(X_i)$ is the estimated counterfactual response
 surface for each $i$ under each treatment $w$, and $\hat{e}_{w}(X_i)$ is
 the estimated probability that $i$ is assigned to treatment $w$. These
