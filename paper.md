@@ -500,101 +500,90 @@ have checked that the rewards of the trees found by `policytree` and
 `fastpolicytree` are identical in all our simulations. It follows that
 the time taken to produce an optimal policy tree is the only quantity of
 interest. Our timing results are presented in
-Table [1](#tab:ptdefault){reference-type="ref"
-reference="tab:ptdefault"}
+Table 1.
 
-::: {#tab:ptdefault}
-  ----------------------------------------------------------- ---- ------ ------- ------------ ------------ ------------ ------------ ------------ -- --
-                                                                                                                                                      
-                               N                               p    Acts   Depth      Data         Time          SD          Time          SD         
-                                                                                                                                                      
-                                                                                                                                                      
-                               N                               p    Acts   Depth      Data         Time          SD          Time          SD         
-                                                                                                                                                      
-                                                               10    2       2      discrete    0.029 sec    0.004 sec    0.002 sec    0.001 sec      
-                             5000                              10    2       2      discrete    0.492 sec     0.05 sec    0.006 sec    0.001 sec      
-                             10000                             10    2       2      discrete    1.922 sec    0.216 sec    0.012 sec    0.002 sec      
-                                                               30    2       2      discrete    0.284 sec    0.032 sec    0.008 sec    0.001 sec      
-                             5000                              30    2       2      discrete    5.059 sec    0.544 sec     0.03 sec    0.002 sec      
-                             10000                             30    2       2      discrete    17.856 sec   1.972 sec     0.06 sec    0.007 sec      
-                                                               60    2       2      discrete    1.393 sec    0.147 sec    0.025 sec    0.002 sec      
-                             5000                              60    2       2      discrete    20.902 sec    2.3 sec     0.107 sec    0.005 sec      
-                             10000                             60    2       2      discrete    1.352 min    18.981 sec    0.21 sec    0.018 sec      
-                                                               10    3       2      discrete    0.031 sec    0.003 sec    0.004 sec    0.001 sec      
-                             5000                              10    3       2      discrete    0.494 sec    0.054 sec    0.008 sec    0.001 sec      
-                             10000                             10    3       2      discrete    1.928 sec    0.201 sec    0.013 sec    0.002 sec      
-                                                               30    3       2      discrete    0.289 sec     0.03 sec    0.011 sec    0.001 sec      
-                             5000                              30    3       2      discrete    5.057 sec    0.549 sec    0.037 sec    0.003 sec      
-                             10000                             30    3       2      discrete    17.738 sec   1.963 sec    0.068 sec    0.004 sec      
-                                                               60    3       2      discrete     1.4 sec     0.143 sec    0.026 sec    0.002 sec      
-                             5000                              60    3       2      discrete    21.241 sec   2.507 sec    0.122 sec    0.009 sec      
-                             10000                             60    3       2      discrete    1.347 min    12.578 sec   0.248 sec    0.023 sec      
-                                                               10    10      2      discrete    0.034 sec    0.003 sec    0.006 sec    0.002 sec      
-                             5000                              10    10      2      discrete    0.508 sec    0.058 sec    0.011 sec    0.001 sec      
-                             10000                             10    10      2      discrete    1.955 sec    0.197 sec    0.019 sec    0.002 sec      
-                                                               30    10      2      discrete    0.296 sec    0.032 sec    0.011 sec    0.001 sec      
-                             5000                              30    10      2      discrete    5.214 sec    0.533 sec    0.051 sec    0.003 sec      
-                             10000                             30    10      2      discrete    18.184 sec   1.783 sec    0.111 sec    0.008 sec      
-                                                               60    10      2      discrete    1.444 sec    0.132 sec    0.034 sec    0.003 sec      
-                             5000                              60    10      2      discrete    21.536 sec   2.601 sec     0.19 sec    0.024 sec      
-                             10000                             60    10      2      discrete    1.306 min     9.18 sec     0.42 sec    0.028 sec      
-                                                               10    2       3      discrete    0.214 sec    0.019 sec    0.005 sec    0.001 sec      
-                             5000                              10    2       3      discrete    2.966 sec    0.292 sec    0.012 sec    0.001 sec      
-                             10000                             10    2       3      discrete    11.701 sec   1.192 sec    0.023 sec    0.003 sec      
-                                                               30    2       3      discrete    5.909 sec    0.584 sec    0.064 sec    0.004 sec      
-                             5000                              30    2       3      discrete    1.609 min    10.264 sec   0.298 sec    0.012 sec      
-                             10000                             30    2       3      discrete    5.477 min    37.104 sec   0.589 sec    0.024 sec      
-                                                               60    2       3      discrete    55.554 sec    5.74 sec    0.526 sec    0.022 sec      
-                             5000                              60    2       3      discrete    13.394 min   1.575 min     2.62 sec    0.102 sec      
-                             10000                             60    2       3      discrete    45.177 min   4.963 min    5.245 sec    0.208 sec      
-                                                               10    3       3      discrete     0.22 sec    0.019 sec    0.007 sec    0.001 sec      
-                             5000                              10    3       3      discrete    3.006 sec    0.269 sec    0.016 sec    0.002 sec      
-                             10000                             10    3       3      discrete    11.717 sec   1.149 sec    0.029 sec    0.011 sec      
-                                                               30    3       3      discrete    5.995 sec    0.555 sec    0.079 sec    0.004 sec      
-                             5000                              30    3       3      discrete    1.631 min    9.892 sec    0.381 sec    0.021 sec      
-                             10000                             30    3       3      discrete    5.547 min    36.543 sec   0.749 sec    0.029 sec      
-                                                               60    3       3      discrete    56.37 sec    5.376 sec    0.631 sec    0.028 sec      
-                             5000                              60    3       3      discrete    13.827 min   1.555 min    3.203 sec     0.13 sec      
-                             10000                             60    3       3      discrete    47.167 min   5.623 min    6.437 sec    0.261 sec      
-                                                               10    10      3      discrete    0.228 sec     0.02 sec    0.007 sec    0.002 sec      
-                             5000                              10    10      3      discrete    3.067 sec    0.286 sec    0.024 sec    0.002 sec      
-                             10000                             10    10      3      discrete    12.01 sec    1.108 sec    0.053 sec    0.006 sec      
-                                                               30    10      3      discrete    6.261 sec    0.573 sec    0.111 sec    0.007 sec      
-                             5000                              30    10      3      discrete    1.677 min    10.335 sec   0.616 sec    0.035 sec      
-                             10000                             30    10      3      discrete    5.699 min    36.839 sec    1.34 sec    0.072 sec      
-                                                               60    10      3      discrete    58.936 sec   5.552 sec    0.908 sec    0.055 sec      
-                             5000                              60    10      3      discrete    14.169 min   1.637 min    5.158 sec    0.259 sec      
-                             10000                             60    10      3      discrete    47.047 min   5.323 min    11.44 sec    0.735 sec      
-                                                                                                                                                      
-                              500                              5     2       2     continuous   0.044 sec    0.004 sec     0.02 sec    0.003 sec      
-                             1000                              5     2       2     continuous   0.167 sec    0.014 sec    0.057 sec    0.009 sec      
-                             2000                              5     2       2     continuous   0.659 sec    0.062 sec    0.181 sec     0.03 sec      
-                                                               10    2       2     continuous   0.172 sec    0.015 sec    0.046 sec    0.006 sec      
-                             1000                              10    2       2     continuous   0.669 sec    0.058 sec    0.131 sec    0.019 sec      
-                             2000                              10    2       2     continuous   2.735 sec    0.264 sec    0.407 sec     0.06 sec      
-                                                               5     3       2     continuous   0.057 sec    0.005 sec    0.032 sec    0.006 sec      
-                             1000                              5     3       2     continuous   0.216 sec    0.019 sec    0.092 sec    0.019 sec      
-                             2000                              5     3       2     continuous   0.858 sec    0.077 sec    0.274 sec    0.067 sec      
-                                                               10    3       2     continuous    0.22 sec    0.019 sec    0.089 sec    0.018 sec      
-                             1000                              10    3       2     continuous   0.865 sec    0.078 sec    0.259 sec    0.061 sec      
-                             2000                              10    3       2     continuous   3.531 sec    0.327 sec    0.702 sec    0.172 sec      
-                                                               5     2       3     continuous   1.211 min    6.121 sec    7.722 sec    1.568 sec      
-                             1000                              5     2       3     continuous   9.323 min    46.243 sec   37.939 sec   7.006 sec      
-                             2000                              5     2       3     continuous   1.215 hrs    5.996 min     3.74 min    42.475 sec     
-                                                               10    2       3     continuous    9.55 min    47.916 sec   34.004 sec   6.382 sec      
-                             1000                              10    2       3     continuous   1.246 hrs    6.225 min    2.322 min    27.031 sec     
-                             2000                              10    2       3     continuous   9.975 hrs    43.205 min   10.799 min   1.744 min      
-                                                               5     3       3     continuous   1.497 min    15.679 sec   15.831 sec   3.593 sec      
-                             1000                              5     3       3     continuous   11.649 min    1.5 min     1.672 min    26.951 sec     
-                             2000                              5     3       3     continuous    1.52 hrs    8.305 min    9.865 min    2.841 min      
-                                                               10    3       3     continuous   11.704 min   54.765 sec   1.294 min    20.11 sec      
-                             1000                              10    3       3     continuous   1.526 hrs    7.184 min     7.6 min       2 min        
-                             2000                              10    3       3     continuous   12.376 hrs   53.47 min    37.925 min   10.356 min     
-   [\[tab:ptdefault\]]{#tab:ptdefault label="tab:ptdefault"}                                                                                          
-  ----------------------------------------------------------- ---- ------ ------- ------------ ------------ ------------ ------------ ------------ -- --
 
-  : Simulation results *(continued)*
-:::
+	                                                                                                                                                      
+| N   |p |Acts |Depth |Data  |Time |SD  |Time   |SD |
+|----:|--|-----|------|------|-----|----|-------|---|
+|1000 | 10 | 2 | 2 | discrete | 0.029 sec | 0.004 sec | 0.002 sec | 0.001 sec  |
+|  5000 | 10 | 2 | 2 | discrete | 0.492 sec | 0.05 sec | 0.006 sec | 0.001 sec  |
+|  10000 | 10 | 2 | 2 | discrete | 1.922 sec | 0.216 sec | 0.012 sec | 0.002 sec | 
+|  1000 | 30 | 2 | 2 | discrete | 0.284 sec | 0.032 sec | 0.008 sec | 0.001 sec  |
+|  5000 | 30 | 2 | 2 | discrete | 5.059 sec | 0.544 sec | 0.03 sec | 0.002 sec  |
+|  10000 | 30 | 2 | 2 | discrete | 17.856 sec | 1.972 sec | 0.06 sec | 0.007 sec | 
+|  1000 | 60 | 2 | 2 | discrete | 1.393 sec | 0.147 sec | 0.025 sec | 0.002 sec  |
+|  5000 | 60 | 2 | 2 | discrete | 20.902 sec | 2.3 sec | 0.107 sec | 0.005 sec  |
+|  10000 | 60 | 2 | 2 | discrete | 1.352 min | 18.981 sec | 0.21 sec | 0.018 sec | 
+|  1000 | 10 | 3 | 2 | discrete | 0.031 sec | 0.003 sec | 0.004 sec | 0.001 sec  |
+|  5000 | 10 | 3 | 2 | discrete | 0.494 sec | 0.054 sec | 0.008 sec | 0.001 sec  |
+|  10000 | 10 | 3 | 2 | discrete | 1.928 sec | 0.201 sec | 0.013 sec | 0.002 sec  |
+|  1000 | 30 | 3 | 2 | discrete | 0.289 sec | 0.03 sec | 0.011 sec | 0.001 sec  |
+|  5000 | 30 | 3 | 2 | discrete | 5.057 sec | 0.549 sec | 0.037 sec | 0.003 sec  |
+|  10000 | 30 | 3 | 2 | discrete | 17.738 sec | 1.963 sec | 0.068 sec | 0.004 sec | 
+|  1000 | 60 | 3 | 2 | discrete | 1.4 sec | 0.143 sec | 0.026 sec | 0.002 sec  |
+|  5000 | 60 | 3 | 2 | discrete | 21.241 sec | 2.507 sec | 0.122 sec | 0.009 sec|  
+|  10000 | 60 | 3 | 2 | discrete | 1.347 min | 12.578 sec | 0.248 sec | 0.023 sec | 
+|  1000 | 10 | 10 | 2 | discrete | 0.034 sec | 0.003 sec | 0.006 sec | 0.002 sec  |
+|  5000 | 10 | 10 | 2 | discrete | 0.508 sec | 0.058 sec | 0.011 sec | 0.001 sec  |
+|  10000 | 10 | 10 | 2 | discrete | 1.955 sec | 0.197 sec | 0.019 sec | 0.002 sec  |
+|  1000 | 30 | 10 | 2 | discrete | 0.296 sec | 0.032 sec | 0.011 sec | 0.001 sec  |
+|  5000 | 30 | 10 | 2 | discrete | 5.214 sec | 0.533 sec | 0.051 sec | 0.003 sec  |
+|  10000 | 30 | 10 | 2 | discrete | 18.184 sec | 1.783 sec | 0.111 sec | 0.008 sec | 
+|  1000 | 60 | 10 | 2 | discrete | 1.444 sec | 0.132 sec | 0.034 sec | 0.003 sec  |
+|  5000 | 60 | 10 | 2 | discrete | 21.536 sec | 2.601 sec | 0.19 sec | 0.024 sec  |
+|  10000 | 60 | 10 | 2 | discrete | 1.306 min | 9.18 sec | 0.42 sec | 0.028 sec  |
+|  1000 | 10 | 2 | 3 | discrete | 0.214 sec | 0.019 sec | 0.005 sec | 0.001 sec  |
+|  5000 | 10 | 2 | 3 | discrete | 2.966 sec | 0.292 sec | 0.012 sec | 0.001 sec  |
+|  10000 | 10 | 2 | 3 | discrete | 11.701 sec | 1.192 sec | 0.023 sec | 0.003 sec | 
+|  1000 | 30 | 2 | 3 | discrete | 5.909 sec | 0.584 sec | 0.064 sec | 0.004 sec  |
+|  5000 | 30 | 2 | 3 | discrete | 1.609 min | 10.264 sec | 0.298 sec | 0.012 sec  |
+|  10000 | 30 | 2 | 3 | discrete | 5.477 min | 37.104 sec | 0.589 sec | 0.024 sec  |
+|  1000 | 60 | 2 | 3 | discrete | 55.554 sec | 5.74 sec | 0.526 sec | 0.022 sec  |
+|  5000 | 60 | 2 | 3 | discrete | 13.394 min | 1.575 min | 2.62 sec | 0.102 sec  |
+|  10000 | 60 | 2 | 3 | discrete | 45.177 min | 4.963 min | 5.245 sec | 0.208 sec | 
+|  1000 | 10 | 3 | 3 | discrete | 0.22 sec | 0.019 sec | 0.007 sec | 0.001 sec  |
+|  5000 | 10 | 3 | 3 | discrete | 3.006 sec | 0.269 sec | 0.016 sec | 0.002 sec  |
+|  10000 | 10 | 3 | 3 | discrete | 11.717 sec | 1.149 sec | 0.029 sec | 0.011 sec | 
+|  1000 | 30 | 3 | 3 | discrete | 5.995 sec | 0.555 sec | 0.079 sec | 0.004 sec  |
+|  5000 | 30 | 3 | 3 | discrete | 1.631 min | 9.892 sec | 0.381 sec | 0.021 sec  |
+|  10000 | 30 | 3 | 3 | discrete | 5.547 min | 36.543 sec | 0.749 sec | 0.029 sec | 
+|  1000 | 60 | 3 | 3 | discrete | 56.37 sec | 5.376 sec | 0.631 sec | 0.028 sec  |
+|  5000 | 60 | 3 | 3 | discrete | 13.827 min | 1.555 min | 3.203 sec | 0.13 sec  |
+|  10000 | 60 | 3 | 3 | discrete | 47.167 min | 5.623 min | 6.437 sec | 0.261 sec | 
+|  1000 | 10 | 10 | 3 | discrete | 0.228 sec | 0.02 sec | 0.007 sec | 0.002 sec | 
+|  5000 | 10 | 10 | 3 | discrete | 3.067 sec | 0.286 sec | 0.024 sec | 0.002 sec | 
+|  10000 | 10 | 10 | 3 | discrete | 12.01 sec | 1.108 sec | 0.053 sec | 0.006 sec | 
+|  1000 | 30 | 10 | 3 | discrete | 6.261 sec | 0.573 sec | 0.111 sec | 0.007 sec | 
+|  5000 | 30 | 10 | 3 | discrete | 1.677 min | 10.335 sec | 0.616 sec | 0.035 sec | 
+|  10000 | 30 | 10 | 3 | discrete | 5.699 min | 36.839 sec | 1.34 sec | 0.072 sec | 
+|  1000 | 60 | 10 | 3 | discrete | 58.936 sec | 5.552 sec | 0.908 sec | 0.055 sec | 
+|  5000 | 60 | 10 | 3 | discrete | 14.169 min | 1.637 min | 5.158 sec | 0.259 sec | 
+|  10000 | 60 | 10 | 3 | discrete | 47.047 min | 5.323 min | 11.44 sec | 0.735 sec | 
+|    500 | 5 | 2 | 2 | continuous | 0.044 sec | 0.004 sec | 0.02 sec | 0.003 sec | 
+|  1000 | 5 | 2 | 2 | continuous | 0.167 sec | 0.014 sec | 0.057 sec | 0.009 sec | 
+|  2000 | 5 | 2 | 2 | continuous | 0.659 sec | 0.062 sec | 0.181 sec | 0.03 sec | 
+|  500 | 10 | 2 | 2 | continuous | 0.172 sec | 0.015 sec | 0.046 sec | 0.006 sec | 
+|  1000 | 10 | 2 | 2 | continuous | 0.669 sec | 0.058 sec | 0.131 sec | 0.019 sec | 
+|  2000 | 10 | 2 | 2 | continuous | 2.735 sec | 0.264 sec | 0.407 sec | 0.06 sec | 
+|  500 | 5 | 3 | 2 | continuous | 0.057 sec | 0.005 sec | 0.032 sec | 0.006 sec | 
+|  1000 | 5 | 3 | 2 | continuous | 0.216 sec | 0.019 sec | 0.092 sec | 0.019 sec | 
+|  2000 | 5 | 3 | 2 | continuous | 0.858 sec | 0.077 sec | 0.274 sec | 0.067 sec | 
+|  500 | 10 | 3 | 2 | continuous | 0.22 sec | 0.019 sec | 0.089 sec | 0.018 sec | 
+|  1000 | 10 | 3 | 2 | continuous | 0.865 sec | 0.078 sec | 0.259 sec | 0.061 sec | 
+|  2000 | 10 | 3 | 2 | continuous | 3.531 sec | 0.327 sec | 0.702 sec | 0.172 sec | 
+|  500 | 5 | 2 | 3 | continuous | 1.211 min | 6.121 sec | 7.722 sec | 1.568 sec | 
+|  1000 | 5 | 2 | 3 | continuous | 9.323 min | 46.243 sec | 37.939 sec | 7.006 sec | 
+|  2000 | 5 | 2 | 3 | continuous | 1.215 hrs | 5.996 min | 3.74 min | 42.475 sec | 
+|  500 | 10 | 2 | 3 | continuous | 9.55 min | 47.916 sec | 34.004 sec | 6.382 sec | 
+|  1000 | 10 | 2 | 3 | continuous | 1.246 hrs | 6.225 min | 2.322 min | 27.031 sec | 
+|  2000 | 10 | 2 | 3 | continuous | 9.975 hrs | 43.205 min | 10.799 min | 1.744 min | 
+|  500 | 5 | 3 | 3 | continuous | 1.497 min | 15.679 sec | 15.831 sec | 3.593 sec | 
+|  1000 | 5 | 3 | 3 | continuous | 11.649 min | 1.5 min | 1.672 min | 26.951 sec | 
+|  2000 | 5 | 3 | 3 | continuous | 1.52 hrs | 8.305 min | 9.865 min | 2.841 min | 
+|  500 | 10 | 3 | 3 | continuous | 11.704 min | 54.765 sec | 1.294 min | 20.11 sec | 
+|  1000 | 10 | 3 | 3 | continuous | 1.526 hrs | 7.184 min | 7.6 min | 2 min | 
+|  2000 | 10 | 3 | 3 | continuous | 12.376 hrs | 53.47 min | 37.925 min | 10.356 min | 
 
 In all cases `fastpolicytree` performs orders of magnitudes more
 quickly, with the difference becoming more pronounced for deeper trees.
@@ -631,14 +620,13 @@ values, i.e.:
 $$RMSE = \sqrt{\frac{1}{nsim}\sum(\mathbb{E}[\Gamma_{iw}(\pi_{FPT}(X_i))] - \mathbb{E}[\Gamma_{iw}(\pi_{PT}(X_i))])^2}$$
 
   -------- ---- ------ ---------- ------------ ------------ ------------ ------------ ------------ -------
-                        **RMSE**                                                                   
-  N         p    Acts    Depth        Time          SD          Time          SD                   
-  1000      30    3        2       continuous   0.818 sec    0.079 sec    0.625 sec    0.056 sec    0.004
-  10000     30    3        2       continuous   1.501 min    17.502 sec   45.787 sec   12.218 sec   0.000
-  100000    30    3        2       continuous   7.871 hrs    2.285 hrs    2.135 hrs    31.591 min   0.000
-  1000      30    20       2       continuous   2.549 sec    0.243 sec    2.638 sec    0.311 sec    0.009
-  10000     30    20       2       continuous   5.805 min    55.805 sec   2.321 min    25.09 sec    0.000
-  100000    30    20       2       continuous   41.501 hrs   7.777 hrs    9.358 hrs    2.546 hrs    0.000
+  N         p    Acts    Depth        Time          SD          Time          SD         RMSE          
+  1000      30    3        2       0.818 sec    0.079 sec    0.625 sec    0.056 sec    0.004
+  10000     30    3        2          1.501 min    17.502 sec   45.787 sec   12.218 sec   0.000
+  100000    30    3        2          7.871 hrs    2.285 hrs    2.135 hrs    31.591 min   0.000
+  1000      30    20       2          2.549 sec    0.243 sec    2.638 sec    0.311 sec    0.009
+  10000     30    20       2          5.805 min    55.805 sec   2.321 min    25.09 sec    0.000
+  100000    30    20       2          41.501 hrs   7.777 hrs    9.358 hrs    2.546 hrs    0.000
   -------- ---- ------ ---------- ------------ ------------ ------------ ------------ ------------ -------
 
   : Simulation results: splitstep `policytree` (Continuous covariate
