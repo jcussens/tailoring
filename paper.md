@@ -225,13 +225,13 @@ $d>0$
 \begin{equation}\label{eq:basicrecursion}
   R^{*}_{d,N}
   = \max_{s \in S}   R^{*}_{d-1,s_{L}(N)} + R^{*}_{d-1,s_{R}(N)}
-  \end{equation}. The
+  \end{equation} The
 base case is:
 \begin{equation}\label{eq:base}
     R^{*}_{0,N} =  \max_{a \in A} \sum_{i \in N}  r(i,a)
     \end{equation}
-(\autoref{eq:basicrecursion}) and
-[](\autoref{eq:base}) lead
+\autoref{eq:basicrecursion} and
+\autoref{eq:base} lead
 to a simple algorithm for finding $f^{*}_{d,N}$: compute
 $R^{*}_{d-1,s_{L}(N)} +
 R^{*}_{d-1,s_{R}(N)}$ by recursion for each split $s \in S$ and record
@@ -246,20 +246,19 @@ set of units $N_{1}$ and depth $d$. Abbreviate $R(f^{*}_{d,N_{1}})$, the
 reward for this optimal tree, to $R^{*}_{d,N_{1}}$. Now suppose we add
 some new units $N_3$ to $N_1$ such as would happen to a 'left' set if we
 increased the splitting value for some covariate. We claim that the
-following upper bound
-([\[eq:simpleleft\]](#eq:simpleleft){reference-type="ref"
-reference="eq:simpleleft"}) on $R^{*}_{d,N_{1}\dot\cup N_{3}}$ is valid.
-($\dot\cup$ represents disjoint union.) $$\label{eq:simpleleft}
+following upper bound on $R^{*}_{d,N_{1}\dot\cup N_{3}}$ is valid.
+($\dot\cup$ represents disjoint union.)
+\begin{equation}
+\label{eq:simpleleft}
   R^{*}_{d,N_{1}\dot\cup N_{3}}  \leq R^{*}_{d,N_{1}} +    \sum_{i \in
-  N_{3}} \max_{a \in A} r(i,a)$$ The upper bound
-([\[eq:simpleleft\]](#eq:simpleleft){reference-type="ref"
-reference="eq:simpleleft"}) makes the following (intuitively reasonable)
+  N_{3}} \max_{a \in A} r(i,a)
+\end{equation}
+The upper bound
+\autoref{eq:simpleleft} makes the following (intuitively reasonable)
 claim: for units $N_{1}\dot\cup N_{3}$ and tree depth $d$, the best
 reward we can hope for is the best reward possible for a depth $d$ tree
 for units $N_1$ alone, plus the best possible reward for each unit in
-$N_3$. We can prove
-([\[eq:simpleleft\]](#eq:simpleleft){reference-type="ref"
-reference="eq:simpleleft"}) by assuming it false and deriving a
+$N_3$. We can prove \autoref{eq:simpleleft} by assuming it false and deriving a
 contradiction. $$\begin{aligned}
   R^{*}_{d,N_{1}\dot\cup N_{3}} & > &R^{*}_{d,N_{1}} +    \sum_{i \in
     N_{3}} \max_{a \in A} r(i,a)\\
@@ -276,19 +275,18 @@ reward for $N_1$ than the optimal tree for $N_1$.
 Now consider removing some units $N_3$ from a set of units $N_2$ as
 would happen to a 'right' set if we increased the splitting value for
 some covariate. We claim that the following upper bound
-([\[eq:simpleright\]](#eq:simpleright){reference-type="ref"
-reference="eq:simpleright"}) on $R^{*}_{d,N_{2}\setminus N_{3}}$ is
-valid. $$\label{eq:simpleright}
+on $R^{*}_{d,N_{2}\setminus N_{3}}$ is
+valid.
+\begin{equation}\label{eq:simpleright}
     R^{*}_{d,N_{2}\setminus N_{3}} \leq R^{*}_{d,N_{2}} - \sum_{i \in
-    N_{3}} \min_{a \in A} r(i,a)$$ The upper bound
-([\[eq:simpleright\]](#eq:simpleright){reference-type="ref"
-reference="eq:simpleright"}) makes the following claim: for units
+    N_{3}} \min_{a \in A} r(i,a)
+\end{equation}
+\autoref{eq:simpleright} makes the following claim: for units
 $N_{2}\setminus N_{3}$ (i.e. the set of units in $N_2$ but not $N_3$)
 and tree depth $d$, the best reward we can hope for is the best reward
 possible for a depth $d$ tree for units $N_2$, minus the lowest possible
-reward for each unit in $N_3$. We can prove
-([\[eq:simpleright\]](#eq:simpleright){reference-type="ref"
-reference="eq:simpleright"}) by assuming it false and deriving a
+reward for each unit in $N_3$. We can prove \autoref{eq:simpleright}
+by assuming it false and deriving a
 contradiction. $$\begin{aligned}
     R^{*}_{d,N_{2}\setminus N_{3}} & > & R^{*}_{d,N_{2}} - \sum_{i \in
     N_{3}} \min_{a \in A} r(i,a) \\
@@ -302,11 +300,8 @@ is non-negative and so the inequality asserts that there is a tree
 (namely $f^{*}_{d,N_{2}\setminus N_{3}}$) which has a strictly higher
 reward for $N_2$ than the optimal tree for $N_2$.
 
-`fastpolicytree` uses the bounds
-([\[eq:simpleleft\]](#eq:simpleleft){reference-type="ref"
-reference="eq:simpleleft"}) and
-([\[eq:simpleright\]](#eq:simpleright){reference-type="ref"
-reference="eq:simpleright"}) as follows. Suppose we are trying to find
+`fastpolicytree` uses the bounds \autoref{eq:simpleleft} and
+\autoref{eq:simpleright} as follows. Suppose we are trying to find
 $f^{*}_{d,N}$, the optimal policy tree of depth $d$ for a set of units
 $N$. Suppose that we have already found $f^{*}_{d-1,N_{1}}$, and
 $f^{*}_{d-1,N_{2}}$, where $N = N_{1} \dot\cup N_{2}$ so we have the
@@ -316,17 +311,16 @@ considering a different split of $N$ where $N_3$ has been removed from
 $N_2$ and added to $N_{1}$ (such as is obtained by increasing the
 splitting value for some covariate). The optimal reward for this split
 is $R^{*}_{d-1,N_{1}\dot\cup N_{3}} +
-R^{*}_{d-1,N_{2}\setminus N_{3}}$. From
-([\[eq:simpleleft\]](#eq:simpleleft){reference-type="ref"
-reference="eq:simpleleft"}) and
-([\[eq:simpleright\]](#eq:simpleright){reference-type="ref"
-reference="eq:simpleright"}) we have: $$\label{eq:usingbound}
+R^{*}_{d-1,N_{2}\setminus N_{3}}$. From \autoref{eq:simpleleft} and
+\autoref{eq:simpleright} we have:
+\begin{equation}\label{eq:usingbound}
   R^{*}_{d-1,N_{1}\dot\cup N_{3}} +
 R^{*}_{d-1,N_{2}\setminus N_{3}} \leq R^{*}_{d-1,N_{1}} + R^{*}_{d-1,N_{2}} + \sum_{i \in
-  N_{3}} \max_{a \in A} r(i,a)   - \min_{a \in A} r(i,a)$$ So given that
+  N_{3}} \max_{a \in A} r(i,a)   - \min_{a \in A} r(i,a)
+  \end{equation}
+  So given that
 we already have $R^{*}_{d-1,N_{1}} + R^{*}_{d-1,N_{2}}$ the RHS of
-([\[eq:usingbound\]](#eq:usingbound){reference-type="ref"
-reference="eq:usingbound"}) provides a cheaply computable upper bound on
+\autoref{eq:usingbound} provides a cheaply computable upper bound on
 $R^{*}_{d-1,N_{1}\dot\cup N_{3}} + R^{*}_{d-1,N_{2}\setminus N_{3}}$.
 `fastpolicytree` computes and stores $\max_{a \in A} r(i,a)$ and
 $\min_{a \in A} r(i,a)$ for every unit $i$ before starting the search
