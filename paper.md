@@ -227,7 +227,7 @@ $d>0$
   = \max_{s \in S}   R^{*}_{d-1,s_{L}(N)} + R^{*}_{d-1,s_{R}(N)}
   \end{equation}. The
 base case is:
-\being{equation}\label{eq:base}
+\begin{equation}\label{eq:base}
     R^{*}_{0,N} =  \max_{a \in A} \sum_{i \in N}  r(i,a)
     \end{equation}
 (\autoref{eq:basicrecursion}) and
