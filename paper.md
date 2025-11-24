@@ -1,3 +1,34 @@
+---
+title: 'Fast Learning of Optimal Policy Trees'
+tags:
+  - policy trees
+  - discrete optimisation
+authors:
+  - name: James Cussens
+    corresponding: true
+    orcid: 0000-0002-1363-2336
+    affiliation: 1
+  - name: Julia Hatamyar
+    orcid: 0000-0003-4145-1265
+    affiliation: 2
+  - name: Vishalie Shah
+    affiliation: 3
+  - given-names: Noemi Kreif
+    affiliation: 4
+affiliations:
+ - name: University of Bristol, UK
+   index: 1
+ - name: University of York, UK
+   index: 2
+ - name: IQVIA
+   index: 3
+ - name: University of Washington, USA
+   index: 4
+date: 24 November 2025
+bibliography: paper.bib
+
+---
+
 Introduction
 ============
 
