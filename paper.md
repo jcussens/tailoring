@@ -226,8 +226,8 @@ $d>0$ $$\label{eq:basicrecursion}
   = \max_{s \in S}   R^{*}_{d-1,s_{L}(N)} + R^{*}_{d-1,s_{R}(N)}$$ The
 base case is: $$\label{eq:base}
     R^{*}_{0,N} =  \max_{a \in A} \sum_{i \in N}  r(i,a)$$
-[](#eq:basicrecursion) and
-[](#eq:base) lead
+(\autoref{eq:basicrecursion}) and
+(\autoref{eq:base}) lead
 to a simple algorithm for finding $f^{*}_{d,N}$: compute
 $R^{*}_{d-1,s_{L}(N)} +
 R^{*}_{d-1,s_{R}(N)}$ by recursion for each split $s \in S$ and record
