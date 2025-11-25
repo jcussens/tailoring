@@ -151,7 +151,7 @@ search tree which would allow datapoints to be added and removed in time
 $O(\log n)$, where $n$ is the size of the set. However, `policytree`
 actually implements sorted sets as a sorted vector. The `Boost`
 container data type `flat_set` [@flatset] is used, which does allow
-faster iteration through the set than using a tree but, addition and
+faster iteration through the set than using a tree, but addition and
 removal are slower. To find where a new element should be inserted into
 a flat set takes $O(\log n)$ time, but then it is also necessary to
 shift elements to make room for the new element---which takes $O(n)$
@@ -318,8 +318,8 @@ R^{*}_{d-1,N_{2}\setminus N_{3}}$. From \autoref{eq:simpleleft} and
 R^{*}_{d-1,N_{2}\setminus N_{3}} \leq R^{*}_{d-1,N_{1}} + R^{*}_{d-1,N_{2}} + \sum_{i \in
   N_{3}} \max_{a \in A} r(i,a)   - \min_{a \in A} r(i,a)
   \end{equation}
-  So given that
-we already have $R^{*}_{d-1,N_{1}} + R^{*}_{d-1,N_{2}}$ the RHS of
+  So, given that
+we already have $R^{*}_{d-1,N_{1}} + R^{*}_{d-1,N_{2}}$, the RHS of
 \autoref{eq:usingbound} provides a cheaply computable upper bound on
 $R^{*}_{d-1,N_{1}\dot\cup N_{3}} + R^{*}_{d-1,N_{2}\setminus N_{3}}$.
 `fastpolicytree` computes and stores $\max_{a \in A} r(i,a)$ and
@@ -500,7 +500,7 @@ have checked that the rewards of the trees found by `policytree` and
 `fastpolicytree` are identical in all our simulations. It follows that
 the time taken to produce an optimal policy tree is the only quantity of
 interest. Our timing results are presented in
-Table 1.
+Table 1 (for discrete data) and Table 2 (for continuous data).
 
 
 	                                                                                                                                                      
@@ -562,7 +562,7 @@ Table 1.
 |  10000 | 60 | 10 | 3 |  47.047 min | 5.323 min | 11.440 sec | 0.735 sec |
 
  : Simulation results for **discrete** data: `policytree` with default
- parameters **PT** vs `fastpolicytree` **FPT**. SD is the standard deviation of
+ parameters (**PT**) vs `fastpolicytree` (**FPT**). SD is the standard deviation of
  the time over 100 simulation repetitions.
 
 | N   |p |Acts |Depth |**PT** Time |**PT** SD  |**FPT** Time   |**FPT** SD |
@@ -593,7 +593,7 @@ Table 1.
 |  2000 | 10 | 3 | 3 |  12.376 hrs | 53.47 min | 37.925 min | 10.356 min | 
 
  : Simulation results for **continuous** data: `policytree` with default
- parameters **PT** vs `fastpolicytree` **FPT**. SD is the standard deviation of
+ parameters (**PT**) vs `fastpolicytree` (**FPT**). SD is the standard deviation of
  the time over 100 simulation repetitions.
 
 In all cases `fastpolicytree` performs orders of magnitudes more
@@ -630,7 +630,7 @@ equal to 10. We report the runtimes and also the root mean squared error
 values, i.e.:
 $$RMSE = \sqrt{\frac{1}{nsim}\sum(\mathbb{E}[\Gamma_{iw}(\pi_{FPT}(X_i))] - \mathbb{E}[\Gamma_{iw}(\pi_{PT}(X_i))])^2}$$
 
-|N     |p |Acts|Depth|Time      |SD        |Time      |SD        |RMSE |
+|N     |p |Acts|Depth|**PT** Time      |**PT** SD        |**FPT** Time      |**FPT** SD        |RMSE |
 |-----:|--|---:|-----|---------:|---------:|---------:|---------:|-----|
 |  1000|30|   3|    2| 0.818 sec| 0.079 sec| 0.625 sec| 0.056 sec|0.004|
 | 10000|30|   3|    2| 1.501 min|17.502 sec|45.787 sec|12.218 sec|0.000|
@@ -639,13 +639,10 @@ $$RMSE = \sqrt{\frac{1}{nsim}\sum(\mathbb{E}[\Gamma_{iw}(\pi_{FPT}(X_i))] - \mat
 | 10000|30|  20|    2| 5.805 min|55.805 sec| 2.321 min|25.090 sec|0.000|
 |100000|30|  20|    2|41.501 hrs| 7.777 hrs| 9.358 hrs| 2.546 hrs|0.000|
 
-  : Simulation results: splitstep `policytree` (Continuous covariate
-  data)
-
-*Note:* Results are averaged across 100 repetitions. The splitting step
-is set to 10 for all Athey `policytree` versions. Reward RMSE is
-calculted as the square root of the mean squared difference between FPT
-and `policytree` rewards.
+  : Simulation results: `policytree` with splitstep = 10 (**PT**) vs `fastpolicytree` (**FPT**) on continuous covariate
+  data. Results are averaged across 100 repetitions. Reward RMSE
+  is calculated as the square root of the mean squared difference
+  between `fastpolicytree` and `policytree` rewards.
 
 Even with the `split.step` parameter increased, the `fastpolicytree`
 runtimes are an improvement over the original package version in larger
@@ -654,16 +651,17 @@ depth two tree learned using `fastpolicytree` is roughly three times
 faster. For smaller samples the runtimes are similar, but there is a
 loss in accuracy between the two versions, indicating that using
 `fastpolicytree` may be preferable when accuracy in the predicted reward
-is desirable. We depict this graphically in Figure
-[1](#fig:splitstep_errors){reference-type="ref"
-reference="fig:splitstep_errors"}, which shows the distribution of
-absolute errors between `fastpolicytree` and `policytree` with
-`split.step` parameter increased.
+is desirable. We depict this graphically in \autoref{fig:splitstep}, which shows the distribution of
+absolute errors between `fastpolicytree` and `policytree` with the
+`split.step` parameter set to 10.
 
-![Distribution of Errors \label{fig:splitstep}](histograms.png) *Note:* Results are across 100 repetitions
+![Distribution of Errors. Results are across 100 repetitions
 of the continuous simulations. The splitting step is set to 10 for all
 Athey `policytree` versions. Absolute error is calculated as difference
-between FPT and `policytree` rewards.
+between `fastpolicytree` and `policytree` rewards. Note that for $N=100000$ no
+error is every incurred by setting the splitting step to 10.
+ \label{fig:splitstep}](histograms.png)
+
 
 Conclusion and Future Work
 ==========================
