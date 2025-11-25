@@ -259,13 +259,13 @@ claim: for units $N_{1}\dot\cup N_{3}$ and tree depth $d$, the best
 reward we can hope for is the best reward possible for a depth $d$ tree
 for units $N_1$ alone, plus the best possible reward for each unit in
 $N_3$. We can prove \autoref{eq:simpleleft} by assuming it false and deriving a
-contradiction. $$\begin{aligned}
+contradiction. \begin{eqnarray*}
   R^{*}_{d,N_{1}\dot\cup N_{3}} & > &R^{*}_{d,N_{1}} +    \sum_{i \in
     N_{3}} \max_{a \in A} r(i,a)\\
 \Leftrightarrow  R(f^{*}_{d,N_{1}\dot\cup N_{3}},N_{1}) + R(f^{*}_{d,N_{1}\dot\cup N_{3}},N_{3})  & > &R^{*}_{d,N_{1}} +    \sum_{i \in
     N_{3}} \max_{a \in A} r(i,a)\\
 \Leftrightarrow  R(f^{*}_{d,N_{1}\dot\cup N_{3}},N_{1}) & > & R^{*}_{d,N_{1}} +    \sum_{i \in
-    N_{3}} \left[ \max_{a \in A} r(i,a) - R(f^{*}_{d,N_{1}\dot\cup N_{3}},i)\right]\end{aligned}$$
+    N_{3}} \left[ \max_{a \in A} r(i,a) - R(f^{*}_{d,N_{1}\dot\cup N_{3}},i)\right]\end{eqnarray*}
 The last line is a contradiction since each term in
 $\sum_{i \in N_{3}} [ \max_{a \in A} r(i,a) - R(f^{*}_{d,N_{1}\dot\cup N_{3}},i)]$
 is non-negative and so the inequality asserts that there is a tree
@@ -287,13 +287,13 @@ and tree depth $d$, the best reward we can hope for is the best reward
 possible for a depth $d$ tree for units $N_2$, minus the lowest possible
 reward for each unit in $N_3$. We can prove \autoref{eq:simpleright}
 by assuming it false and deriving a
-contradiction. $$\begin{aligned}
+contradiction. \begin{eqnarray*}
     R^{*}_{d,N_{2}\setminus N_{3}} & > & R^{*}_{d,N_{2}} - \sum_{i \in
     N_{3}} \min_{a \in A} r(i,a) \\
     \Leftrightarrow  R(f^{*}_{d,N_{2}\setminus N_{3}},N_{2}) - R(f^{*}_{d,N_{2}\setminus N_{3}},N_{3}) & > & R^{*}_{d,N_{2}} - \sum_{i \in
     N_{3}} \min_{a \in A} r(i,a) \\
 \Leftrightarrow  R(f^{*}_{d,N_{2}\setminus N_{3}},N_{2}) & > & R^{*}_{d,N_{2}} + \sum_{i \in
-    N_{3}} \left[  R(f^{*}_{d,N_{2}\setminus N_{3}},i) - \min_{a \in A} r(i,a)\right]\end{aligned}$$
+    N_{3}} \left[  R(f^{*}_{d,N_{2}\setminus N_{3}},i) - \min_{a \in A} r(i,a)\right]\end{eqnarray*}
 The last line is a contradiction since each term in $\sum_{i \in
     N_{3}} [  R(f^{*}_{d,N_{2}\setminus N_{3}},i) -  \min_{a \in A} r(i,a)]$
 is non-negative and so the inequality asserts that there is a tree
@@ -504,7 +504,7 @@ Table 1.
 
 
 	                                                                                                                                                      
-| N   |p |Acts |Depth |PT Time |PT SD  |FPT Time   |FPT SD |
+| N   |p |Acts |Depth |**PT** Time |**PT** SD  |**FPT** Time   |**FPT** SD |
 |----:|-:|--|--|----:|----:|----:|----:|
 |1000 | 10 | 2 | 2 |  0.029 sec | 0.004 sec | 0.002 sec | 0.001 sec  |
 |  5000 | 10 | 2 | 2 |  0.492 sec | 0.05 sec | 0.006 sec | 0.001 sec  |
@@ -561,7 +561,11 @@ Table 1.
 |  5000 | 60 | 10 | 3 |  14.169 min | 1.637 min | 5.158 sec | 0.259 sec | 
 |  10000 | 60 | 10 | 3 |  47.047 min | 5.323 min | 11.440 sec | 0.735 sec |
 
-| N   |p |Acts |Depth |Time |SD  |Time   |SD |
+ : Simulation results for **discrete** data: `policytree` with default
+ parameters **PT** vs `fastpolicytree` **FPT**. SD is the standard deviation of
+ the time over 100 simulation repetitions.
+
+| N   |p |Acts |Depth |**PT** Time |**PT** SD  |**FPT** Time   |**FPT** SD |
 |----:|-:|--|--|----:|----:|----:|----:|
 |  500 | 5 | 2 | 2 |  0.044 sec | 0.004 sec | 0.020 sec | 0.003 sec | 
 |  1000 | 5 | 2 | 2 |  0.167 sec | 0.014 sec | 0.057 sec | 0.009 sec | 
@@ -587,6 +591,10 @@ Table 1.
 |  500 | 10 | 3 | 3 |  11.704 min | 54.765 sec | 1.294 min | 20.110 sec | 
 |  1000 | 10 | 3 | 3 |  1.526 hrs | 7.184 min | 7.600 min | 2.000 min | 
 |  2000 | 10 | 3 | 3 |  12.376 hrs | 53.47 min | 37.925 min | 10.356 min | 
+
+ : Simulation results for **continuous** data: `policytree` with default
+ parameters **PT** vs `fastpolicytree` **FPT**. SD is the standard deviation of
+ the time over 100 simulation repetitions.
 
 In all cases `fastpolicytree` performs orders of magnitudes more
 quickly, with the difference becoming more pronounced for deeper trees.
