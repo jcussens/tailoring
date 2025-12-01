@@ -131,11 +131,7 @@ maximises the policy value estimator).
 quickly than existing software. In the rest of this paper we aim to
 show that it has succeeded in this goal and describe the algorithmic
 and implementational methods that have been used to achieve this
-success. Our focus is on a comparison with the existing `policytree`
-`R` package, also [available on
-CRAN](https://cran.r-project.org/package=policytree). We compare
-algorithmic and implementational choices and provide an extensive
-empirical comparison.
+success.
 
 Comparison with existing software
 =================================
@@ -143,22 +139,29 @@ Comparison with existing software
 In recent years, there have been some notable developments in decision
 tree-based methods for policy learning that are globally optimal. Some
 of these methods embed counterfactual estimation and policy learning
-within the same decision tree, while others separate these two tasks by
-first estimating the counterfactuals using an appropriate data model,
-and then training a decision tree on these estimates to learn the
-optimal policy rule [@Amram2022-wt]. `fastpolicytree` was created to solve the latter approach. @Zhou_2023 develop an implementation of an exhaustive
-tree-search based algorithm that finds an exact optimal tree. However,
-their tree struggles to scale well beyond shallow trees and small
-datasets. Based on the work of @Bertsimas2017-bs, they also consider
-formulating the policy learning problem as a mixed integer programme
-(MIP), which can be solved using commercial solvers (e.g. Gurobi
-[@gurobi]), however they encounter similar scaling issues using this
-approach. @Amram2022-wt develop an alternative implementation of the
-exact tree search that uses coordinate descent to train the decision
-trees by repeatedly optimising each tree split until no further
-improvement in the overall objective function can be achieved.
+within the same decision tree, while others separate these two tasks
+by first estimating the counterfactuals using an appropriate data
+model, and then training a decision tree on these estimates to learn
+the optimal policy rule [@Amram2022-wt]. `fastpolicytree` was created
+to solve the second step of the latter approach. @Zhou_2023 develop an
+implementation of an exhaustive tree-search based algorithm that finds
+an exact optimal tree. However, their tree struggles to scale well
+beyond shallow trees and small datasets. Based on the work of
+@Bertsimas2017-bs, they also consider formulating the policy learning
+problem as a mixed integer programme (MIP), which can be solved using
+commercial solvers (e.g. Gurobi [@gurobi]), however they encounter
+similar scaling issues using this approach. @Amram2022-wt develop an
+alternative implementation of the exact tree search that uses
+coordinate descent to train the decision trees by repeatedly
+optimising each tree split until no further improvement in the overall
+objective function can be achieved.
 
-
+Our focus is on a comparison with the existing `policytree` `R`
+package, also [available on
+CRAN](https://cran.r-project.org/package=policytree). We compare
+algorithmic and implementational choices and provide an extensive
+empirical comparison. We start with an account of the tree-building
+approach found in `policytree`.
 
 `policytree` {#sec:pt}
 ------------
