@@ -1,5 +1,5 @@
 ---
-title: 'Fast Learning of Optimal Policy Trees'
+title: '`fastpolicytree`: Fast Learning of Optimal Policy Trees'
 tags:
   - policy trees
   - discrete optimisation
@@ -29,43 +29,33 @@ bibliography: paper.bib
 
 ---
 
-Introduction
-============
+Summary
+=======
 
-The problem of learning optimal policy rules that map an individual
-covariate profile to a treatment decision has gained significant
-traction in recent years. Increasing availability of rich, large-scale
-data has contributed to this shift away from static policymaking towards
-a data-driven approach [@Amram2022-wt]. For example, in medicine,
-treatment decisions are increasingly personalised at the patient level
-according to patient characteristics and expected outcomes.
+`fastpolicytree` is an `R` package for fast learning of optimal
+policy trees. A policy tree provides a mapping from characteristics of
+an individual to a decision for that individual. Increasing
+availability of rich, large-scale data has contributed to a shift away
+from static policymaking towards a data-driven approach
+[@Amram2022-wt]. For example, in medicine, treatment decisions are
+increasingly personalised at the patient level according to patient
+characteristics and expected outcomes.
 
-The existing literature on statistical methods for learning optimal
-policy rules is vast
-[@Manski2004-wf; @Swaminathan2015-qm; @Kitagawa2018-le; @Van_der_Laan2015-ko; @Luedtke2016-at; @Luedtke2016-bi; @Athey2021-uo].
-Proposed approaches include those that assign a particular policy action
-(or treatment) to individuals whose expected benefit from being assigned
-to that treatment compared to a baseline treatment (estimated via the
-conditional average treatment effect (CATE) function) is positive, or
-those that directly select a policy rule that maximises expected
-outcomes across the population. Essentially, policy learning involves
-counterfactual estimation since we can only observe outcomes under the
-treatment actually received.
-
-In this paper, we consider the problem of learning optimal policy rules
-from an observational dataset of individuals $i=1,\ldots,n$, that are
-characterised by the form $(X_i,W_i,Y_i)$, where $X_i$ is a vector of
-covariates including confounders and effect modifiers, $W_i$ is a
-discrete treatment that could take one of $w=1,\ldots,m$ values, and
-$Y_i$ is the observed outcome. Our aim is to learn a policy rule $\pi$
-that maps $X$ into a treatment decision
-$X \rightarrow \pi(x) \in \{1,\dots,m\}$ for policies in a pre-specified
-policy class $\pi \in \Pi$. The optimal policy rule $\pi^*$ is the rule
-that maximises (or minimises, depending on the objective function) the
-estimator of the policy value, often defined as the expected
-counterfactual mean reward $\mathbb{E}[\Gamma_{iw}(\pi(X_i))]$, where
-$\Gamma_{iw}$ is the estimated counterfactual reward for each
-observation $i$ under each policy action $w$.
+`fastpolicytree` can be used as part of the proceses of learning
+optimal policy rules from an observational dataset of individuals
+$i=1,\ldots,n$, that are characterised by the form $(X_i,W_i,Y_i)$,
+where $X_i$ is a vector of covariates including confounders and effect
+modifiers, $W_i$ is a discrete treatment that could take one of
+$w=1,\ldots,m$ values, and $Y_i$ is the observed
+outcome. `fastpolicytree` learns a policy rule $\pi$ that maps $X$
+into a treatment decision $X \rightarrow \pi(x) \in \{1,\dots,m\}$ for
+policies in a pre-specified policy class $\pi \in \Pi$. The optimal
+policy rule $\pi^*$ is the rule that maximises (or minimises,
+depending on the objective function) the estimator of the policy
+value, often defined as the expected counterfactual mean reward
+$\mathbb{E}[\Gamma_{iw}(\pi(X_i))]$, where $\Gamma_{iw}$ is the
+estimated counterfactual reward for each observation $i$ under each
+policy action $w$.
 
 Depth-$k$ decision trees are a popular class for policy learning
 problems since they are able to generate interpretable and transparent
@@ -78,6 +68,49 @@ the path of splits and into a leaf node according to their individual
 covariate profile. This tree-like structure means that the reasoning
 behind the decision rule is explainable, which is an often important
 consideration in personalised decision making.
+
+`fastpolicytree` has been available as an [`R` package on
+CRAN](https://cran.r-project.org/package=fastpolicytree) since June
+2025. At time of writing `fastpolicytree` has been downloaded 882
+times from the RStudio CRAN mirror alone. Although we expect most
+people to use `fastpolicytree` as an `R` package, it is possible to
+create a standalone executable by compiling the `C` code for with the
+`R` code is a thin wrapper. Instructions on how to do this are provided on
+the [github repo for
+`fastpolicytree`](https://github.com/jcussens/tailoring).
+
+The `R` package contains a single function:
+`fastpolicytree()`, which is intended as a direct replacement for the
+`policy_tree()` function provided by the `policytree` `R` package. The
+`fastpolicytree()` function has additional arguments which can be used
+to alter its standard approach to finding optimal policy trees, but a
+user can safely leave these at their default values. The
+`fastpolicytree()` function lacks the `split.step` argument that the
+`policy_tree()` function has, since we focus on finding only optimal
+trees (for a given depth). The `policytree` `R` package has many useful
+functions in addition to `policy_tree()`. We have not replicated these
+in the `fastpolicytree` package, so in practice it makes sense to have
+both packages available.
+
+
+Statement of Need
+=================
+
+
+The problem of learning optimal policy rules that map an individual
+covariate profile to a treatment decision has gained significant
+traction in recent years. 
+The existing literature on statistical methods for learning optimal
+policy rules is vast
+[@Manski2004-wf; @Swaminathan2015-qm; @Kitagawa2018-le; @Van_der_Laan2015-ko; @Luedtke2016-at; @Luedtke2016-bi; @Athey2021-uo].
+Proposed approaches include those that assign a particular policy action
+(or treatment) to individuals whose expected benefit from being assigned
+to that treatment compared to a baseline treatment (estimated via the
+conditional average treatment effect (CATE) function) is positive, or
+those that directly select a policy rule that maximises expected
+outcomes across the population. Essentially, policy learning involves
+counterfactual estimation since we can only observe outcomes under the
+treatment actually received.
 
 Traditionally, decision trees are trained using a top-down, greedy
 approach, meaning that the recursive algorithm starts at the root node
@@ -94,15 +127,26 @@ increases), computational intensity and speed (i.e. generates a solution
 in a reasonable timeframe), and accuracy of optimality (i.e. correctly
 maximises the policy value estimator).
 
+`fastpolicytree` was created to learn optimal policy trees more
+quickly than existing software. In the rest of this paper we aim to
+show that it has succeeded in this goal and describe the algorithmic
+and implementational methods that have been used to achieve this
+success. Our focus is on a comparison with the existing `policytree`
+`R` package, also [available on
+CRAN](https://cran.r-project.org/package=policytree). We compare
+algorithmic and implementational choices and provide an extensive
+empirical comparison.
+
+Comparison with existing software
+=================================
+
 In recent years, there have been some notable developments in decision
 tree-based methods for policy learning that are globally optimal. Some
 of these methods embed counterfactual estimation and policy learning
 within the same decision tree, while others separate these two tasks by
 first estimating the counterfactuals using an appropriate data model,
 and then training a decision tree on these estimates to learn the
-optimal policy rule [@Amram2022-wt]. We focus on methods that use the
-latter approach since we are only interested in the policy optimisation
-step in this work. @Zhou_2023 develop an implementation of an exhaustive
+optimal policy rule [@Amram2022-wt]. `fastpolicytree` was created to solve the latter approach. @Zhou_2023 develop an implementation of an exhaustive
 tree-search based algorithm that finds an exact optimal tree. However,
 their tree struggles to scale well beyond shallow trees and small
 datasets. Based on the work of @Bertsimas2017-bs, they also consider
@@ -114,13 +158,7 @@ exact tree search that uses coordinate descent to train the decision
 trees by repeatedly optimising each tree split until no further
 improvement in the overall objective function can be achieved.
 
-Our implementation
-==================
 
-Our implementation is available as an `R` package called
-`fastpolicytree`. Its goal is simply to learn policy trees more quickly
-than the existing `policytree` `R` package. We start with an account of
-the tree-building approach found in `policytree`.
 
 `policytree` {#sec:pt}
 ------------
@@ -666,7 +704,7 @@ error is every incurred by setting the splitting step to 10.
 Conclusion and Future Work
 ==========================
 
-In this paper, we describe an algorithm, `fastpolicytree`, for learning
+In this paper, we describe our software, `fastpolicytree`, for learning
 optimal policy trees that exploits a number of optimisations to improve
 run times significantly when compared to `policytree`. We have performed
 a large number of benchmarking experiments to support the claim of
@@ -696,22 +734,11 @@ and describe STreeD (Separable Trees with Dynamic programming), a method
 which has good results for both (cost-sensitive) classification trees
 and policy trees.
 
-The `fastpolicytree` `R` package is available on CRAN at:
-<https://cran.r-project.org/package=fastpolicytree>. The code is written
-in `C` with some 'wrapper' code written in `R`. It is also possible to
-create a standalone Linux executable (if one has a `C` compiler
-installed). The `R` package contains a single function:
-`fastpolicytree()`, which is intended as a direct replacement for the
-`policy_tree()` function provided by the `policytree` `R` package. The
-`fastpolicytree()` function has additional arguments which can be used
-to alter its standard approach to finding optimal policy trees, but a
-user can safely leave these at their default values. The
-`fastpolicytree()` function lacks the `split.step` argument that the
-`policy_tree()` function has, since we focus on finding only optimal
-trees (for a given depth). The `policytree` `R` package has many useful
-functions in addition to `policy_tree()`. We have not replicated these
-in the `fastpolicytree` package, so in practice it makes sense to have
-both packages available.
+Availability
+============
+
+The `fastpolicytree` `R` package is [available on CRAN](https://cran.r-project.org/package=fastpolicytree). The code is written
+in `C` with some 'wrapper' code written in `R`, all of which is [available on the github repo for `fastpolicytree`](https://github.com/jcussens/tailoring).
 
 Acknowledgments {#acknowledgments .unnumbered}
 ===============
