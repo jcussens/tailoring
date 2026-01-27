@@ -117,9 +117,11 @@ Software design
 The key design decisions behind `fastpolicytree` were those made when
 designing the underlying *algorithm*. The software solves a discrete
 optimisation problem which always involves many tradeoffs. For example
-our use of caching (Section \autoref{sec:caching}) involved a
-trade-off between space and time. These algorithm design decisions
-which led to our software are given in Section \autoref{sec:fpt}.
+our use of caching  involved a
+trade-off between space and time. The algorithm design decisions
+which led to our software are given in the sections on **Using
+bounds**, **Alternative set implementation**, **Caching** and
+**Miscellaneous optimisations**. 	    
 
 In addition to algorithm design, one needs to create software that is
 accessible, usable and does not needlessly replicate functionality
@@ -147,9 +149,9 @@ The `fastpolicytree` R package was only made available on CRAN in June
 2025, so it is difficult at this point to know what its research
 impact will be. The `policytree` R package is certainly widely used
 and since `fastpolicytree` allows policy trees to be learned
-significantly faster than `policytree` (see Section
-\autoref{sec:simulation}) it is reasonable to expect that it will be
-used at least as much as `policytree`.
+significantly faster than `policytree` (see the **Simulation study**
+section) it is reasonable to expect that it will be used at least as
+much as `policytree`.
 
 We do know that, at time of writing, our `fastpolicytree` R package
 has been downloaded 1100 times from the RStudio CRAN mirror alone.
