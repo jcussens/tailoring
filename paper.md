@@ -41,7 +41,7 @@ from static policymaking towards a data-driven approach
 increasingly personalised at the patient level according to patient
 characteristics and expected outcomes.
 
-`fastpolicytree` can be used as part of the proceses of learning
+`fastpolicytree` can be used as part of the process of learning
 optimal policy rules from an observational dataset of individuals
 $i=1,\ldots,n$, that are characterised by the form $(X_i,W_i,Y_i)$,
 where $X_i$ is a vector of covariates including confounders and effect
@@ -69,28 +69,6 @@ covariate profile. This tree-like structure means that the reasoning
 behind the decision rule is explainable, which is an often important
 consideration in personalised decision making.
 
-`fastpolicytree` has been available as an [`R` package on
-CRAN](https://cran.r-project.org/package=fastpolicytree) since June
-2025. At time of writing `fastpolicytree` has been downloaded 882
-times from the RStudio CRAN mirror alone. Although we expect most
-people to use `fastpolicytree` as an `R` package, it is possible to
-create a standalone executable by compiling the `C` code for with the
-`R` code is a thin wrapper. Instructions on how to do this are provided on
-the [github repo for
-`fastpolicytree`](https://github.com/jcussens/tailoring).
-
-The `R` package contains a single function:
-`fastpolicytree()`, which is intended as a direct replacement for the
-`policy_tree()` function provided by the `policytree` `R` package. The
-`fastpolicytree()` function has additional arguments which can be used
-to alter its standard approach to finding optimal policy trees, but a
-user can safely leave these at their default values. The
-`fastpolicytree()` function lacks the `split.step` argument that the
-`policy_tree()` function has, since we focus on finding only optimal
-trees (for a given depth). The `policytree` `R` package has many useful
-functions in addition to `policy_tree()`. We have not replicated these
-in the `fastpolicytree` package, so in practice it makes sense to have
-both packages available.
 
 
 Statement of Need
@@ -132,6 +110,52 @@ quickly than existing software. In the rest of this paper we aim to
 show that it has succeeded in this goal and describe the algorithmic
 and implementational methods that have been used to achieve this
 success.
+
+Software design
+===============
+
+The key design decisions behind `fastpolicytree` were those made when
+designing the underlying *algorithm*. The software solves a discrete
+optimisation problem which always involves many tradeoffs. For example
+our use of caching (Section \autoref{sec:caching}) involved a
+trade-off between space and time. These algorithm design decisions
+which led to our software are given in Section \autoref{sec:fpt}.
+
+In addition to algorithm design, one needs to create software that is
+accessible, usable and does not needlessly replicate functionality
+provided by existing software. With a view to accessibility and
+usability `fastpolicytree` is available as an [`R` package on
+CRAN](https://cran.r-project.org/package=fastpolicytree). The `R`
+package contains a single function: `fastpolicytree()`, which is
+intended as a direct replacement for the `policy_tree()` function
+provided by the existing `policytree` `R` package. The `policytree` `R` package
+has many useful functions in addition to `policy_tree()`. We have not
+pointlessly replicated these in the `fastpolicytree` package, so in
+practice it makes sense to have both packages available.
+
+Although we expect most people to use `fastpolicytree` as an `R`
+package, it is possible to create a standalone executable by compiling
+the `C` code for with the `R` code is a thin wrapper. Instructions on
+how to do this are provided on the [github repo for
+`fastpolicytree`](https://github.com/jcussens/tailoring).
+
+
+Research impact statement
+=========================
+
+The `fastpolicytree` R package was only made available on CRAN in June
+2025, so it is difficult at this point to know what its research
+impact will be. The `policytree` R package is certainly widely used
+and since `fastpolicytree` allows policy trees to be learned
+significantly faster than `policytree` (see Section
+\autoref{sec:simulation}) it is reasonable to expect that it will be
+used at least as much as `policytree`.
+
+We do know that, at time of writing, our `fastpolicytree` R package
+has been downloaded 1100 times from the RStudio CRAN mirror alone.
+This large number of downloads is probably partly due to the
+[`policytree` github repo](https://github.com/grf-labs/policytree)
+pointing users to our `fastpolicytree` software. 
 
 Comparison with existing software
 =================================
@@ -399,7 +423,7 @@ Method 1 and Method 2 have competing benefits. At present, if most
 covariates have no more than 30 distinct values then Method 2 is used,
 otherwise Method 1 is used.
 
-### Caching
+### Caching {#sec:caching}
 
 ![Two partially constructed policy trees which have the same tree to find at position X. Units satisfying an inequality at a tree node are sent to its left branch, and those not satisfying it are sent right.\label{fig:cacheex}](trees.png)
 
@@ -446,7 +470,7 @@ Pre-allocating memory
     to store a new tree, pre-allocated space is used and the new tree
     overwrites any tree previously stored in that space.
 
-Simulation study
+Simulation study {#sec:simulation}
 ================
 
 In this section, we perform several experiments on synthetic data to
@@ -742,6 +766,13 @@ Availability
 
 The `fastpolicytree` `R` package is [available on CRAN](https://cran.r-project.org/package=fastpolicytree). The code is written
 in `C` with some 'wrapper' code written in `R`, all of which is [available on the github repo for `fastpolicytree`](https://github.com/jcussens/tailoring).
+
+AI usage disclosure
+===================
+
+No generative AI tools were used in the development of this software,
+the writing of this manuscript, or the preparation of supporting
+materials.
 
 Acknowledgments {#acknowledgments .unnumbered}
 ===============
