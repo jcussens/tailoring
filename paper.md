@@ -132,7 +132,7 @@ package contains a single function: `fastpolicytree()`, which is
 intended as a direct replacement for the `policy_tree()` function
 provided by the existing `policytree` `R` package. The `policytree` `R` package
 has many useful functions in addition to `policy_tree()`. We have not
-pointlessly replicated these in the `fastpolicytree` package, so in
+redundantly replicated these in the `fastpolicytree` package, so in
 practice it makes sense to have both packages available.
 
 Although we expect most people to use `fastpolicytree` as an `R`
@@ -144,6 +144,17 @@ how to do this are provided on the [github repo for
 
 Research impact statement
 =========================
+
+Building treatment recommendation rules using decision trees has
+attracted growing interest in the health and social sciences. The
+foundational paper introducing policy trees (Athey and Wager, 2021)
+has received over 700 citations. The `policytree` R package was
+the only available software implementation of this method, but its
+computational cost is often prohibitive for larger datasets, as trees
+deeper than two levels cannot typically be grown within reasonable run
+times. We introduce `fastpolicytree`, which substantially reduces
+computation time and makes deeper, more practically useful policy
+trees feasible.
 
 The `fastpolicytree` R package was only made available on CRAN in June
 2025, so it is difficult at this point to know what its research
