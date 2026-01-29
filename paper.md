@@ -148,7 +148,8 @@ Research impact statement
 Building treatment recommendation rules using decision trees has
 attracted growing interest in the health and social sciences. The
 foundational paper introducing policy trees [@Athey2021-uo]
-has received over 700 citations. The `policytree` R package was
+has received over 700 citations. Prior to the software described here,
+the `policytree` R package was
 the only available software implementation of this method, but its
 computational cost is often prohibitive for larger datasets, as trees
 deeper than two levels cannot typically be grown within reasonable run
