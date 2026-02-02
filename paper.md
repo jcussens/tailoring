@@ -796,6 +796,9 @@ part of Project MR/T04487X/1: *Tailoring Health Policies To Improve
 Outcomes Using Machine Learning, Causal Inference And Operations
 Research Methods*.
 
+References
+==========
+
 [^1]: <https://github.com/grf-labs/policytree>
 
 [^2]: The learned policy $\pi$ and the estimated policy values
