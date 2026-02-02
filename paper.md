@@ -166,7 +166,7 @@ section) it is reasonable to expect that it will be used at least as
 much as `policytree`.
 
 We do know that, at time of writing, our `fastpolicytree` R package
-has been downloaded 1100 times from the RStudio CRAN mirror alone.
+has been downloaded 1123 times from the RStudio CRAN mirror alone.
 This large number of downloads is probably partly due to the
 [`policytree` github repo](https://github.com/grf-labs/policytree)
 pointing users to our `fastpolicytree` software. 
